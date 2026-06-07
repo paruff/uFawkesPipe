@@ -1,5 +1,7 @@
 # uFawkesPipe
 
+[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml)
+
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
 uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for polyglot application development with a standardized pipeline contract. It provides automated build, test, security scanning, and deployment capabilities using Cloud Native Buildpacks and modern DevSecOps practices.

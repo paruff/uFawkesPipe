@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: docker compose config
+
+      - name: Run validation script
+        run: ./validate.sh
+
+      - name: ShellCheck all shell scripts
+        uses: koalaman/shellcheck-action@v1
+        with:
+          version: v0.10.0
+          severity: warning
+
+      - name: YAML lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_data: |
+            extends: default
+            rules:
+              line-length: disable
+              document-start: disable
+              truthy: disable
+
+      - name: Check .env.example has no real secrets
+        run: |
+          echo "🔍 Scanning .env.example for leaked secrets..."
+          issues=0
+          # Check for non-default password values
+          if grep -q "^JENKINS_ADMIN_PASSWORD=" .env.example && ! grep -q "^JENKINS_ADMIN_PASSWORD=changeme$" .env.example; then
+            echo "❌ JENKINS_ADMIN_PASSWORD appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          # Check for non-default DockerHub values
+          if grep -q "^DOCKERHUB_USERNAME=" .env.example && ! grep -q "^DOCKERHUB_USERNAME=your-dockerhub-username$" .env.example; then
+            echo "❌ DOCKERHUB_USERNAME appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          if grep -q "^DOCKERHUB_TOKEN=" .env.example && ! grep -q "^DOCKERHUB_TOKEN=your-dockerhub-token-or-password$" .env.example; then
+            echo "❌ DOCKERHUB_TOKEN appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          if [ "$issues" -gt 0 ]; then
+            echo "❌ $issues secret leak(s) detected in .env.example"
+            exit 1
+          fi
+          echo "✅ .env.example is clean (no real secrets)"
+
+      - name: Check required files exist
+        run: |
+          missing=0
+          for f in docker-compose.yml .env.example .deliveryd.yml.example jenkins/Dockerfile \
+                    jenkins/plugins.txt jenkins/casc.yaml pack/Dockerfile README.md Makefile; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing: $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            exit 1
+          fi
+          echo "✅ All required files present"
+
+      - name: Verify Phase A rename complete
+        run: |
+          if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
+               --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
+               --include="*.txt" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd"; then
+            echo "❌ Remaining 'deliveryd' references found (pipeline contract filename excluded)"
+            exit 1
+          fi
+          echo "✅ No stray 'deliveryd' references"
