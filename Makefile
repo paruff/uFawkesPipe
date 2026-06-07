@@ -1,4 +1,4 @@
-# Makefile for deliveryd platform management
+# Makefile for uFawkesPipe platform management
 
 .PHONY: help start stop restart logs status clean build ps health backup restore
 
@@ -9,20 +9,20 @@ help: ## Show this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 start: ## Start all services
-	@echo "🚀 Starting deliveryd platform..."
+	@echo "🚀 Starting uFawkesPipe platform..."
 	docker-compose up -d
 	@echo "✅ Platform started. Access Jenkins at http://localhost:8080/jenkins"
 
 stop: ## Stop all services
-	@echo "🛑 Stopping deliveryd platform..."
+	@echo "🛑 Stopping uFawkesPipe platform..."
 	docker-compose stop
 
 down: ## Stop and remove containers
-	@echo "🗑️  Removing deliveryd containers..."
+	@echo "🗑️  Removing uFawkesPipe containers..."
 	docker-compose down
 
 restart: ## Restart all services
-	@echo "🔄 Restarting deliveryd platform..."
+	@echo "🔄 Restarting uFawkesPipe platform..."
 	docker-compose restart
 
 logs: ## Show logs from all services
@@ -64,7 +64,7 @@ clean: ## Remove all containers, volumes, and images
 backup: ## Backup Jenkins data
 	@echo "💾 Backing up Jenkins data..."
 	@mkdir -p backups
-	docker run --rm -v deliveryd_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
+	docker run --rm -v ufp_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
 		tar czf /backup/jenkins-backup-$$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
 	@echo "✅ Backup complete: backups/jenkins-backup-*.tar.gz"
 
@@ -77,7 +77,7 @@ restore: ## Restore Jenkins data from latest backup
 	@LATEST=$$(ls -t backups/jenkins-backup-*.tar.gz | head -1); \
 	echo "Restoring from: $$LATEST"; \
 	docker-compose stop jenkins; \
-	docker run --rm -v deliveryd_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
+	docker run --rm -v ufp_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
 		sh -c "rm -rf /data/* && tar xzf /backup/$$(basename $$LATEST) -C /data"; \
 	docker-compose start jenkins; \
 	echo "✅ Restore complete"
@@ -86,7 +86,7 @@ validate-config: ## Validate docker-compose configuration
 	docker-compose config
 
 init: ## Initialize environment (first-time setup)
-	@echo "🎬 Initializing deliveryd platform..."
+	@echo "🎬 Initializing uFawkesPipe platform..."
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
 		echo "✅ Created .env file. Please edit it with your credentials."; \

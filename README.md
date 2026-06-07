@@ -1,8 +1,8 @@
-# deliveryd
+# uFawkesPipe
 
-**Integration & Delivery Plane for Internal Developer Platforms**
+**Integration & Delivery Plane of the Fawkes IDP Family**
 
-deliveryd is a production-ready CI/CD platform built on Jenkins, designed for polyglot application development with a standardized pipeline contract. It provides automated build, test, security scanning, and deployment capabilities using Cloud Native Buildpacks and modern DevSecOps practices.
+uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for polyglot application development with a standardized pipeline contract. It provides automated build, test, security scanning, and deployment capabilities using Cloud Native Buildpacks and modern DevSecOps practices.
 
 ## 🚀 Features
 
@@ -17,7 +17,7 @@ deliveryd is a production-ready CI/CD platform built on Jenkins, designed for po
 
 ## 📋 Pipeline Stages
 
-Every pipeline in deliveryd follows these standardized stages:
+Every pipeline in uFawkesPipe follows these standardized stages:
 
 1. **Lint** - Code quality and style checks (language-specific)
 2. **Unit Tests** - Automated testing with coverage reporting
@@ -32,7 +32,7 @@ Every pipeline in deliveryd follows these standardized stages:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    deliveryd Platform                        │
+│                    uFawkesPipe Platform                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
@@ -80,8 +80,8 @@ Every pipeline in deliveryd follows these standardized stages:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/paruff/deliveryd.git
-   cd deliveryd
+    git clone https://github.com/paruff/uFawkesPipe.git
+    cd uFawkesPipe
    ```
 
 2. **Configure environment**
@@ -157,7 +157,7 @@ Every pipeline in deliveryd follows these standardized stages:
 
 2. **Copy the standard Jenkinsfile to your repo**
    ```bash
-   cp /path/to/deliveryd/Jenkinsfile /path/to/your/repo/
+    cp /path/to/uFawkesPipe/Jenkinsfile /path/to/your/repo/
    ```
 
 3. **Create a pipeline job in Jenkins**
@@ -188,7 +188,7 @@ The `.deliveryd.yml` file defines how your application should be built and deplo
 
 ## 🔌 Webhook API
 
-deliveryd exposes Jenkins webhook APIs for external plane integration.
+uFawkesPipe exposes Jenkins webhook APIs for external plane integration.
 
 ### Trigger Pipeline via Webhook
 
@@ -230,7 +230,7 @@ curl -u admin:password \
 
 ## ☸️ Kubernetes Promotion Path
 
-deliveryd is designed for single-node development but provides a clear path to Kubernetes production.
+uFawkesPipe is designed for single-node development but provides a clear path to Kubernetes production.
 
 ### Development → Production Promotion
 
@@ -255,7 +255,7 @@ spec:
     spec:
       containers:
       - name: jenkins
-        image: deliveryd/jenkins:latest
+        image: ufawkespipe/jenkins:latest
         volumeMounts:
         - name: jenkins-home
           mountPath: /var/jenkins_home
@@ -283,7 +283,7 @@ kubernetes:
 
 ### Helm Deployment
 
-deliveryd also supports Helm deployments:
+uFawkesPipe also supports Helm deployments:
 
 ```yaml
 kubernetes:
@@ -343,7 +343,7 @@ Persistent data is stored in Docker volumes:
 
 **Backup volumes:**
 ```bash
-docker run --rm -v deliveryd_jenkins_home:/data -v $(pwd):/backup alpine \
+docker run --rm -v ufp_jenkins_home:/data -v $(pwd):/backup alpine \
   tar czf /backup/jenkins-backup.tar.gz -C /data .
 ```
 
@@ -359,7 +359,7 @@ docker-compose logs jenkins
 
 # Reset Jenkins
 docker-compose down
-docker volume rm deliveryd_jenkins_home
+docker volume rm ufp_jenkins_home
 docker-compose up -d
 ```
 
@@ -406,8 +406,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🙋 Support
 
-- GitHub Issues: https://github.com/paruff/deliveryd/issues
-- Documentation: https://github.com/paruff/deliveryd/wiki
+- GitHub Issues: https://github.com/paruff/uFawkesPipe/issues
+- Documentation: https://github.com/paruff/uFawkesPipe/wiki
 
 ---
 

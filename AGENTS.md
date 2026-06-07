@@ -1,16 +1,16 @@
-# Agent Instructions — deliveryd
+# Agent Instructions — uFawkesPipe
 
 > Universal instructions for all agents: GitHub Copilot, VS Code agent mode, Claude.
-> deliveryd is the **Integration & Delivery Plane** of the Fawkes IDP family.
+> uFawkesPipe is the **Integration & Delivery Plane of the Fawkes IDP family**.
 > It provides a Jenkins-based CI/CD platform via Docker Compose with a standardised
 > pipeline contract for polyglot applications.
 > **Do not modify this file without maintainer approval.**
 
 ---
 
-## 1. What deliveryd Is
+## 1. What uFawkesPipe Is
 
-deliveryd is a production-ready CI/CD platform built on Jenkins, designed for polyglot
+uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for polyglot
 application development with a standardised pipeline contract. It provides automated
 build, test, security scanning, and deployment capabilities via Docker Compose.
 
@@ -20,14 +20,14 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 | Jenkins (via Docker Compose) | Pipeline orchestration |
 | Docker Compose | Service orchestration for the platform itself |
 | `jenkins/` | Jenkins configuration as code (JCasC), plugin lists |
-| `k8s/` | Kubernetes deployment manifests for running deliveryd on K8s |
+| `k8s/` | Kubernetes deployment manifests for running uFawkesPipe on K8s |
 | `pack/` | Buildpack configuration for app builds |
 | `shared/` | Shared pipeline libraries and utilities |
-| `Jenkinsfile` | Pipeline definition for deliveryd's own CI |
+| `Jenkinsfile` | Pipeline definition for uFawkesPipe's own CI |
 | `Makefile` | Developer convenience targets |
 | `.deliveryd.yml` | Pipeline contract — app teams configure this |
 
-**Repository:** github.com/paruff/deliveryd
+**Repository:** github.com/paruff/uFawkesPipe
 
 ---
 
@@ -37,12 +37,12 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 |---|---|---|---|
 | `docker-compose.yml` | YAML | Jenkins + supporting services | Hardcode credentials |
 | `jenkins/` | YAML / Groovy | JCasC config, plugin lists, seed jobs | Store secrets here |
-| `k8s/` | YAML | K8s manifests for deliveryd on Kubernetes | Use `latest` image tags |
+| `k8s/` | YAML | K8s manifests for uFawkesPipe on Kubernetes | Use `latest` image tags |
 | `pack/` | TOML / YAML | Buildpack builder and extension configs | Hardcode language versions |
 | `shared/` | Groovy | Shared Jenkins pipeline library steps | Put app logic here |
 | `examples/` | Various | Example `.deliveryd.yml` for different stacks | Use as production config |
 | `docs/` | Markdown | Architecture, pipeline contract reference, runbooks | |
-| `Jenkinsfile` | Groovy | deliveryd's own CI pipeline | Hardcode credentials |
+| `Jenkinsfile` | Groovy | uFawkesPipe's own CI pipeline | Hardcode credentials |
 | `Makefile` | Make | `make up`, `make down`, `make validate` targets | Put logic that belongs in scripts |
 | `validate.sh` | Bash | Pre-flight validation script | Bypass with `--no-verify` |
 
@@ -95,7 +95,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 ### k8s/
 - No `latest` image tags
 - Resource limits on all containers
-- Labels: `plane: deliveryd`, `managed-by: fawkes`
+- Labels: `plane: ufawkespipe`, `managed-by: fawkes`
 
 ---
 
@@ -165,9 +165,9 @@ Every PR must include the AI-Assisted Review Block:
 
 ## 9. Integration with Other Planes
 
-- **Obstackd**: deliveryd sends pipeline traces to Obstackd's OTEL Collector (port 4317)
-- **developerd**: Developer tooling triggered by deliveryd pipeline events
-- **fawkes**: Full IDP uses deliveryd as its CI/CD engine; check fawkes CHANGE_IMPACT_MAP
+- **Obstackd**: uFawkesPipe sends pipeline traces to Obstackd's OTEL Collector (port 4317)
+- **developerd**: Developer tooling triggered by uFawkesPipe pipeline events
+- **fawkes**: Full IDP uses uFawkesPipe as its CI/CD engine; check fawkes CHANGE_IMPACT_MAP
 
 ---
 

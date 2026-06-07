@@ -1,5 +1,5 @@
 #!/bin/bash
-# Validation script for deliveryd platform
+# Validation script for uFawkesPipe platform
 
 set -e
 
@@ -11,7 +11,7 @@ DEFAULT_DOCKERHUB_USERNAME="your-dockerhub-username"
 DEFAULT_DOCKERHUB_TOKEN="your-dockerhub-token-or-password"
 
 echo "========================================="
-echo "deliveryd Platform Validation"
+echo "uFawkesPipe Platform Validation"
 echo "========================================="
 echo ""
 

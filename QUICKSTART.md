@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get deliveryd up and running in 5 minutes!
+Get uFawkesPipe up and running in 5 minutes!
 
 ## Prerequisites
 
@@ -14,8 +14,8 @@ Get deliveryd up and running in 5 minutes!
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/paruff/deliveryd.git
-cd deliveryd
+git clone https://github.com/paruff/uFawkesPipe.git
+cd uFawkesPipe
 ```
 
 ### 2. Configure Environment
@@ -115,7 +115,7 @@ Jenkins comes with a pre-configured example pipeline:
 
 2. **Copy standard Jenkinsfile**
    ```bash
-   cp deliveryd/Jenkinsfile your-repo/Jenkinsfile
+   cp uFawkesPipe/Jenkinsfile your-repo/Jenkinsfile
    git add Jenkinsfile .deliveryd.yml
    git commit -m "Add CI/CD configuration"
    git push
@@ -211,7 +211,7 @@ make logs-jenkins
 
 # Reset Jenkins (⚠️ destroys data)
 docker-compose down
-docker volume rm deliveryd_jenkins_home
+docker volume rm ufp_jenkins_home
 make start
 ```
 
@@ -251,9 +251,9 @@ make logs-sonar
 
 ## Support
 
-- 📖 Documentation: https://github.com/paruff/deliveryd
-- 🐛 Issues: https://github.com/paruff/deliveryd/issues
-- 💬 Discussions: https://github.com/paruff/deliveryd/discussions
+- 📖 Documentation: https://github.com/paruff/uFawkesPipe
+- 🐛 Issues: https://github.com/paruff/uFawkesPipe/issues
+- 💬 Discussions: https://github.com/paruff/uFawkesPipe/discussions
 
 ---
 
