@@ -1,4 +1,4 @@
-FROM buildpacksio/pack:latest
+FROM buildpacksio/pack:0.32.1
 
 USER root
 
