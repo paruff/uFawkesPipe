@@ -23,9 +23,8 @@ jobs:
         run: ./validate.sh
 
       - name: ShellCheck all shell scripts
-        uses: koalaman/shellcheck-action@v1
+        uses: ludeeus/action-shellcheck@2.0.0
         with:
-          version: v0.10.0
           severity: warning
 
       - name: YAML lint
