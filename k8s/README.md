@@ -1,6 +1,6 @@
-# Kubernetes Manifests for deliveryd
+# Kubernetes Manifests for uFawkesPipe
 
-This directory contains Kubernetes manifests for deploying deliveryd to a Kubernetes cluster.
+This directory contains Kubernetes manifests for deploying uFawkesPipe to a Kubernetes cluster.
 
 ## Files
 
@@ -14,7 +14,7 @@ This directory contains Kubernetes manifests for deploying deliveryd to a Kubern
 
 1. Create namespace:
    ```bash
-   kubectl create namespace deliveryd
+   kubectl create namespace ufawkespipe
    ```
 
 2. Create secrets:
@@ -22,12 +22,12 @@ This directory contains Kubernetes manifests for deploying deliveryd to a Kubern
    kubectl create secret generic dockerhub-credentials \
      --from-literal=username=your-username \
      --from-literal=token=your-token \
-     -n deliveryd
-   
-   kubectl create secret generic jenkins-admin \
-     --from-literal=username=admin \
-     --from-literal=password=your-secure-password \
-     -n deliveryd
+      -n ufawkespipe
+    
+    kubectl create secret generic jenkins-admin \
+      --from-literal=username=admin \
+      --from-literal=password=your-secure-password \
+      -n ufawkespipe
    ```
 
 3. Apply manifests:
@@ -37,16 +37,16 @@ This directory contains Kubernetes manifests for deploying deliveryd to a Kubern
 
 4. Check status:
    ```bash
-   kubectl get pods -n deliveryd
-   kubectl get svc -n deliveryd
-   kubectl get ingress -n deliveryd
+   kubectl get pods -n ufawkespipe
+   kubectl get svc -n ufawkespipe
+   kubectl get ingress -n ufawkespipe
    ```
 
 ## Notes
 
 - Update `jenkins-ingress.yaml` with your domain
 - Adjust storage class in `jenkins-pvc.yaml` for your cluster
-- The Jenkins image (`deliveryd/jenkins:latest`) needs to be built and pushed to a registry
+- The Jenkins image (`ufawkespipe/jenkins:latest`) needs to be built and pushed to a registry
 - For production, enable TLS in ingress and use cert-manager
 - **Security Warning**: The deployment uses Docker socket mounting which grants root access to the host. For production environments, consider:
   - Docker-in-Docker (DinD) sidecar containers
@@ -57,9 +57,9 @@ This directory contains Kubernetes manifests for deploying deliveryd to a Kubern
 ## Building and Pushing Custom Image
 
 ```bash
-cd deliveryd
-docker build -t your-registry/deliveryd-jenkins:latest -f jenkins/Dockerfile jenkins/
-docker push your-registry/deliveryd-jenkins:latest
+cd uFawkesPipe
+docker build -t your-registry/ufp-jenkins:latest -f jenkins/Dockerfile jenkins/
+docker push your-registry/ufp-jenkins:latest
 
 # Update jenkins-deployment.yaml with your image
 ```

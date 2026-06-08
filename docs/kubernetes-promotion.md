@@ -1,10 +1,10 @@
 # Kubernetes Promotion Path
 
-This document describes how to promote deliveryd from single-node Docker Compose to Kubernetes.
+This document describes how to promote uFawkesPipe from single-node Docker Compose to Kubernetes.
 
 ## Overview
 
-deliveryd is designed for easy development on a single node with Docker Compose, but can be promoted to Kubernetes for production use. This guide shows the migration path.
+uFawkesPipe is designed for easy development on a single node with Docker Compose, but can be promoted to Kubernetes for production use. This guide shows the migration path.
 
 ## Architecture Comparison
 
@@ -37,8 +37,8 @@ kubectl get nodes
 ## Step 2: Create Namespace
 
 ```bash
-kubectl create namespace deliveryd
-kubectl config set-context --current --namespace=deliveryd
+kubectl create namespace ufawkespipe
+kubectl config set-context --current --namespace=ufawkespipe
 ```
 
 ## Step 3: Deploy Jenkins on Kubernetes
@@ -58,13 +58,13 @@ See the `k8s/` directory for complete manifests:
 kubectl create secret generic dockerhub-credentials \
   --from-literal=username=your-username \
   --from-literal=token=your-token \
-  -n deliveryd
+  -n ufawkespipe
 
 # Apply all manifests
 kubectl apply -f k8s/
 
 # Watch deployment
-kubectl get pods -n deliveryd -w
+kubectl get pods -n ufawkespipe -w
 ```
 
 ## Step 4: Configure Jenkins Kubernetes Plugin
@@ -75,7 +75,7 @@ Once Jenkins is running on K8s, configure the Kubernetes plugin to use pods as b
 2. Add Kubernetes Cloud:
    - Name: `kubernetes`
    - Kubernetes URL: `https://kubernetes.default.svc`
-   - Kubernetes Namespace: `deliveryd`
+   - Kubernetes Namespace: `ufawkespipe`
    - Jenkins URL: `http://jenkins:8080/jenkins`
 
 ## Migration Checklist
