@@ -1,5 +1,5 @@
 jenkins:
-  systemMessage: "deliveryd - Integration & Delivery Plane\n\nAutomated CI/CD Platform for Polyglot Applications"
+  systemMessage: "uFawkesPipe - Integration & Delivery Plane of Fawkes IDP\n\nAutomated CI/CD Platform for Polyglot Applications"
   numExecutors: 2
   mode: NORMAL
   scmCheckoutRetryCount: 3
@@ -32,12 +32,12 @@ jenkins:
   # Global Pipeline Libraries
   globalLibraries:
     libraries:
-      - name: "deliveryd-pipeline-library"
+      - name: "ufawkespipe-pipeline-library"
         retriever:
           modernSCM:
             scm:
               git:
-                remote: "https://github.com/paruff/deliveryd"
+                remote: "https://github.com/paruff/uFawkesPipe"
                 credentialsId: ""
         defaultVersion: "main"
         implicit: false
@@ -58,8 +58,8 @@ unclassified:
   globalConfigFiles:
     configs:
       - json:
-          id: "deliveryd-pipeline-contract"
-          name: "deliveryd Pipeline Contract Schema"
+          id: "ufawkespipe-pipeline-contract"
+          name: "uFawkesPipe Pipeline Contract Schema"
           comment: "JSON Schema for .deliveryd.yml validation"
           
 credentials:
@@ -110,7 +110,7 @@ jobs:
       }
   - script: >
       pipelineJob('pipelines/example-polyglot-pipeline') {
-        description('Example polyglot pipeline following deliveryd contract')
+        description('Example polyglot pipeline following uFawkesPipe contract')
         parameters {
           stringParam('REPO_URL', '', 'Git repository URL')
           stringParam('BRANCH', 'main', 'Branch to build')

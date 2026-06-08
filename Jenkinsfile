@@ -1,9 +1,9 @@
 #!/usr/bin/env groovy
 
 /**
- * deliveryd Standard Pipeline
+ * uFawkesPipe Standard Pipeline
  * 
- * This Jenkinsfile implements the deliveryd pipeline contract for polyglot applications.
+ * This Jenkinsfile implements the uFawkesPipe pipeline contract for polyglot applications.
  * It reads configuration from .deliveryd.yml and executes appropriate stages based on
  * the application type and language.
  * 
@@ -22,7 +22,7 @@
  * 10. Deploy - Optional K8s deployment
  */
 
-@Library('deliveryd-pipeline-library') _
+@Library('ufawkespipe-pipeline-library') _
 
 pipeline {
     agent any
@@ -64,7 +64,7 @@ pipeline {
                     // Display build information
                     sh """
                         echo "========================================"
-                        echo "deliveryd Pipeline - Build Information"
+                        echo "uFawkesPipe Pipeline - Build Information"
                         echo "========================================"
                         echo "Repository: ${env.GIT_URL}"
                         echo "Branch: ${GIT_BRANCH}"
@@ -99,7 +99,7 @@ pipeline {
                                 builder: 'cnb',
                                 image: [
                                     registry: 'docker.io',
-                                    namespace: env.DOCKERHUB_USERNAME ?: 'deliveryd',
+                                    namespace: env.DOCKERHUB_USERNAME ?: 'ufawkespipe',
                                     name: 'application'
                                 ]
                             ]
@@ -118,7 +118,7 @@ pipeline {
                     APP_LANGUAGE = CONFIG.app.language
                     
                     // Build image tag
-                    def imageNamespace = CONFIG.build?.image?.namespace ?: env.DOCKERHUB_USERNAME ?: 'deliveryd'
+                    def imageNamespace = CONFIG.build?.image?.namespace ?: env.DOCKERHUB_USERNAME ?: 'ufawkespipe'
                     def imageName = CONFIG.build?.image?.name ?: APP_NAME
                     IMAGE_TAG = "${imageNamespace}/${imageName}:${GIT_COMMIT_SHORT}"
                     

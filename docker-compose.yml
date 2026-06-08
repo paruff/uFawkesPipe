@@ -6,7 +6,7 @@ services:
     build:
       context: ./jenkins
       dockerfile: Dockerfile
-    container_name: deliveryd-jenkins
+    container_name: ufp-jenkins
     restart: unless-stopped
     ports:
       - "8080:8080"      # Jenkins UI
@@ -23,7 +23,7 @@ services:
       - ./jenkins/casc.yaml:/var/jenkins_home/casc.yaml:ro
       - ./shared:/shared:rw  # Shared workspace for artifacts
     networks:
-      - deliveryd-network
+      - ufp-network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/jenkins/login || exit 1"]
       interval: 30s
@@ -34,7 +34,7 @@ services:
   # SonarQube - SAST (Static Application Security Testing)
   sonarqube:
     image: sonarqube:10-community
-    container_name: deliveryd-sonarqube
+    container_name: ufp-sonarqube
     restart: unless-stopped
     ports:
       - "9000:9000"
@@ -48,7 +48,7 @@ services:
       - sonarqube_extensions:/opt/sonarqube/extensions
       - sonarqube_logs:/opt/sonarqube/logs
     networks:
-      - deliveryd-network
+      - ufp-network
     depends_on:
       - sonarqube-db
     healthcheck:
@@ -61,7 +61,7 @@ services:
   # PostgreSQL for SonarQube
   sonarqube-db:
     image: postgres:15-alpine
-    container_name: deliveryd-sonarqube-db
+    container_name: ufp-sonarqube-db
     restart: unless-stopped
     environment:
       - POSTGRES_USER=sonar
@@ -70,7 +70,7 @@ services:
     volumes:
       - sonarqube_db:/var/lib/postgresql/data
     networks:
-      - deliveryd-network
+      - ufp-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sonar"]
       interval: 10s
@@ -80,14 +80,14 @@ services:
   # OWASP Dependency-Check - Dependency Vulnerability Scanning
   dependency-check:
     image: owasp/dependency-check:latest
-    container_name: deliveryd-dependency-check
+    container_name: ufp-dependency-check
     restart: "no"  # On-demand service
     volumes:
       - dependency_check_data:/usr/share/dependency-check/data
       - ./shared:/src:ro
       - ./shared/reports:/report:rw
     networks:
-      - deliveryd-network
+      - ufp-network
     command: ["--help"]  # Default command, will be overridden
 
   # Pack CLI - Cloud Native Buildpacks
@@ -95,14 +95,14 @@ services:
     build:
       context: ./pack
       dockerfile: Dockerfile
-    container_name: deliveryd-pack
+    container_name: ufp-pack
     restart: "no"  # On-demand service
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - pack_cache:/pack-cache
       - ./shared:/workspace:rw
     networks:
-      - deliveryd-network
+      - ufp-network
     environment:
       - PACK_CACHE_DIR=/pack-cache
     command: ["--help"]  # Default command, will be overridden
@@ -110,7 +110,7 @@ services:
   # Nexus Repository (Optional) - Artifact Repository
   # nexus:
   #   image: sonatype/nexus3:latest
-  #   container_name: deliveryd-nexus
+  #   container_name: ufp-nexus
   #   restart: unless-stopped
   #   ports:
   #     - "8081:8081"
@@ -118,7 +118,7 @@ services:
   #   volumes:
   #     - nexus_data:/nexus-data
   #   networks:
-  #     - deliveryd-network
+  #     - ufp-network
   #   environment:
   #     - INSTALL4J_ADD_VM_PARAMS=-Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
 
@@ -141,7 +141,7 @@ volumes:
   #   driver: local
 
 networks:
-  deliveryd-network:
+  ufp-network:
     driver: bridge
     ipam:
       config:
