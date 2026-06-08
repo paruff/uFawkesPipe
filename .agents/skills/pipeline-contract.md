@@ -1,7 +1,7 @@
 ---
 name: pipeline-contract
-description: .deliveryd.yml (or .fawkespipe.yml) schema, validation, breaking change detection, and migration patterns for uFawkesPipe
-applies: .deliveryd.yml.example, examples/*.yml, Jenkinsfile, shared/vars/loadConfig.groovy
+description: .fawkespipe.yml (migrating from .deliveryd.yml) schema, validation, breaking change detection, and migration patterns for uFawkesPipe
+applies: .fawkespipe.yml.example, examples/*.yml, Jenkinsfile, shared/vars/loadConfig.groovy
 ---
 
 # Pipeline Contract — Schema and Migration
@@ -10,7 +10,7 @@ applies: .deliveryd.yml.example, examples/*.yml, Jenkinsfile, shared/vars/loadCo
 
 ## Contract File
 
-The pipeline contract filename is `.fawkespipe.yml` (migrating from `.deliveryd.yml`).
+The pipeline contract filename is `.fawkespipe.yml` (migrated from `.deliveryd.yml`).
 
 ## Schema Reference
 

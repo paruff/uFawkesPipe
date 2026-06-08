@@ -25,7 +25,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 | `shared/` | Shared pipeline libraries and utilities |
 | `Jenkinsfile` | Pipeline definition for uFawkesPipe's own CI |
 | `Makefile` | Developer convenience targets |
-| `.deliveryd.yml` | Pipeline contract — app teams configure this |
+| `.fawkespipe.yml` | Pipeline contract — app teams configure this |
 
 **Repository:** github.com/paruff/uFawkesPipe
 
@@ -40,7 +40,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 | `k8s/` | YAML | K8s manifests for uFawkesPipe on Kubernetes | Use `latest` image tags |
 | `pack/` | TOML / YAML | Buildpack builder and extension configs | Hardcode language versions |
 | `shared/` | Groovy | Shared Jenkins pipeline library steps | Put app logic here |
-| `examples/` | Various | Example `.deliveryd.yml` for different stacks | Use as production config |
+| `examples/` | Various | Example `.fawkespipe.yml` for different stacks | Use as production config |
 | `docs/` | Markdown | Architecture, pipeline contract reference, runbooks | |
 | `Jenkinsfile` | Groovy | uFawkesPipe's own CI pipeline | Hardcode credentials |
 | `Makefile` | Make | `make up`, `make down`, `make validate` targets | Put logic that belongs in scripts |
@@ -54,7 +54,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 |---|---|---|
 | 1 | `AGENTS.md` (this file) | Stack, boundaries, PM contract |
 | 2 | `docker-compose.yml` | Current service versions and configuration |
-| 3 | `.deliveryd.yml.example` | The pipeline contract that app teams use |
+| 3 | `.fawkespipe.yml.example` | The pipeline contract that app teams use |
 | 4 | `docs/ARCHITECTURE.md` | How Jenkins, Docker, and Buildpacks fit together |
 | 5 | `docs/KNOWN_LIMITATIONS.md` | Known issues — do not make these worse |
 | 6 | `docs/CHANGE_IMPACT_MAP.md` | What breaks when pipeline contract changes |
@@ -87,7 +87,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 - Failed stages must capture and archive artifacts before failing the build
 - No inline credentials — use `withCredentials()` block
 
-### .deliveryd.yml (pipeline contract)
+### .fawkespipe.yml (pipeline contract)
 - This is the interface app teams configure — treat changes as breaking changes
 - New fields must be optional with sensible defaults
 - Removed fields require a deprecation period and migration guide
@@ -110,7 +110,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 
 ### Agents MUST Ask Before
 - Changing Jenkins image version or plugin versions
-- Modifying `.deliveryd.yml` pipeline contract fields
+- Modifying `.fawkespipe.yml` pipeline contract fields
 - Changing `docker-compose.yml` service structure
 - Adding new stages to the standard pipeline
 - Modifying `k8s/` manifests
@@ -149,7 +149,7 @@ build, test, security scanning, and deployment capabilities via Docker Compose.
 Every PR must include the AI-Assisted Review Block:
 - What pipeline stages are affected
 - How tested (local `make up` + pipeline run)
-- Breaking change check on `.deliveryd.yml` contract
+- Breaking change check on `.fawkespipe.yml` contract
 - Credentials check: nothing sensitive committed
 
 ---

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Validation script for uFawkesPipe platform
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -71,7 +71,7 @@ echo "Checking required files..."
 required_files=(
     "docker-compose.yml"
     ".env.example"
-    ".deliveryd.yml.example"
+    ".fawkespipe.yml.example"
     "Jenkinsfile"
     "jenkins/Dockerfile"
     "jenkins/plugins.txt"
@@ -102,12 +102,12 @@ import yaml
 import sys
 
 files = [
-    '.deliveryd.yml.example',
+    '.fawkespipe.yml.example',
     'jenkins/casc.yaml',
-    'examples/.deliveryd-java-maven.yml',
-    'examples/.deliveryd-python-flask.yml',
-    'examples/.deliveryd-nodejs-express.yml',
-    'examples/.deliveryd-go.yml',
+    'examples/.fawkespipe-java-maven.yml',
+    'examples/.fawkespipe-python-flask.yml',
+    'examples/.fawkespipe-nodejs-express.yml',
+    'examples/.fawkespipe-go.yml',
 ]
 
 k8s_files = [
@@ -181,6 +181,7 @@ required_dirs=(
     "docs"
     "k8s"
     "shared"
+    "scripts"
 )
 
 for dir in "${required_dirs[@]}"; do
@@ -200,7 +201,7 @@ if [ -f ".env" ]; then
     success ".env file exists"
     
     # Check required variables
-    required_vars=("DOCKERHUB_USERNAME" "DOCKERHUB_TOKEN")
+    required_vars=("DOCKERHUB_USERNAME" "DOCKERHUB_TOKEN" "SONAR_DB_PASSWORD" "WEBHOOK_SECRET")
     for var in "${required_vars[@]}"; do
         if grep -q "^${var}=" .env; then
             value=$(grep "^${var}=" .env | cut -d= -f2-)
@@ -223,10 +224,10 @@ echo ""
 # Verify example configurations
 echo "Checking example configurations..."
 example_files=(
-    "examples/.deliveryd-java-maven.yml"
-    "examples/.deliveryd-python-flask.yml"
-    "examples/.deliveryd-nodejs-express.yml"
-    "examples/.deliveryd-go.yml"
+    "examples/.fawkespipe-java-maven.yml"
+    "examples/.fawkespipe-python-flask.yml"
+    "examples/.fawkespipe-nodejs-express.yml"
+    "examples/.fawkespipe-go.yml"
 )
 
 for file in "${example_files[@]}"; do

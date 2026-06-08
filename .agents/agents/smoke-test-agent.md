@@ -39,7 +39,7 @@ set -euo pipefail
 # 3. Wait for Jenkins (curl localhost:8080/jenkins, timeout 60s)
 # 4. Wait for SonarQube (curl localhost:9000/api/system/status, timeout 90s)
 # 5. Verify example pipeline template exists
-# 6. Verify .deliveryd.yml.example parses as valid YAML
+# 6. Verify .fawkespipe.yml.example parses as valid YAML
 # 7. Report elapsed time
 # 8. Clean up (make down)
 ```

@@ -9,7 +9,7 @@ uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for 
 ## 🚀 Features
 
 - **Polyglot Support** - Build applications in Java, Python, Node.js, Go, Ruby, and more
-- **Standard Pipeline Contract** - Define CI/CD behavior via `.deliveryd.yml` configuration
+- **Standard Pipeline Contract** - Define CI/CD behavior via `.fawkespipe.yml` configuration
 - **Cloud Native Buildpacks** - Build OCI-compliant container images without Dockerfiles
 - **Security First** - Integrated SAST, dependency scanning, and container image scanning
 - **Jenkins-based** - Robust, battle-tested CI/CD orchestration
@@ -119,7 +119,7 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 
 ### First Pipeline
 
-1. **Create a `.deliveryd.yml` in your application repository**
+1. **Create a `.fawkespipe.yml` in your application repository**
 
    Example for a Node.js app:
    ```yaml
@@ -171,7 +171,7 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 
 ## 📖 Pipeline Contract Reference
 
-The `.deliveryd.yml` file defines how your application should be built and deployed. See [.deliveryd.yml.example](./.deliveryd.yml.example) for a complete reference.
+The `.fawkespipe.yml` file defines how your application should be built and deployed. See [.fawkespipe.yml.example](./.fawkespipe.yml.example) for a complete reference.
 
 ### Key Sections
 
@@ -183,10 +183,10 @@ The `.deliveryd.yml` file defines how your application should be built and deplo
 
 ### Language-Specific Examples
 
-- [Java/Maven](./examples/.deliveryd-java-maven.yml)
-- [Python/Flask](./examples/.deliveryd-python-flask.yml)
-- [Node.js/Express](./examples/.deliveryd-nodejs-express.yml)
-- [Go](./examples/.deliveryd-go.yml)
+- [Java/Maven](./examples/.fawkespipe-java-maven.yml)
+- [Python/Flask](./examples/.fawkespipe-python-flask.yml)
+- [Node.js/Express](./examples/.fawkespipe-nodejs-express.yml)
+- [Go](./examples/.fawkespipe-go.yml)
 
 ## 🔌 Webhook API
 
@@ -273,7 +273,7 @@ spec:
 
 **Kubernetes Pipeline Integration:**
 
-Enable in `.deliveryd.yml`:
+Enable in `.fawkespipe.yml`:
 ```yaml
 kubernetes:
   enabled: true

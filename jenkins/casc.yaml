@@ -60,7 +60,7 @@ unclassified:
       - json:
           id: "ufawkespipe-pipeline-contract"
           name: "uFawkesPipe Pipeline Contract Schema"
-          comment: "JSON Schema for .deliveryd.yml validation"
+          comment: "JSON Schema for .fawkespipe.yml validation"
 
 credentials:
   system:

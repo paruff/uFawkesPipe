@@ -4,11 +4,11 @@ description: Applied automatically when working on Jenkinsfile or shared/ librar
 applyTo: "Jenkinsfile,shared/**/*.groovy,jenkins/**/*.groovy"
 ---
 
-# Jenkins Pipeline Instructions — deliveryd
+# Jenkins Pipeline Instructions — uFawkesPipe
 
 ## Read First
 - `AGENTS.md` → Jenkinsfile and Shared Library rules
-- `.deliveryd.yml.example` → the pipeline contract app teams use
+- `.fawkespipe.yml.example` → the pipeline contract app teams use
 
 ## DORA Logging — Required on Every Stage
 

@@ -1,11 +1,11 @@
-# Change Impact Map — deliveryd
+# Change Impact Map — uFawkesPipe
 
-> deliveryd is consumed by app teams via the `.deliveryd.yml` pipeline contract.
+> uFawkesPipe is consumed by app teams via the `.fawkespipe.yml` pipeline contract.
 > Changes here can break other teams' pipelines. Check this table before touching anything.
 
 ---
 
-## Pipeline Contract (.deliveryd.yml)
+## Pipeline Contract (.fawkespipe.yml)
 
 | If you change... | You must also update... |
 |---|---|
@@ -57,5 +57,5 @@
 |---|---|
 | OTEL exporter endpoint format | **Obstackd**: pipeline traces may stop arriving |
 | Jenkins webhook port | **fawkes**: GitHub webhook configuration for the full IDP |
-| `.deliveryd.yml` contract | **developerd**: developer tooling that reads pipeline status |
+| `.fawkespipe.yml` contract | **developerd**: developer tooling that reads pipeline status |
 | Pipeline stage names | **Obstackd**: Grafana dashboards that filter by stage name |

@@ -6,7 +6,7 @@ applies: pack/**/*, examples/**/*.yml
 
 # Language Pack — Buildpack Language Support
 
-> Load this skill before creating a new language pack or example `.deliveryd.yml`.
+> Load this skill before creating a new language pack or example `.fawkespipe.yml`.
 
 ## Pack Directory Structure
 
@@ -28,7 +28,7 @@ pack/<language>/
 | Go | `paketobuildpacks/builder:base` | `BP_GO_VERSION=1.21` | golangci-lint | go test -v -race | Trivy | Trivy |
 | Ruby | (future) | `BP_RUBY_VERSION=3.2` | rubocop | rspec | brakeman | bundler-audit |
 
-## Example `.deliveryd.yml` Pattern
+## Example `.fawkespipe.yml` Pattern
 
 ```yaml
 app:

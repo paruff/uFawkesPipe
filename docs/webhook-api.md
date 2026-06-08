@@ -1,6 +1,6 @@
 # Webhook and API Documentation
 
-deliveryd exposes multiple APIs and webhooks that allow external planes to trigger and interact with pipelines.
+uFawkesPipe exposes multiple APIs and webhooks that allow external planes to trigger and interact with pipelines.
 
 ## Overview
 
@@ -275,7 +275,7 @@ curl -X POST \
 ```python
 import requests
 
-class DeliverydClient:
+class UfawkesPipeClient:
     def __init__(self, base_url, username, api_token):
         self.base_url = base_url
         self.auth = (username, api_token)
@@ -311,7 +311,7 @@ class DeliverydClient:
         return 'TIMEOUT'
 
 # Usage
-client = DeliverydClient(
+client = UfawkesPipeClient(
     'http://localhost:8080/jenkins',
     'admin',
     'your-api-token'
@@ -330,7 +330,7 @@ print(f"Build status: {status['result']}")
 ```javascript
 const axios = require('axios');
 
-class DeliverydClient {
+class UfawkesPipeClient {
   constructor(baseUrl, username, apiToken) {
     this.baseUrl = baseUrl;
     this.auth = {
@@ -364,7 +364,7 @@ class DeliverydClient {
 }
 
 // Usage
-const client = new DeliverydClient(
+const client = new UfawkesPipeClient(
   'http://localhost:8080/jenkins',
   'admin',
   'your-api-token'

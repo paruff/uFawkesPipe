@@ -14,7 +14,7 @@ Specialist for creating and maintaining Groovy-based shared pipeline library ste
 |---|---|---|
 | 1 | `AGENTS.md` | PM contract, boundaries, rules |
 | 2 | `jenkins/casc.yaml` | Library registration, credential IDs |
-| 3 | `.deliveryd.yml.example` | Pipeline contract fields consumed by steps |
+| 3 | `.fawkespipe.yml.example` | Pipeline contract fields consumed by steps |
 | 4 | `docs/PIPELINE_CONTRACT.md` | Stage semantics and DORA mapping |
 
 ## Architecture Rules

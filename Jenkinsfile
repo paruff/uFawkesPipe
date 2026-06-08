@@ -4,14 +4,14 @@
  * uFawkesPipe Standard Pipeline
  * 
  * This Jenkinsfile implements the uFawkesPipe pipeline contract for polyglot applications.
- * It reads configuration from .deliveryd.yml and executes appropriate stages based on
+ * It reads configuration from .fawkespipe.yml (or legacy .deliveryd.yml) and executes appropriate stages based on
  * the application type and language.
  * 
  * Supports: Java, Python, Node.js, Go, Ruby, and more
  * 
  * Pipeline Stages:
  * 1. Checkout - Clone the repository
- * 2. Load Config - Parse .deliveryd.yml contract
+ * 2. Load Config - Parse .fawkespipe.yml contract
  * 3. Lint - Code quality and style checks
  * 4. Unit Test - Run unit tests and generate coverage
  * 5. SAST - Static Application Security Testing (SonarQube, Trivy)
@@ -47,7 +47,7 @@ pipeline {
         PACK_CLI = '/usr/local/bin/pack'
         DEPENDENCY_CHECK = '/usr/local/bin/dependency-check'
         
-        // Build configuration (loaded from .deliveryd.yml)
+        // Build configuration (loaded from .fawkespipe.yml)
         CONFIG = null
         APP_NAME = null
         APP_LANGUAGE = null
@@ -79,10 +79,18 @@ pipeline {
         stage('Load Config') {
             steps {
                 script {
-                    echo "📋 Loading pipeline configuration from .deliveryd.yml..."
+                    echo "📋 Loading pipeline configuration..."
                     
-                    if (!fileExists('.deliveryd.yml')) {
-                        echo "⚠️  Warning: .deliveryd.yml not found. Using defaults."
+                    // Deprecation shim: support both filenames during migration
+                    def contractFile = '.fawkespipe.yml'
+                    if (!fileExists(contractFile) && fileExists('.deliveryd.yml')) {
+                        echo "⚠️  DEPRECATED: '.deliveryd.yml' is renamed '.fawkespipe.yml'. " +
+                             "Support for .deliveryd.yml will be removed after 2026-06-14."
+                        contractFile = '.deliveryd.yml'
+                    }
+                    
+                    if (!fileExists(contractFile)) {
+                        echo "⚠️  Warning: ${contractFile} not found. Using defaults."
                         // Set default configuration
                         CONFIG = [
                             app: [name: 'application', type: 'service', language: 'unknown'],
@@ -106,8 +114,8 @@ pipeline {
                         ]
                     } else {
                         // Parse YAML configuration
-                        CONFIG = readYaml file: '.deliveryd.yml'
-                        echo "✅ Configuration loaded successfully"
+                        CONFIG = readYaml file: contractFile
+                        echo "✅ Configuration loaded from ${contractFile}"
                         echo "   App: ${CONFIG.app.name}"
                         echo "   Type: ${CONFIG.app.type}"
                         echo "   Language: ${CONFIG.app.language}"

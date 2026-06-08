@@ -16,7 +16,7 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 | 2 | `jenkins/Dockerfile` | Current scanning tools installed |
 | 3 | `jenkins/casc.yaml` | SonarQube config, credential IDs |
 | 4 | `docker-compose.yml` | SonarQube, Dependency-Check services |
-| 5 | `.deliveryd.yml.example` | Security stage configuration options |
+| 5 | `.fawkespipe.yml.example` | Security stage configuration options |
 
 ## Tool Inventory
 

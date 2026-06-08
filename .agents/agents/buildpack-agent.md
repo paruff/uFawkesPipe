@@ -14,7 +14,7 @@ Specialist for creating language packs that define how different application sta
 |---|---|---|
 | 1 | `pack/Dockerfile` | Current buildpack builder setup |
 | 2 | `docker-compose.yml` | pack-cli service configuration |
-| 3 | `.deliveryd.yml.example` | How builders are configured in pipeline contract |
+| 3 | `.fawkespipe.yml.example` | How builders are configured in pipeline contract |
 | 4 | `examples/` | Existing language examples |
 | 5 | `Jenkinsfile` (Build stage) | How pack CLI is invoked |
 
@@ -30,7 +30,7 @@ pack/<language>/
 └── env.toml             # Default BP_* environment variables
 ```
 
-In `.deliveryd.yml`, packs are referenced via:
+In `.fawkespipe.yml`, packs are referenced via:
 ```yaml
 build:
   builder: cnb
@@ -71,7 +71,7 @@ pack build ${IMAGE_TAG} \
 
 ## What You MAY Do
 - Add new language packs in `pack/<language>/`
-- Create example `.deliveryd.yml` files in `examples/`
+- Create example `.fawkespipe.yml` files in `examples/`
 - Update `Jenkinsfile` build stage for new builder options
 - Create language-specific documentation in `docs/packs/`
 

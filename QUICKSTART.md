@@ -81,7 +81,7 @@ Jenkins comes with a pre-configured example pipeline:
 
 ### Option 2: Create Custom Pipeline
 
-1. **Add `.deliveryd.yml` to your repository**
+1. **Add `.fawkespipe.yml` to your repository**
 
    Example for Node.js:
    ```yaml
@@ -116,7 +116,7 @@ Jenkins comes with a pre-configured example pipeline:
 2. **Copy standard Jenkinsfile**
    ```bash
    cp uFawkesPipe/Jenkinsfile your-repo/Jenkinsfile
-   git add Jenkinsfile .deliveryd.yml
+   git add Jenkinsfile .fawkespipe.yml
    git commit -m "Add CI/CD configuration"
    git push
    ```

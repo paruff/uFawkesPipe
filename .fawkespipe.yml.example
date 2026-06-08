@@ -1,8 +1,8 @@
-# deliveryd Pipeline Contract Specification
+# uFawkesPipe Pipeline Contract Specification
 # Version: 1.0.0
 #
-# This file defines the contract between your application repository and the deliveryd CI/CD platform.
-# Place this file at the root of your repository as .deliveryd.yml
+# This file defines the contract between your application repository and the uFawkesPipe CI/CD platform.
+# Place this file at the root of your repository as .fawkespipe.yml
 
 # Application metadata
 app:

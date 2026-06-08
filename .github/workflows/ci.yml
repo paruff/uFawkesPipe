@@ -80,7 +80,7 @@ jobs:
       - name: Check required files exist
         run: |
           missing=0
-          for f in docker-compose.yml .env.example .deliveryd.yml.example jenkins/Dockerfile \
+          for f in docker-compose.yml .env.example .fawkespipe.yml.example jenkins/Dockerfile \
                     jenkins/plugins.txt jenkins/casc.yaml pack/Dockerfile README.md Makefile; do
             if [ ! -f "$f" ]; then
               echo "❌ Missing: $f"
@@ -96,8 +96,8 @@ jobs:
         run: |
           if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
                --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
-               --include="*.txt" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd"; then
-            echo "❌ Remaining 'deliveryd' references found (pipeline contract filename excluded)"
+               --include="*.txt" --include="*.json" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml"; then
+            echo "❌ Remaining 'deliveryd' references found (legacy pipeline contract filename excluded)"
             exit 1
           fi
           echo "✅ No stray 'deliveryd' references"

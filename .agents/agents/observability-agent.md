@@ -46,7 +46,7 @@ echo "dora:stage-finish:<stageName>:${env.BUILD_NUMBER}:${isoNow()}:<result>"
 environment:
   - OTEL_EXPORTER_OTLP_ENDPOINT=http://obstackd-otel-collector:4317
   - OTEL_SERVICE_NAME=uFawkesPipe
-  - OTEL_RESOURCE_ATTRIBUTES=plane=deliveryd,managed-by=fawkes
+  - OTEL_RESOURCE_ATTRIBUTES=plane=ufawkespipe,managed-by=fawkes
 ```
 
 ### Trace Attributes
