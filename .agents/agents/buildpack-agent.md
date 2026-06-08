@@ -12,11 +12,22 @@ Specialist for creating language packs that define how different application sta
 
 | Priority | File | What You Learn |
 |---|---|---|
-| 1 | `pack/Dockerfile` | Current buildpack builder setup |
-| 2 | `docker-compose.yml` | pack-cli service configuration |
-| 3 | `.fawkespipe.yml.example` | How builders are configured in pipeline contract |
-| 4 | `examples/` | Existing language examples |
-| 5 | `Jenkinsfile` (Build stage) | How pack CLI is invoked |
+| 1 | `AGENTS.md` | PM contract, boundaries, rules |
+| 2 | `pack/Dockerfile` | Current buildpack builder setup |
+| 3 | `docker-compose.yml` | pack-cli service configuration |
+| 4 | `.fawkespipe.yml.example` | How builders are configured in pipeline contract |
+| 5 | `examples/` | Existing language examples |
+| 6 | `Jenkinsfile` (Build stage) | How pack CLI is invoked |
+
+## Language Matrix
+
+| Language | Builder | Build Env Vars | Lint | Test | SAST | Dep Scan |
+|---|---|---|---|---|---|---|
+| Java | `paketobuildpacks/builder:base` | `BP_JVM_VERSION=17` | checkstyle | mvn test | SonarQube | OWASP + Trivy |
+| Python | `paketobuildpacks/builder:base` | `BP_CPYTHON_VERSION=3.11` | pylint/black/flake8 | pytest + cov | Bandit | Safety + Trivy |
+| Node.js | `paketobuildpacks/builder:base` | `BP_NODE_VERSION=20` | npm run lint | npm test + cov | SonarQube + Trivy | Trivy |
+| Go | `paketobuildpacks/builder:base` | `BP_GO_VERSION=1.21` | golangci-lint | go test -v -race | Trivy | Trivy |
+| Ruby | (future) | `BP_RUBY_VERSION=3.2` | rubocop | rspec | brakeman | bundler-audit |
 
 ## Language Pack Structure
 

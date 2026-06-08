@@ -13,9 +13,9 @@ Specialist for creating and maintaining Groovy-based shared pipeline library ste
 | Priority | File | What You Learn |
 |---|---|---|
 | 1 | `AGENTS.md` | PM contract, boundaries, rules |
-| 2 | `jenkins/casc.yaml` | Library registration, credential IDs |
-| 3 | `.fawkespipe.yml.example` | Pipeline contract fields consumed by steps |
-| 4 | `docs/PIPELINE_CONTRACT.md` | Stage semantics and DORA mapping |
+| 2 | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
+| 3 | `jenkins/casc.yaml` | Library registration, credential IDs |
+| 4 | `.fawkespipe.yml.example` | Pipeline contract fields consumed by steps |
 
 ## Architecture Rules
 
@@ -30,36 +30,27 @@ Specialist for creating and maintaining Groovy-based shared pipeline library ste
 // Every step must:
 // 1. Accept Map config with sensible defaults
 // 2. Be idempotent — safe to re-run
-// 3. Log DORA timestamps (start/finish)
+// 3. Log DORA timestamps per .agents/specs/dora-log-format.md
 // 4. Validate required params with error() helper
 
 def call(Map config = [:]) {
   def name = config.name ?: error('name is required')
-  echo "stage-start:${isoNow()} step:buildImage"
-  echo "sha:${env.GIT_COMMIT}"
+  echo "dora:stage-start:Build:${env.BUILD_NUMBER}:${isoNow()}"
+  echo "dora:sha:${env.GIT_COMMIT}"
   // ... core logic ...
-  echo "stage-finish:${isoNow()} step:buildImage result:success"
-}
-
-String isoNow() {
-  return new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))
+  echo "dora:stage-finish:Build:${env.BUILD_NUMBER}:${isoNow()}:success"
 }
 ```
 
 ### DORA Logging — Mandatory
-```groovy
-echo "stage-start:${isoNow()} step:<stepName> params:<key>=<value>"
-echo "sha:${env.GIT_COMMIT}"
-// ... work ...
-echo "stage-finish:${isoNow()} step:<stepName> result:<success|failure>"
-```
+> Full spec in `.agents/specs/dora-log-format.md`. Use `isoNow()` utility step for timestamps.
 
 ### Error Handling
 ```groovy
 try {
   // step logic
 } catch (Exception e) {
-  echo "stage-finish:${isoNow()} step:<stepName> result:failure error:${e.message}"
+  echo "dora:error:<stageName>:${env.BUILD_NUMBER}:${isoNow()}:${e.message}"
   archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
   throw e  // re-throw to fail stage
 }

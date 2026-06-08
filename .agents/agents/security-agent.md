@@ -1,7 +1,7 @@
 ---
 name: security-agent
 description: Security scanning configuration, secret detection, vulnerability policy specialist
-applies: pack/**/*, jenkins/**/*, docker-compose.yml
+applies: jenkins/**/*, docker-compose.yml
 ---
 
 # Security Agent

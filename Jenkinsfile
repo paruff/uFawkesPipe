@@ -79,47 +79,8 @@ pipeline {
         stage('Load Config') {
             steps {
                 script {
-                    echo "📋 Loading pipeline configuration..."
-                    
-                    // Deprecation shim: support both filenames during migration
-                    def contractFile = '.fawkespipe.yml'
-                    if (!fileExists(contractFile) && fileExists('.deliveryd.yml')) {
-                        echo "⚠️  DEPRECATED: '.deliveryd.yml' is renamed '.fawkespipe.yml'. " +
-                             "Support for .deliveryd.yml will be removed after 2026-06-14."
-                        contractFile = '.deliveryd.yml'
-                    }
-                    
-                    if (!fileExists(contractFile)) {
-                        echo "⚠️  Warning: ${contractFile} not found. Using defaults."
-                        // Set default configuration
-                        CONFIG = [
-                            app: [name: 'application', type: 'service', language: 'unknown'],
-                            stages: [
-                                lint: [enabled: false],
-                                test: [enabled: false],
-                                sast: [enabled: false],
-                                dependency_scan: [enabled: false],
-                                build: [enabled: true],
-                                image_scan: [enabled: false],
-                                push: [enabled: true]
-                            ],
-                            build: [
-                                builder: 'cnb',
-                                image: [
-                                    registry: 'docker.io',
-                                    namespace: env.DOCKERHUB_USERNAME ?: 'ufawkespipe',
-                                    name: 'application'
-                                ]
-                            ]
-                        ]
-                    } else {
-                        // Parse YAML configuration
-                        CONFIG = readYaml file: contractFile
-                        echo "✅ Configuration loaded from ${contractFile}"
-                        echo "   App: ${CONFIG.app.name}"
-                        echo "   Type: ${CONFIG.app.type}"
-                        echo "   Language: ${CONFIG.app.language}"
-                    }
+                    // Load and validate pipeline contract via shared library
+                    CONFIG = loadConfig()
                     
                     // Set environment variables from config
                     APP_NAME = CONFIG.app.name

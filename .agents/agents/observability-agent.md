@@ -1,7 +1,7 @@
 ---
 name: observability-agent
 description: OpenTelemetry instrumentation, DORA metrics, and observability specialist
-applies: docker-compose.yml, Jenkinsfile, shared/vars/**/*.groovy
+applies: **/*otel*, **/*dora*, **/*metrics*, shared/vars/**/*.groovy
 ---
 
 # Observability Agent
@@ -13,34 +13,28 @@ Specialist for instrumenting uFawkesPipe with OpenTelemetry, collecting DORA met
 | Priority | File | What You Learn |
 |---|---|---|
 | 1 | `AGENTS.md` (§9) | Cross-plane integration with Obstackd |
-| 2 | `docker-compose.yml` | Current service networking |
-| 3 | `Jenkinsfile` | Pipeline stages to instrument |
-| 4 | `docs/CHANGE_IMPACT_MAP.md` | Cross-plane impact of changes |
-| 5 | `docs/METRICS.md` | DORA metric definitions |
+| 2 | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
+| 3 | `docker-compose.yml` | Current service networking |
+| 4 | `Jenkinsfile` | Pipeline stages to instrument |
+| 5 | `docs/CHANGE_IMPACT_MAP.md` | Cross-plane impact of changes |
 
 ## DORA Metrics Collection
 
-Every pipeline must log these metrics:
+> **All log format definitions are in `.agents/specs/dora-log-format.md`.**
+> Do not define DORA formats here — reference the spec.
 
-| Metric | Definition | Log Format |
-|---|---|---|
-| **Lead Time for Changes** | Time from commit to production deploy | `dora:lead-time:<sha>:<seconds>` |
-| **Deployment Frequency** | Deploy events per unit time | `dora:deploy:<env>:<timestamp>` |
-| **Mean Time to Restore** | Time from failure to recovery | `dora:mttr:<sha>:<seconds>` |
-| **Change Failure Rate** | Failed deploys / total deploys | `dora:cfr:<sha>:<result>` |
+Every pipeline must log these metrics per the spec:
 
-### Required Log Lines Per Stage
-```groovy
-// Every stage in Jenkinsfile must emit:
-echo "dora:stage-start:<stageName>:${env.BUILD_NUMBER}:${isoNow()}"
-echo "dora:sha:${env.GIT_COMMIT}"
-// ... stage work ...
-echo "dora:stage-finish:<stageName>:${env.BUILD_NUMBER}:${isoNow()}:<result>"
-```
+| Metric | Definition |
+|---|---|
+| **Lead Time for Changes** | Time from commit to production deploy |
+| **Deployment Frequency** | Deploy events per unit time |
+| **Mean Time to Restore** | Time from failure to recovery |
+| **Change Failure Rate** | Failed deploys / total deploys |
 
 ## OpenTelemetry Integration
 
-### OTEL Exporter Configuration (future)
+### OTEL Exporter Configuration
 ```yaml
 # docker-compose.yml additions:
 environment:
@@ -73,3 +67,4 @@ environment:
 - Emit credentials, tokens, or secrets in log lines
 - Use non-standard timestamps (always ISO 8601 UTC)
 - Remove existing DORA log lines without deprecation period
+- Define DORA log formats in this file (use the spec)

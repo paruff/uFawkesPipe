@@ -1,12 +1,13 @@
 ---
 name: language-pack
-description: Buildpack configuration and language-specific build/test/scan patterns for uFawkesPipe
+description: Buildpack configuration and language-specific build/test/scan patterns for uFawkesPipe. Defers to buildpack-agent for language matrix and implementation details.
 applies: pack/**/*, examples/**/*.yml
 ---
 
 # Language Pack — Buildpack Language Support
 
 > Load this skill before creating a new language pack or example `.fawkespipe.yml`.
+> **For the full language matrix and implementation details, see `buildpack-agent`.**
 
 ## Pack Directory Structure
 
@@ -18,15 +19,14 @@ pack/<language>/
 └── env.toml             # Default BP_* environment variables
 ```
 
-## Language Matrix
+## Adding a New Language
 
-| Language | Builder | Build Env Vars | Lint | Test | SAST | Dep Scan |
-|---|---|---|---|---|---|---|
-| Java | `paketobuildpacks/builder:base` | `BP_JVM_VERSION=17` | checkstyle | mvn test | SonarQube | OWASP + Trivy |
-| Python | `paketobuildpacks/builder:base` | `BP_CPYTHON_VERSION=3.11` | pylint/black/flake8 | pytest + cov | Bandit | Safety + Trivy |
-| Node.js | `paketobuildpacks/builder:base` | `BP_NODE_VERSION=20` | npm run lint | npm test + cov | SonarQube | Trivy |
-| Go | `paketobuildpacks/builder:base` | `BP_GO_VERSION=1.21` | golangci-lint | go test -v -race | Trivy | Trivy |
-| Ruby | (future) | `BP_RUBY_VERSION=3.2` | rubocop | rspec | brakeman | bundler-audit |
+1. Create `pack/<language>/env.toml` with BP_* environment variables
+2. Create `pack/<language>/Jenkinsfile.template` using the template below
+3. Add a row to the language matrix in `buildpack-agent`
+4. Create `examples/.fawkespipe-<language>.yml` with a working config
+5. Test with: `pack build test-<language> --builder paketobuildpacks/builder:base`
+6. Run `./scripts/validate-agents.sh` to verify consistency
 
 ## Example `.fawkespipe.yml` Pattern
 
@@ -65,7 +65,6 @@ stages:
       threshold: 70
   sast:
     enabled: true
-    <tool-config>
   dependency_scan:
     enabled: true
     tools:
@@ -101,3 +100,12 @@ pipeline {
   }
 }
 ```
+
+## Validation Checklist for New Packs
+
+- [ ] `env.toml` contains valid BP_* variables
+- [ ] `Jenkinsfile.template` calls shared library steps
+- [ ] Example `.fawkespipe-<language>.yml` parses as valid YAML
+- [ ] `pack build` succeeds locally
+- [ ] Lint step passes for the language
+- [ ] Test step passes for the language

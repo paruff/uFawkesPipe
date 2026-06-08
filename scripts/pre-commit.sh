@@ -130,6 +130,19 @@ if [ -f "docker-compose.yml" ]; then
     fi
 fi
 
+# 8. Agent/skill validation
+echo ""
+echo "🔍 Validating agent and skill definitions..."
+if [ -f "scripts/validate-agents.sh" ]; then
+    if ./scripts/validate-agents.sh 2>/dev/null; then
+        echo -e "${GREEN}✅ Agent/skill validation passed${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Agent/skill validation had warnings (non-blocking)${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  scripts/validate-agents.sh not found, skipping${NC}"
+fi
+
 # Summary
 echo ""
 echo "========================================="

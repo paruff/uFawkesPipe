@@ -25,8 +25,8 @@ def call(Map config = [:]) {
   // 1. Validate required params
   def required = config.requiredParam ?: error('myStep: requiredParam is required')
 
-  // 2. Log start
-  echo "stage-start:${isoNow()} step:myStep param1=${config.param1}"
+  // 2. Log start per .agents/specs/dora-log-format.md
+  echo "dora:stage-start:MyStep:${env.BUILD_NUMBER}:${isoNow()}"
 
   // 3. Idempotency check — skip if already done
   if (fileExists('.myStep-completed')) {
@@ -38,27 +38,26 @@ def call(Map config = [:]) {
   try {
     sh "some-command ${required}"
     writeFile file: '.myStep-completed', text: 'done'
-    echo "stage-finish:${isoNow()} step:myStep result:success"
+    echo "dora:stage-finish:MyStep:${env.BUILD_NUMBER}:${isoNow()}:success"
   } catch (Exception e) {
-    echo "stage-finish:${isoNow()} step:myStep result:failure error:${e.message}"
+    echo "dora:error:MyStep:${env.BUILD_NUMBER}:${isoNow()}:${e.message}"
     archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
     throw e
   }
-}
-
-// Utility — available to all steps in vars/
-String isoNow() {
-  return new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))
 }
 ```
 
 ## DORA Logging — Strict Rules
 
-| Field | Format | Example |
-|---|---|---|
-| Stage start | `stage-start:<ISO timestamp> step:<name>` | `stage-start:2026-06-07T12:00:00Z step:buildImage` |
-| SHA | `sha:<commit hash>` | `sha:abc123def456` |
-| Stage finish | `stage-finish:<ISO timestamp> step:<name> result:<result>` | `stage-finish:2026-06-07T12:05:00Z step:buildImage result:success` |
+> Full spec in `.agents/specs/dora-log-format.md`. Use `isoNow()` utility step for timestamps.
+
+| Rule | Details |
+|---|---|
+| Prefix | All lines MUST start with `dora:` |
+| Delimiter | Colon-delimited fields |
+| Timestamps | ISO 8601 UTC via `isoNow()` |
+| Build number | Include `env.BUILD_NUMBER` in stage events |
+| No PII | Never log credentials, tokens, or secrets |
 
 ## Idempotency Patterns
 
@@ -78,17 +77,21 @@ if (result == 'already-done') { return }
 ## Credential Handling
 
 ```groovy
-// ✅ CORRECT
+// ✅ CORRECT — credentials stay in Jenkins credential store
 withCredentials([usernamePassword(
   credentialsId: 'dockerhub-credentials',
   usernameVariable: 'DOCKER_USER',
   passwordVariable: 'DOCKER_PASS'
 )]) {
-  sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+  // Use stdin to avoid exposing password in process table
+  sh "echo \${DOCKER_PASS} | docker login -u \${DOCKER_USER} --password-stdin"
 }
 
-// ❌ WRONG — never inline
+// ❌ WRONG — password visible in process table
 sh "docker login -u myuser -p mypassword"
+
+// ❌ WRONG — password visible in shell expansion
+sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
 ```
 
 ## Error Handling
@@ -100,7 +103,7 @@ try {
   // ALWAYS capture artifacts before re-throwing
   archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
   junit allowEmptyResults: true, testResults: 'reports/junit/*.xml'
-  echo "stage-finish:${isoNow()} step:name result:failure error:${e.message}"
+  echo "dora:error:<stageName>:${env.BUILD_NUMBER}:${isoNow()}:${e.message}"
   throw e
 }
 ```
