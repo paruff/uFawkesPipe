@@ -36,6 +36,10 @@ jobs:
               line-length: disable
               document-start: disable
               truthy: disable
+              indentation:
+                spaces: 2
+                indent-sequences: whatever
+                check-multi-line-strings: false
 
       - name: Check .env.example has no real secrets
         run: |

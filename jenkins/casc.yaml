@@ -3,7 +3,7 @@ jenkins:
   numExecutors: 2
   mode: NORMAL
   scmCheckoutRetryCount: 3
-  
+
   securityRealm:
     local:
       allowsSignup: false
@@ -11,7 +11,7 @@ jenkins:
         - id: "${JENKINS_ADMIN_USER:-admin}"
           password: "${JENKINS_ADMIN_PASSWORD:-changeme}"
           name: "Admin User"
-          
+
   authorizationStrategy:
     globalMatrix:
       permissions:
@@ -46,14 +46,14 @@ jenkins:
 unclassified:
   location:
     url: "http://localhost:8080/jenkins/"
-    
+
   # SonarQube Configuration
   sonarGlobalConfiguration:
     installations:
       - name: "SonarQube"
         serverUrl: "http://sonarqube:9000"
         credentialsId: "sonarqube-token"
-        
+
   # Generic Webhook Trigger Configuration (for external plane integration)
   globalConfigFiles:
     configs:
@@ -61,7 +61,7 @@ unclassified:
           id: "ufawkespipe-pipeline-contract"
           name: "uFawkesPipe Pipeline Contract Schema"
           comment: "JSON Schema for .deliveryd.yml validation"
-          
+
 credentials:
   system:
     domainCredentials:
@@ -78,7 +78,7 @@ credentials:
               secret: "${WEBHOOK_SECRET:-changeme}"
               description: "Webhook Secret for External Triggers"
           - string:
-              scope: GLOBAL  
+              scope: GLOBAL
               id: "sonarqube-token"
               secret: "${SONAR_TOKEN:-squ_default_token}"
               description: "SonarQube Authentication Token"
