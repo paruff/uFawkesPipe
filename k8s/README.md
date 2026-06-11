@@ -13,17 +13,19 @@ This directory contains Kubernetes manifests for deploying uFawkesPipe to a Kube
 ## Deployment
 
 1. Create namespace:
+
    ```bash
    kubectl create namespace ufawkespipe
    ```
 
 2. Create secrets:
+
    ```bash
    kubectl create secret generic dockerhub-credentials \
      --from-literal=username=your-username \
      --from-literal=token=your-token \
       -n ufawkespipe
-    
+
     kubectl create secret generic jenkins-admin \
       --from-literal=username=admin \
       --from-literal=password=your-secure-password \
@@ -31,6 +33,7 @@ This directory contains Kubernetes manifests for deploying uFawkesPipe to a Kube
    ```
 
 3. Apply manifests:
+
    ```bash
    kubectl apply -f k8s/
    ```

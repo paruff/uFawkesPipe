@@ -7,8 +7,8 @@ services:
     container_name: ufp-jenkins
     restart: unless-stopped
     ports:
-      - "8080:8080"      # Jenkins UI
-      - "50000:50000"    # Jenkins agent communication
+      - "8080:8080" # Jenkins UI
+      - "50000:50000" # Jenkins agent communication
     environment:
       - JENKINS_OPTS=--prefix=/jenkins
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx2g
@@ -17,13 +17,14 @@ services:
       - DOCKERHUB_TOKEN=${DOCKERHUB_TOKEN}
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock  # SECURITY: Grants full host Docker control. Required for pack build (Docker-in-Docker). Do NOT expose to untrusted containers.
+      - /var/run/docker.sock:/var/run/docker.sock # SECURITY: Grants full host Docker control. Required for pack build (Docker-in-Docker). Do NOT expose to untrusted containers.
       - ./jenkins/casc.yaml:/var/jenkins_home/casc.yaml:ro
-      - ./shared:/shared:rw  # Shared workspace for artifacts
+      - ./shared:/shared:rw # Shared workspace for artifacts
     networks:
       - ufp-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/jenkins/login || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/jenkins/login || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -50,7 +51,11 @@ services:
     depends_on:
       - sonarqube-db
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"' || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          'wget -qO- http://localhost:9000/api/system/status | grep -q ''"status":"UP"'' || exit 1',
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -79,14 +84,14 @@ services:
   dependency-check:
     image: owasp/dependency-check:12.2.2
     container_name: ufp-dependency-check
-    restart: "no"  # On-demand service
+    restart: "no" # On-demand service
     volumes:
       - dependency_check_data:/usr/share/dependency-check/data
       - ./shared:/src:ro
       - ./shared/reports:/report:rw
     networks:
       - ufp-network
-    command: ["--help"]  # Default command, will be overridden
+    command: ["--help"] # Default command, will be overridden
 
   # Pack CLI - Cloud Native Buildpacks
   pack-cli:
@@ -94,16 +99,16 @@ services:
       context: ./pack
       dockerfile: Dockerfile
     container_name: ufp-pack
-    restart: "no"  # On-demand service
+    restart: "no" # On-demand service
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # SECURITY: Required for pack build to push images. Same risk as jenkins service.
+      - /var/run/docker.sock:/var/run/docker.sock # SECURITY: Required for pack build to push images. Same risk as jenkins service.
       - pack_cache:/pack-cache
       - ./shared:/workspace:rw
     networks:
       - ufp-network
     environment:
       - PACK_CACHE_DIR=/pack-cache
-    command: ["--help"]  # Default command, will be overridden
+    command: ["--help"] # Default command, will be overridden
 
   # Nexus Repository (Optional) - Artifact Repository
   # nexus:

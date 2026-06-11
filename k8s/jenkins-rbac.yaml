@@ -10,12 +10,12 @@ metadata:
   name: jenkins
   namespace: ufawkespipe
 rules:
-- apiGroups: [""]
-  resources: ["pods", "pods/log", "pods/exec"]
-  verbs: ["get", "list", "watch", "create", "delete"]
-- apiGroups: [""]
-  resources: ["secrets", "configmaps"]
-  verbs: ["get", "list", "create", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs: ["get", "list", "create", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -27,6 +27,6 @@ roleRef:
   kind: Role
   name: jenkins
 subjects:
-- kind: ServiceAccount
-  name: jenkins
-  namespace: ufawkespipe
+  - kind: ServiceAccount
+    name: jenkins
+    namespace: ufawkespipe

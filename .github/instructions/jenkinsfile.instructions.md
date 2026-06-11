@@ -7,6 +7,7 @@ applyTo: "Jenkinsfile,shared/**/*.groovy,jenkins/**/*.groovy"
 # Jenkins Pipeline Instructions — uFawkesPipe
 
 ## Read First
+
 - `AGENTS.md` → Jenkinsfile and Shared Library rules
 - `.fawkespipe.yml.example` → the pipeline contract app teams use
 
@@ -56,7 +57,7 @@ stage('Publish') {
     withCredentials([usernamePassword(
       credentialsId: 'docker-registry',
       usernameVariable: 'REGISTRY_USER',
-      passwordVariable: 'REGISTRY_PASS'
+      passwordVariable: 'REGISTRY_PASS' # pragma: allowlist secret
     )]) {
       sh 'docker login -u $REGISTRY_USER -p $REGISTRY_PASS $REGISTRY_URL'
     }

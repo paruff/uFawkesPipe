@@ -13,13 +13,13 @@ spec:
   #   - jenkins.yourdomain.com
   #   secretName: jenkins-tls
   rules:
-  - host: jenkins.yourdomain.com  # Change to your domain
-    http:
-      paths:
-      - path: /jenkins
-        pathType: Prefix
-        backend:
-          service:
-            name: jenkins
-            port:
-              number: 8080
+    - host: jenkins.yourdomain.com # Change to your domain
+      http:
+        paths:
+          - path: /jenkins
+            pathType: Prefix
+            backend:
+              service:
+                name: jenkins
+                port:
+                  number: 8080

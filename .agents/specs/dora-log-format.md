@@ -15,12 +15,12 @@ dora:sha:<commitHash>
 dora:stage-finish:<stageName>:<buildNumber>:<isoTimestamp>:<result>
 ```
 
-| Field | Type | Example |
-|---|---|---|
-| `stageName` | string | `Build`, `Test`, `SAST`, `Push` |
-| `buildNumber` | string | `42` |
-| `isoTimestamp` | ISO 8601 | `2026-06-08T14:30:00Z` |
-| `result` | enum | `success`, `failure`, `skipped` |
+| Field          | Type     | Example                         |
+| -------------- | -------- | ------------------------------- |
+| `stageName`    | string   | `Build`, `Test`, `SAST`, `Push` |
+| `buildNumber`  | string   | `42`                            |
+| `isoTimestamp` | ISO 8601 | `2026-06-08T14:30:00Z`          |
+| `result`       | enum     | `success`, `failure`, `skipped` |
 
 ### DORA Metrics
 
@@ -31,12 +31,12 @@ dora:mttr:<sha>:<seconds>
 dora:cfr:<sha>:<result>
 ```
 
-| Metric | Field | Type | Example |
-|---|---|---|---|
-| Lead Time | `seconds` | int | `3600` |
-| Deploy | `env` | string | `production`, `staging` |
-| MTTR | `seconds` | int | `1800` |
-| Change Failure Rate | `result` | enum | `pass`, `fail` |
+| Metric              | Field     | Type   | Example                 |
+| ------------------- | --------- | ------ | ----------------------- |
+| Lead Time           | `seconds` | int    | `3600`                  |
+| Deploy              | `env`     | string | `production`, `staging` |
+| MTTR                | `seconds` | int    | `1800`                  |
+| Change Failure Rate | `result`  | enum   | `pass`, `fail`          |
 
 ### Error Events (on failure)
 

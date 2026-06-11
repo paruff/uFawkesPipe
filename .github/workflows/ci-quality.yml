@@ -108,9 +108,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Check .env.example has no real secrets
+      - name: Validate .env.example contains no sensitive values # pragma: allowlist-nextline secret
         run: |
-          echo "🔍 Scanning .env.example for leaked secrets..."
+          echo "🔍 Scanning .env.example for leaked sensitive values..."
           issues=0
           if grep -q "^JENKINS_ADMIN_PASSWORD=" .env.example && ! grep -q "^JENKINS_ADMIN_PASSWORD=changeme$" .env.example; then
             echo "❌ JENKINS_ADMIN_PASSWORD appears to have a real value"

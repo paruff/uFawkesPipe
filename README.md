@@ -81,12 +81,14 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
     git clone https://github.com/paruff/uFawkesPipe.git
     cd uFawkesPipe
    ```
 
 2. **Configure environment**
+
    ```bash
    cp .env.example .env
    # Edit .env with your credentials
@@ -94,16 +96,19 @@ Every pipeline in uFawkesPipe follows these standardized stages:
    ```
 
    **Required configuration:**
+
    - `DOCKERHUB_USERNAME` - Your DockerHub username
    - `DOCKERHUB_TOKEN` - DockerHub access token or password
    - `JENKINS_ADMIN_PASSWORD` - Change default admin password
 
 3. **Start the platform**
+
    ```bash
    docker-compose up -d
    ```
 
 4. **Wait for services to start** (2-3 minutes)
+
    ```bash
    docker-compose logs -f jenkins
    # Wait for "Jenkins is fully up and running"
@@ -115,49 +120,51 @@ Every pipeline in uFawkesPipe follows these standardized stages:
      - Password: (from `.env` file)
    - **SonarQube**: http://localhost:9000
      - Username: `admin`
-     - Password: `admin` (change on first login)
+     - Password: `admin` (change on first login) # pragma: allowlist secret
 
 ### First Pipeline
 
 1. **Create a `.fawkespipe.yml` in your application repository**
 
    Example for a Node.js app:
+
    ```yaml
    app:
      name: my-app
      type: service
      language: nodejs
-   
+
    build:
      builder: cnb
      image:
        namespace: myorg
        name: my-app
-   
+
    stages:
      lint:
        enabled: true
        commands:
          - language: nodejs
            cmd: npm run lint
-     
+
      test:
        enabled: true
        commands:
          - language: nodejs
            cmd: npm test
-     
+
      sast:
        enabled: true
-     
+
      dependency_scan:
        enabled: true
-     
+
      push:
        enabled: true
    ```
 
 2. **Copy the standard Jenkinsfile to your repo**
+
    ```bash
     cp /path/to/uFawkesPipe/Jenkinsfile /path/to/your/repo/
    ```
@@ -202,13 +209,14 @@ curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
   -d '{
     "repo_url": "https://github.com/user/repo",
     "branch": "main",
-    "webhook_secret": "your-secret"
+    "webhook_secret": "your-secret" # pragma: allowlist secret
   }'
 ```
 
 **GitHub Webhook Integration**:
 
 Configure in GitHub: Settings → Webhooks → Add webhook
+
 - Payload URL: `http://your-jenkins:8080/jenkins/github-webhook/`
 - Content type: `application/json`
 - Events: Push, Pull Request
@@ -256,24 +264,25 @@ spec:
   template:
     spec:
       containers:
-      - name: jenkins
-        image: ufawkespipe/jenkins:latest
-        volumeMounts:
-        - name: jenkins-home
-          mountPath: /var/jenkins_home
+        - name: jenkins
+          image: ufawkespipe/jenkins:latest
+          volumeMounts:
+            - name: jenkins-home
+              mountPath: /var/jenkins_home
   volumeClaimTemplates:
-  - metadata:
-      name: jenkins-home
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 20Gi
+    - metadata:
+        name: jenkins-home
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
 ```
 
 **Kubernetes Pipeline Integration:**
 
 Enable in `.fawkespipe.yml`:
+
 ```yaml
 kubernetes:
   enabled: true
@@ -299,18 +308,22 @@ kubernetes:
 ## 🔒 Security Features
 
 ### Static Application Security Testing (SAST)
+
 - **SonarQube** - Code quality and security vulnerabilities
 - **Trivy** - Filesystem and code scanning
 
 ### Dependency Scanning
+
 - **OWASP Dependency-Check** - Known vulnerable dependencies (CVE database)
 - **Trivy** - Comprehensive vulnerability database
 
 ### Container Scanning
+
 - **Trivy** - Container image vulnerability scanning
 - **Hadolint** - Dockerfile best practices
 
 ### Security Best Practices
+
 - Fail builds on critical vulnerabilities
 - Quality gates for code coverage and security
 - Automated security scanning in every pipeline
@@ -321,6 +334,7 @@ kubernetes:
 ### Jenkins Configuration as Code (JCasC)
 
 Jenkins is configured via `jenkins/casc.yaml`. Modify this file to:
+
 - Add users and permissions
 - Configure external integrations
 - Set up pipeline libraries
@@ -329,6 +343,7 @@ Jenkins is configured via `jenkins/casc.yaml`. Modify this file to:
 ### Service Configuration
 
 Edit `docker-compose.yml` to:
+
 - Change exposed ports
 - Add more services (Nexus, Harbor, etc.)
 - Configure resource limits
@@ -337,6 +352,7 @@ Edit `docker-compose.yml` to:
 ### Volume Management
 
 Persistent data is stored in Docker volumes:
+
 - `jenkins_home` - Jenkins data and jobs
 - `sonarqube_data` - SonarQube analysis data
 - `sonarqube_db` - PostgreSQL database
@@ -344,6 +360,7 @@ Persistent data is stored in Docker volumes:
 - `pack_cache` - CNB build cache
 
 **Backup volumes:**
+
 ```bash
 docker run --rm -v ufp_jenkins_home:/data -v $(pwd):/backup alpine \
   tar czf /backup/jenkins-backup.tar.gz -C /data .
@@ -352,6 +369,7 @@ docker run --rm -v ufp_jenkins_home:/data -v $(pwd):/backup alpine \
 ## 🐛 Troubleshooting
 
 ### Jenkins won't start
+
 ```bash
 # Check logs
 docker-compose logs jenkins
@@ -366,6 +384,7 @@ docker-compose up -d
 ```
 
 ### SonarQube quality gate fails
+
 ```bash
 # Check SonarQube logs
 docker-compose logs sonarqube
@@ -375,6 +394,7 @@ docker-compose logs sonarqube
 ```
 
 ### Pack build fails
+
 ```bash
 # Check Docker access
 docker ps
@@ -386,6 +406,7 @@ docker pull paketobuildpacks/builder:base
 ```
 
 ### Dependency-Check is slow
+
 - First run downloads CVE database (10-30 minutes)
 - Subsequent runs use cached data (faster)
 - Consider disabling for development builds
@@ -414,17 +435,18 @@ MIT License - see [LICENSE](LICENSE) for details.
 ---
 
 Built with ❤️ for platform engineers and developers
+
 ## uFawkes Stack Ecosystem
 
 uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering ecosystem:
 
-| Stack | Description | Link |
-|-------|-------------|------|
-| **uFawkesObs** | Observability — Prometheus, Grafana, AI dashboards | [GitHub](https://github.com/paruff/ufawkesobs) |
-| **uFawkesPipe** | CI/CD — Jenkins, Buildpacks, DevSecOps | [GitHub](https://github.com/paruff/ufawkespipe) |
+| Stack           | Description                                          | Link                                            |
+| --------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/ufawkesobs)  |
+| **uFawkesPipe** | CI/CD — Jenkins, Buildpacks, DevSecOps               | [GitHub](https://github.com/paruff/ufawkespipe) |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/ufawkesdora) |
-| **uFawkesSec** | Security — policy-as-code, supply chain, guardrails | [GitHub](https://github.com/paruff/ufawkessec) |
-| **uFawkesDevX** | Developer experience — golden paths, IDP templates | [GitHub](https://github.com/paruff/ufawkesdevx) |
-| **uFawkesAI** | AI agent templates — golden path scaffolding | [GitHub](https://github.com/paruff/ufawkesai) |
+| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/ufawkessec)  |
+| **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/ufawkesdevx) |
+| **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/ufawkesai)   |
 
 **Product Suite Roadmap**: [fawkes/ROADMAP.md](https://github.com/paruff/fawkes/blob/main/ROADMAP.md)

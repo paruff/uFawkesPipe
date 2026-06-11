@@ -15,7 +15,7 @@ app:
 build:
   # Builder type: cnb (Cloud Native Buildpacks), docker, or custom
   builder: cnb
-  
+
   # CNB-specific configuration (used when builder: cnb)
   cnb:
     builder: paketobuildpacks/builder:base  # CNB builder image
@@ -23,14 +23,14 @@ build:
     env:                                     # Build-time environment variables
       BP_JVM_VERSION: "17"
       BP_MAVEN_BUILD_ARGUMENTS: "-DskipTests"
-  
+
   # Docker-specific configuration (used when builder: docker)
   docker:
     dockerfile: Dockerfile
     context: .
     target: production                       # Multi-stage build target
     buildArgs: {}                            # Build arguments
-  
+
   # Image configuration
   image:
     registry: docker.io                      # Container registry
@@ -57,7 +57,7 @@ stages:
         cmd: golangci-lint run
     dockerfile:
       enabled: true                          # Enable Dockerfile linting with hadolint
-  
+
   # Unit test stage
   test:
     enabled: true
@@ -74,7 +74,7 @@ stages:
       enabled: true
       threshold: 80                          # Minimum coverage percentage
       report: coverage.xml                   # Coverage report file
-  
+
   # SAST (Static Application Security Testing)
   sast:
     enabled: true
@@ -88,7 +88,7 @@ stages:
     trivy:
       enabled: true                          # Trivy filesystem scan
       severity: HIGH,CRITICAL
-  
+
   # Dependency vulnerability scanning
   dependency_scan:
     enabled: true
@@ -97,11 +97,11 @@ stages:
       - trivy                                # Trivy dependency scan
     fail_on: CRITICAL                        # Fail build on: CRITICAL, HIGH, MEDIUM, LOW
     suppressions: dependency-check-suppressions.xml  # Optional suppressions file
-  
+
   # Build stage (handled by builder configuration above)
   build:
     enabled: true
-    
+
   # Container image scanning (post-build)
   image_scan:
     enabled: true
@@ -109,7 +109,7 @@ stages:
       - trivy                                # Trivy image scan
     severity: HIGH,CRITICAL
     fail_on: CRITICAL
-  
+
   # Push to registry
   push:
     enabled: true
