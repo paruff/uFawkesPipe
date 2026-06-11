@@ -16,42 +16,42 @@ The pipeline contract filename is `.fawkespipe.yml` (migrated from `.deliveryd.y
 
 ```yaml
 app:
-  name: string              # Required — application name
-  type: string              # Required — service | library | cli | frontend
-  language: string          # Required — java | python | nodejs | go | ruby
-  version: string           # Optional — semver, auto-generated if absent
+  name: string # Required — application name
+  type: string # Required — service | library | cli | frontend
+  language: string # Required — java | python | nodejs | go | ruby
+  version: string # Optional — semver, auto-generated if absent
 
 build:
-  builder: string           # cnb | docker | custom
+  builder: string # cnb | docker | custom
   image:
-    registry: string        # Default: docker.io
-    namespace: string       # Required
-    name: string            # Default: app.name
-    tags: string[]          # Tag strategy with variable substitution
+    registry: string # Default: docker.io
+    namespace: string # Required
+    name: string # Default: app.name
+    tags: string[] # Tag strategy with variable substitution
 
 stages:
-  lint/enabled: bool        # Default: true
-  test/enabled: bool        # Default: true
-  sast/enabled: bool        # Default: false
-  dependency_scan/enabled: bool  # Default: false
-  build/enabled: bool       # Default: true
-  image_scan/enabled: bool  # Default: false
-  push/enabled: bool        # Default: true
+  lint/enabled: bool # Default: true
+  test/enabled: bool # Default: true
+  sast/enabled: bool # Default: false
+  dependency_scan/enabled: bool # Default: false
+  build/enabled: bool # Default: true
+  image_scan/enabled: bool # Default: false
+  push/enabled: bool # Default: true
 
-notifications:              # Optional
-kubernetes:                 # Optional
-advanced:                   # Optional
+notifications: # Optional
+kubernetes: # Optional
+advanced: # Optional
 ```
 
 ## Breaking Change Rules
 
-| Change | Type | Migration |
-|---|---|---|
-| Add new field | Non-breaking | Default value required |
-| Remove field | **Breaking** | Deprecation notice + 1 week both supported |
-| Rename field | **Breaking** | Alias both names in parser |
-| Change default value | Non-breaking | Announce in changelog |
-| Add new required field | **Breaking** | Major version bump |
+| Change                 | Type         | Migration                                  |
+| ---------------------- | ------------ | ------------------------------------------ |
+| Add new field          | Non-breaking | Default value required                     |
+| Remove field           | **Breaking** | Deprecation notice + 1 week both supported |
+| Rename field           | **Breaking** | Alias both names in parser                 |
+| Change default value   | Non-breaking | Announce in changelog                      |
+| Add new required field | **Breaking** | Major version bump                         |
 
 ## Deprecation Shim (in Jenkinsfile)
 

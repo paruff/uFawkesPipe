@@ -51,17 +51,18 @@ def call(Map config = [:]) {
 
 > Full spec in `.agents/specs/dora-log-format.md`. Use `isoNow()` utility step for timestamps.
 
-| Rule | Details |
-|---|---|
-| Prefix | All lines MUST start with `dora:` |
-| Delimiter | Colon-delimited fields |
-| Timestamps | ISO 8601 UTC via `isoNow()` |
+| Rule         | Details                                    |
+| ------------ | ------------------------------------------ |
+| Prefix       | All lines MUST start with `dora:`          |
+| Delimiter    | Colon-delimited fields                     |
+| Timestamps   | ISO 8601 UTC via `isoNow()`                |
 | Build number | Include `env.BUILD_NUMBER` in stage events |
-| No PII | Never log credentials, tokens, or secrets |
+| No PII       | Never log credentials, tokens, or secrets  |
 
 ## Idempotency Patterns
 
 ### Pattern 1: Marker File (preferred)
+
 ```groovy
 if (fileExists('.step-done')) { return }
 sh "..."
@@ -69,6 +70,7 @@ writeFile file: '.step-done', text: 'done'
 ```
 
 ### Pattern 2: Check Output
+
 ```groovy
 def result = sh(script: "some-check-command", returnStdout: true).trim()
 if (result == 'already-done') { return }
@@ -81,9 +83,9 @@ if (result == 'already-done') { return }
 withCredentials([usernamePassword(
   credentialsId: 'dockerhub-credentials',
   usernameVariable: 'DOCKER_USER',
-  passwordVariable: 'DOCKER_PASS'
+  passwordVariable: 'DOCKER_PASS' # pragma: allowlist secret
 )]) {
-  // Use stdin to avoid exposing password in process table
+  // Use stdin to avoid exposing password in process table # pragma: allowlist secret
   sh "echo \${DOCKER_PASS} | docker login -u \${DOCKER_USER} --password-stdin"
 }
 

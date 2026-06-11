@@ -5,33 +5,33 @@
 
 ## Active Task
 
-| Field | Value |
-|---|---|
-| **Task ID** | — |
-| **Status** | idle |
-| **Assigned Agent** | — |
-| **Loaded Skills** | — |
-| **Started At** | — |
+| Field              | Value |
+| ------------------ | ----- |
+| **Task ID**        | —     |
+| **Status**         | idle  |
+| **Assigned Agent** | —     |
+| **Loaded Skills**  | —     |
+| **Started At**     | —     |
 
 ## Recent Changes
 
-| Timestamp | Agent | Files Changed | Summary |
-|---|---|---|---|
-| — | — | — | No changes recorded yet |
+| Timestamp | Agent | Files Changed | Summary                 |
+| --------- | ----- | ------------- | ----------------------- |
+| —         | —     | —             | No changes recorded yet |
 
 ## Agent Health
 
-| Agent | Last Run | Status |
-|---|---|---|
-| orchestrator-agent | — | idle |
-| pipeline-library-agent | — | idle |
-| buildpack-agent | — | idle |
-| security-agent | — | idle |
-| observability-agent | — | idle |
-| docs-agent | — | idle |
-| smoke-test-agent | — | idle |
-| workflow-agent | — | idle |
-| review-agent | — | idle |
+| Agent                  | Last Run | Status |
+| ---------------------- | -------- | ------ |
+| orchestrator-agent     | —        | idle   |
+| pipeline-library-agent | —        | idle   |
+| buildpack-agent        | —        | idle   |
+| security-agent         | —        | idle   |
+| observability-agent    | —        | idle   |
+| docs-agent             | —        | idle   |
+| smoke-test-agent       | —        | idle   |
+| workflow-agent         | —        | idle   |
+| review-agent           | —        | idle   |
 
 ## Notes
 

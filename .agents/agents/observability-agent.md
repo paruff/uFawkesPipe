@@ -10,13 +10,13 @@ Specialist for instrumenting uFawkesPipe with OpenTelemetry, collecting DORA met
 
 ## Context Files — Read First
 
-| Priority | File | What You Learn |
-|---|---|---|
-| 1 | `AGENTS.md` (§9) | Cross-plane integration with Obstackd |
-| 2 | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
-| 3 | `docker-compose.yml` | Current service networking |
-| 4 | `Jenkinsfile` | Pipeline stages to instrument |
-| 5 | `docs/CHANGE_IMPACT_MAP.md` | Cross-plane impact of changes |
+| Priority | File                               | What You Learn                                         |
+| -------- | ---------------------------------- | ------------------------------------------------------ |
+| 1        | `AGENTS.md` (§9)                   | Cross-plane integration with Obstackd                  |
+| 2        | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
+| 3        | `docker-compose.yml`               | Current service networking                             |
+| 4        | `Jenkinsfile`                      | Pipeline stages to instrument                          |
+| 5        | `docs/CHANGE_IMPACT_MAP.md`        | Cross-plane impact of changes                          |
 
 ## DORA Metrics Collection
 
@@ -25,16 +25,17 @@ Specialist for instrumenting uFawkesPipe with OpenTelemetry, collecting DORA met
 
 Every pipeline must log these metrics per the spec:
 
-| Metric | Definition |
-|---|---|
+| Metric                    | Definition                            |
+| ------------------------- | ------------------------------------- |
 | **Lead Time for Changes** | Time from commit to production deploy |
-| **Deployment Frequency** | Deploy events per unit time |
-| **Mean Time to Restore** | Time from failure to recovery |
-| **Change Failure Rate** | Failed deploys / total deploys |
+| **Deployment Frequency**  | Deploy events per unit time           |
+| **Mean Time to Restore**  | Time from failure to recovery         |
+| **Change Failure Rate**   | Failed deploys / total deploys        |
 
 ## OpenTelemetry Integration
 
 ### OTEL Exporter Configuration
+
 ```yaml
 # docker-compose.yml additions:
 environment:
@@ -44,26 +45,30 @@ environment:
 ```
 
 ### Trace Attributes
-| Span Attribute | Value |
-|---|---|
-| `gen_ai.plane` | `uFawkesPipe` |
-| `pipeline.stage` | `<stageName>` |
-| `pipeline.build_number` | `${BUILD_NUMBER}` |
-| `pipeline.sha` | `${GIT_COMMIT}` |
-| `pipeline.result` | `success | failure` |
+
+| Span Attribute          | Value                |
+| ----------------------- | -------------------- |
+| `gen_ai.plane`          | `uFawkesPipe`        |
+| `pipeline.stage`        | `<stageName>`        |
+| `pipeline.build_number` | `${BUILD_NUMBER}`    |
+| `pipeline.sha`          | `${GIT_COMMIT}`      |
+| `pipeline.result`       | `success \| failure` |
 
 ## What You MAY Do
+
 - Add DORA logging to pipeline stages and shared library steps
 - Create `docs/METRICS.md` documenting metric collection
 - Add OTEL environment variables to `docker-compose.yml`
 - Create Grafana dashboard JSON for pipeline metrics
 
 ## What You MUST Ask Before
+
 - Changing the OTEL endpoint port (must match Obstackd config)
 - Adding a new metric that requires pipeline contract changes
 - Modifying the log format that Obstackd parses for traces
 
 ## What You MUST NEVER
+
 - Emit credentials, tokens, or secrets in log lines
 - Use non-standard timestamps (always ISO 8601 UTC)
 - Remove existing DORA log lines without deprecation period

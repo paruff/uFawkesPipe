@@ -5,6 +5,7 @@ uFawkesPipe exposes multiple APIs and webhooks that allow external planes to tri
 ## Overview
 
 The platform provides:
+
 1. **Generic Webhook Trigger** - Trigger any job via HTTP POST
 2. **GitHub Webhooks** - Automatic pipeline triggers from GitHub
 3. **Jenkins REST API** - Full programmatic control
@@ -31,11 +32,13 @@ WEBHOOK_SECRET=your-random-secret-string
 ### Request Format
 
 **Headers:**
+
 ```
 Content-Type: application/json
 ```
 
 **Body:**
+
 ```json
 {
   "repo_url": "https://github.com/user/repo",
@@ -62,6 +65,7 @@ curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
 ### Response
 
 Success (200):
+
 ```json
 {
   "jobs": {
@@ -74,6 +78,7 @@ Success (200):
 ```
 
 Error (400/401):
+
 ```json
 {
   "message": "Invalid webhook secret"
@@ -132,6 +137,7 @@ GitHub sends a JSON payload with event details:
 ### Pipeline Configuration
 
 In your Jenkins pipeline job:
+
 1. Enable "GitHub hook trigger for GITScm polling"
 2. Configure Git SCM with repository URL
 3. Jenkins will automatically trigger on matching webhooks
@@ -143,10 +149,12 @@ Jenkins provides a comprehensive REST API for programmatic access.
 ### Authentication
 
 **API Token:**
+
 1. Jenkins → User → Configure → API Token → Generate
 2. Use in requests: `username:api-token`
 
 **Basic Auth:**
+
 ```bash
 curl -u admin:your-api-token ...
 ```
@@ -161,6 +169,7 @@ curl -u admin:token \
 ```
 
 Response:
+
 ```json
 {
   "name": "my-job",
@@ -196,6 +205,7 @@ curl -u admin:token \
 ```
 
 Response:
+
 ```json
 {
   "number": 42,
@@ -248,7 +258,10 @@ http://localhost:8080/jenkins/buildStatus/icon?job=my-job
 ### HTML
 
 ```html
-<img src="http://localhost:8080/jenkins/buildStatus/icon?job=my-job" alt="Build Status">
+<img
+  src="http://localhost:8080/jenkins/buildStatus/icon?job=my-job"
+  alt="Build Status"
+/>
 ```
 
 ## 5. Multibranch Pipeline Webhooks
@@ -279,7 +292,7 @@ class UfawkesPipeClient:
     def __init__(self, base_url, username, api_token):
         self.base_url = base_url
         self.auth = (username, api_token)
-    
+
     def trigger_build(self, job_name, parameters=None):
         """Trigger a Jenkins build"""
         if parameters:
@@ -288,26 +301,26 @@ class UfawkesPipeClient:
         else:
             url = f"{self.base_url}/job/{job_name}/build"
             response = requests.post(url, auth=self.auth)
-        
+
         return response.status_code == 201
-    
+
     def get_build_status(self, job_name, build_number):
         """Get build status"""
         url = f"{self.base_url}/job/{job_name}/{build_number}/api/json"
         response = requests.get(url, auth=self.auth)
         return response.json()
-    
+
     def wait_for_build(self, job_name, build_number, timeout=600):
         """Wait for build to complete"""
         import time
         start = time.time()
-        
+
         while time.time() - start < timeout:
             status = self.get_build_status(job_name, build_number)
             if not status['building']:
                 return status['result']
             time.sleep(5)
-        
+
         return 'TIMEOUT'
 
 # Usage
@@ -328,30 +341,30 @@ print(f"Build status: {status['result']}")
 ### Node.js Client
 
 ```javascript
-const axios = require('axios');
+const axios = require("axios");
 
 class UfawkesPipeClient {
   constructor(baseUrl, username, apiToken) {
     this.baseUrl = baseUrl;
     this.auth = {
       username: username,
-      password: apiToken
+      password: apiToken,
     };
   }
 
   async triggerBuild(jobName, parameters = {}) {
     const hasParams = Object.keys(parameters).length > 0;
-    const endpoint = hasParams ? 'buildWithParameters' : 'build';
+    const endpoint = hasParams ? "buildWithParameters" : "build";
     const url = `${this.baseUrl}/job/${jobName}/${endpoint}`;
-    
+
     try {
       const response = await axios.post(url, null, {
         auth: this.auth,
-        params: parameters
+        params: parameters,
       });
       return response.status === 201;
     } catch (error) {
-      console.error('Failed to trigger build:', error);
+      console.error("Failed to trigger build:", error);
       return false;
     }
   }
@@ -365,17 +378,17 @@ class UfawkesPipeClient {
 
 // Usage
 const client = new UfawkesPipeClient(
-  'http://localhost:8080/jenkins',
-  'admin',
-  'your-api-token'
+  "http://localhost:8080/jenkins",
+  "admin",
+  "your-api-token",
 );
 
 (async () => {
   // Trigger build
-  await client.triggerBuild('my-app', { BRANCH: 'develop' });
-  
+  await client.triggerBuild("my-app", { BRANCH: "develop" });
+
   // Check status
-  const status = await client.getBuildStatus('my-app', 42);
+  const status = await client.getBuildStatus("my-app", 42);
   console.log(`Build status: ${status.result}`);
 })();
 ```
@@ -417,7 +430,7 @@ get_build_status() {
 wait_for_build() {
   local build_number=$1
   echo "Waiting for build ${build_number}..."
-  
+
   while true; do
     status=$(get_build_status "${build_number}")
     if [ "${status}" != "null" ]; then
@@ -446,6 +459,7 @@ wait_for_build "${build_number}"
 ## Monitoring Webhooks
 
 View webhook delivery logs in Jenkins:
+
 - Jenkins → Manage Jenkins → System Log
 - GitHub → Repository → Settings → Webhooks → Recent Deliveries
 

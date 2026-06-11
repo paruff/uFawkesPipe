@@ -10,16 +10,16 @@ Routes tasks to the correct agent and skill based on file patterns and task desc
 
 ## Agent Registry
 
-| Agent | Trigger Pattern | Loads Skill |
-|---|---|---|
-| `pipeline-library-agent` | `shared/vars/*.groovy`, `Jenkinsfile` | `pipeline-library` |
-| `buildpack-agent` | `pack/**/*`, `examples/**/*.yml` | `language-pack` |
-| `security-agent` | `jenkins/Dockerfile`, `docker-compose.yml`, `**/*security*` | — |
-| `observability-agent` | `**/*otel*`, `**/*dora*`, `**/*metrics*` | — |
-| `docs-agent` | `docs/**/*.md`, `*.md` | — |
-| `smoke-test-agent` | `scripts/*smoke*`, `scripts/*test*` | — |
-| `workflow-agent` | `.github/**/*`, `.github/workflows/*.yml` | — |
-| `review-agent` | `@review` trigger, `**/*` | — |
+| Agent                    | Trigger Pattern                                             | Loads Skill        |
+| ------------------------ | ----------------------------------------------------------- | ------------------ |
+| `pipeline-library-agent` | `shared/vars/*.groovy`, `Jenkinsfile`                       | `pipeline-library` |
+| `buildpack-agent`        | `pack/**/*`, `examples/**/*.yml`                            | `language-pack`    |
+| `security-agent`         | `jenkins/Dockerfile`, `docker-compose.yml`, `**/*security*` | —                  |
+| `observability-agent`    | `**/*otel*`, `**/*dora*`, `**/*metrics*`                    | —                  |
+| `docs-agent`             | `docs/**/*.md`, `*.md`                                      | —                  |
+| `smoke-test-agent`       | `scripts/*smoke*`, `scripts/*test*`                         | —                  |
+| `workflow-agent`         | `.github/**/*`, `.github/workflows/*.yml`                   | —                  |
+| `review-agent`           | `@review` trigger, `**/*`                                   | —                  |
 
 ## Routing Rules
 
@@ -40,16 +40,16 @@ fi
 
 ### By Task Description
 
-| Keyword in Task | Agent | Skill |
-|---|---|---|
+| Keyword in Task                              | Agent                  | Skill            |
+| -------------------------------------------- | ---------------------- | ---------------- |
 | `pipeline`, `stage`, `Jenkinsfile`, `groovy` | pipeline-library-agent | pipeline-library |
-| `build`, `pack`, `buildpack`, `language` | buildpack-agent | language-pack |
-| `security`, `scan`, `SAST`, `vulnerability` | security-agent | — |
-| `DORA`, `metrics`, `observability`, `trace` | observability-agent | — |
-| `docs`, `README`, `documentation` | docs-agent | — |
-| `test`, `smoke`, `validate` | smoke-test-agent | — |
-| `CI`, `workflow`, `GitHub Actions` | workflow-agent | — |
-| `review`, `PR`, `diff` | review-agent | — |
+| `build`, `pack`, `buildpack`, `language`     | buildpack-agent        | language-pack    |
+| `security`, `scan`, `SAST`, `vulnerability`  | security-agent         | —                |
+| `DORA`, `metrics`, `observability`, `trace`  | observability-agent    | —                |
+| `docs`, `README`, `documentation`            | docs-agent             | —                |
+| `test`, `smoke`, `validate`                  | smoke-test-agent       | —                |
+| `CI`, `workflow`, `GitHub Actions`           | workflow-agent         | —                |
+| `review`, `PR`, `diff`                       | review-agent           | —                |
 
 ## Skill Loading Priority
 
@@ -63,6 +63,7 @@ When multiple skills apply, load in this order:
 ## Context Propagation
 
 Before invoking a sub-agent, the orchestrator:
+
 1. Reads `.agents/memory/context.md` for active task state
 2. Loads the relevant skill(s) into context
 3. Passes task description + file list to the target agent

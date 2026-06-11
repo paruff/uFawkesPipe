@@ -9,12 +9,14 @@ uFawkesPipe is designed for easy development on a single node with Docker Compos
 ## Architecture Comparison
 
 ### Development (Docker Compose)
+
 - Single node deployment
 - Docker volumes for persistence
 - Bridge networking
 - Suitable for: Local dev, small teams, testing
 
 ### Production (Kubernetes)
+
 - Multi-node cluster
 - PersistentVolumeClaims for storage
 - Service mesh networking
@@ -23,6 +25,7 @@ uFawkesPipe is designed for easy development on a single node with Docker Compos
 ## Step 1: Prepare Kubernetes Cluster
 
 You'll need:
+
 - Kubernetes 1.24+ cluster
 - `kubectl` configured
 - Storage provisioner (for PVCs)

@@ -29,6 +29,7 @@ nano .env  # or vim, code, etc.
 ```
 
 **Required settings in `.env`:**
+
 ```bash
 DOCKERHUB_USERNAME=your-dockerhub-username
 DOCKERHUB_TOKEN=your-dockerhub-token
@@ -36,6 +37,7 @@ JENKINS_ADMIN_PASSWORD=your-secure-password
 ```
 
 **Get DockerHub token:**
+
 1. Go to https://hub.docker.com/settings/security
 2. Click "New Access Token"
 3. Copy the token to `.env`
@@ -54,6 +56,7 @@ make logs
 ```
 
 Wait 2-3 minutes for services to start. You'll see:
+
 ```
 Jenkins is fully up and running
 ```
@@ -61,12 +64,13 @@ Jenkins is fully up and running
 ### 4. Access Services
 
 - **Jenkins**: http://localhost:8080/jenkins
+
   - Username: `admin`
   - Password: (from `.env`)
-  
+
 - **SonarQube**: http://localhost:9000
   - Username: `admin`
-  - Password: `admin` (change on first login)
+  - Password: `admin` (change on first login) # pragma: allowlist secret
 
 ## Create Your First Pipeline
 
@@ -84,36 +88,38 @@ Jenkins comes with a pre-configured example pipeline:
 1. **Add `.fawkespipe.yml` to your repository**
 
    Example for Node.js:
+
    ```yaml
    app:
      name: my-app
      type: service
      language: nodejs
-   
+
    build:
      builder: cnb
      image:
        namespace: myorg
        name: my-app
-   
+
    stages:
      lint:
        enabled: true
        commands:
          - language: nodejs
            cmd: npm run lint
-     
+
      test:
        enabled: true
        commands:
          - language: nodejs
            cmd: npm test
-     
+
      push:
        enabled: true
    ```
 
 2. **Copy standard Jenkinsfile**
+
    ```bash
    cp uFawkesPipe/Jenkinsfile your-repo/Jenkinsfile
    git add Jenkinsfile .fawkespipe.yml
@@ -122,6 +128,7 @@ Jenkins comes with a pre-configured example pipeline:
    ```
 
 3. **Create Pipeline in Jenkins**
+
    - Jenkins → New Item
    - Name: `my-app`
    - Type: Pipeline
@@ -156,7 +163,7 @@ curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
   -d '{
     "repo_url": "https://github.com/user/repo",
     "branch": "main",
-    "webhook_secret": "changeme"
+    "webhook_secret": "changeme" # pragma: allowlist secret
   }'
 ```
 
@@ -195,6 +202,7 @@ make clean
 ## Verify Installation
 
 Run the validation script:
+
 ```bash
 ./validate.sh
 ```
@@ -202,6 +210,7 @@ Run the validation script:
 ## Troubleshooting
 
 ### Jenkins won't start
+
 ```bash
 # Check logs
 make logs-jenkins
@@ -216,11 +225,13 @@ make start
 ```
 
 ### Can't access Jenkins
+
 - Ensure port 8080 is not in use: `lsof -i :8080`
 - Check firewall rules
 - Verify Docker networking: `docker network ls`
 
 ### SonarQube won't start
+
 ```bash
 # Increase vm.max_map_count (Linux only)
 sudo sysctl -w vm.max_map_count=262144
@@ -230,6 +241,7 @@ make logs-sonar
 ```
 
 ### Pipeline fails to build image
+
 - Verify Docker socket is mounted: `ls -la /var/run/docker.sock`
 - Check DockerHub credentials in `.env`
 - Ensure sufficient disk space: `df -h`

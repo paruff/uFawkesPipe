@@ -21,7 +21,7 @@ pack/<language>/
 
 ## Adding a New Language
 
-1. Create `pack/<language>/env.toml` with BP_* environment variables
+1. Create `pack/<language>/env.toml` with BP\_\* environment variables
 2. Create `pack/<language>/Jenkinsfile.template` using the template below
 3. Add a row to the language matrix in `buildpack-agent`
 4. Create `examples/.fawkespipe-<language>.yml` with a working config
@@ -81,6 +81,7 @@ stages:
 ## CI Template (Jenkinsfile.template)
 
 Must call shared library steps:
+
 ```groovy
 @Library('ufawkespipe-pipeline-library') _
 
@@ -103,7 +104,7 @@ pipeline {
 
 ## Validation Checklist for New Packs
 
-- [ ] `env.toml` contains valid BP_* variables
+- [ ] `env.toml` contains valid BP\_\* variables
 - [ ] `Jenkinsfile.template` calls shared library steps
 - [ ] Example `.fawkespipe-<language>.yml` parses as valid YAML
 - [ ] `pack build` succeeds locally

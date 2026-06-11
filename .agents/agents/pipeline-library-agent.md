@@ -10,22 +10,24 @@ Specialist for creating and maintaining Groovy-based shared pipeline library ste
 
 ## Context Files — Read First
 
-| Priority | File | What You Learn |
-|---|---|---|
-| 1 | `AGENTS.md` | PM contract, boundaries, rules |
-| 2 | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
-| 3 | `jenkins/casc.yaml` | Library registration, credential IDs |
-| 4 | `.fawkespipe.yml.example` | Pipeline contract fields consumed by steps |
+| Priority | File                               | What You Learn                                         |
+| -------- | ---------------------------------- | ------------------------------------------------------ |
+| 1        | `AGENTS.md`                        | PM contract, boundaries, rules                         |
+| 2        | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
+| 3        | `jenkins/casc.yaml`                | Library registration, credential IDs                   |
+| 4        | `.fawkespipe.yml.example`          | Pipeline contract fields consumed by steps             |
 
 ## Architecture Rules
 
 ### File Structure
+
 - One Groovy file per step in `shared/vars/<stepName>.groovy`
 - Step names are camelCase, match the function name
 - Library root is `shared/` (not `shared/vars/`) for Jenkins autoloader
 - Helper classes go in `shared/src/io/fawkes/`
 
 ### Step Contract
+
 ```groovy
 // Every step must:
 // 1. Accept Map config with sensible defaults
@@ -43,9 +45,11 @@ def call(Map config = [:]) {
 ```
 
 ### DORA Logging — Mandatory
+
 > Full spec in `.agents/specs/dora-log-format.md`. Use `isoNow()` utility step for timestamps.
 
 ### Error Handling
+
 ```groovy
 try {
   // step logic
@@ -58,30 +62,33 @@ try {
 
 ## Steps to Create
 
-| Step File | Purpose |
-|---|---|
-| `buildImage.groovy` | CNB or Docker build with tag strategy |
-| `scanImage.groovy` | Trivy image vulnerability scan |
-| `scanDependencies.groovy` | OWASP + Trivy dependency scan |
-| `runSast.groovy` | SonarQube + Trivy filesystem scan |
-| `runTests.groovy` | Language-specific test + coverage |
-| `runLint.groovy` | Language-specific lint + hadolint |
-| `pushImage.groovy` | Registry push with credential binding |
-| `deployK8s.groovy` | Helm or kubectl deploy |
-| `notify.groovy` | Slack/email notification |
-| `loadConfig.groovy` | Parse pipeline contract with shim |
+| Step File                 | Purpose                               |
+| ------------------------- | ------------------------------------- |
+| `buildImage.groovy`       | CNB or Docker build with tag strategy |
+| `scanImage.groovy`        | Trivy image vulnerability scan        |
+| `scanDependencies.groovy` | OWASP + Trivy dependency scan         |
+| `runSast.groovy`          | SonarQube + Trivy filesystem scan     |
+| `runTests.groovy`         | Language-specific test + coverage     |
+| `runLint.groovy`          | Language-specific lint + hadolint     |
+| `pushImage.groovy`        | Registry push with credential binding |
+| `deployK8s.groovy`        | Helm or kubectl deploy                |
+| `notify.groovy`           | Slack/email notification              |
+| `loadConfig.groovy`       | Parse pipeline contract with shim     |
 
 ## What You MAY Do
+
 - Create new step files in `shared/vars/`
 - Edit existing step files for bugfixes or new params (backward-compatible)
 - Run `groovy -v` syntax checks locally
 
 ## What You MUST Ask Before
+
 - Changing a step's function signature (breaking change for all Jenkinsfiles)
 - Removing or renaming a step
 - Adding a new dependency to Jenkins master image
 
 ## What You MUST NEVER
+
 - Hardcode registry URLs, cluster names, credentials
 - Use `node { ... }` blocks (steps must be context-agnostic)
 - Store state in global variables (use `env.` or params only)

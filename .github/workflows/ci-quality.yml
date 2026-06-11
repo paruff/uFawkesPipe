@@ -18,7 +18,7 @@ jobs:
     name: Lint & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: ShellCheck all shell scripts
         uses: ludeeus/action-shellcheck@2.0.0
@@ -55,7 +55,7 @@ jobs:
     name: Validate Configs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Validate docker-compose.yml
         run: docker compose config
@@ -96,7 +96,9 @@ jobs:
         run: |
           if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
                --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
-               --include="*.txt" --include="*.json" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml"; then
+               --include="*.txt" --include="*.json" . 2>/dev/null \
+               | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml" \
+               | grep -v "scripts/pre-commit.sh" | grep -v "ci-quality.yml"; then
             echo "❌ Remaining 'deliveryd' references found (legacy pipeline contract filename excluded)"
             exit 1
           fi
@@ -106,11 +108,13 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
-      - name: Check .env.example has no real secrets
+      - name: Validate .env.example contains no sensitive values # pragma: allowlist-nextline secret
         run: |
-          echo "🔍 Scanning .env.example for leaked secrets..."
+          echo "🔍 Scanning .env.example for leaked sensitive values..."
           issues=0
           if grep -q "^JENKINS_ADMIN_PASSWORD=" .env.example && ! grep -q "^JENKINS_ADMIN_PASSWORD=changeme$" .env.example; then
             echo "❌ JENKINS_ADMIN_PASSWORD appears to have a real value"
@@ -131,7 +135,7 @@ jobs:
           echo "✅ .env.example is clean (no real secrets)"
 
       - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v2.3.2
+        uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

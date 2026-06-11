@@ -10,24 +10,24 @@ Specialist for creating language packs that define how different application sta
 
 ## Context Files — Read First
 
-| Priority | File | What You Learn |
-|---|---|---|
-| 1 | `AGENTS.md` | PM contract, boundaries, rules |
-| 2 | `pack/Dockerfile` | Current buildpack builder setup |
-| 3 | `docker-compose.yml` | pack-cli service configuration |
-| 4 | `.fawkespipe.yml.example` | How builders are configured in pipeline contract |
-| 5 | `examples/` | Existing language examples |
-| 6 | `Jenkinsfile` (Build stage) | How pack CLI is invoked |
+| Priority | File                        | What You Learn                                   |
+| -------- | --------------------------- | ------------------------------------------------ |
+| 1        | `AGENTS.md`                 | PM contract, boundaries, rules                   |
+| 2        | `pack/Dockerfile`           | Current buildpack builder setup                  |
+| 3        | `docker-compose.yml`        | pack-cli service configuration                   |
+| 4        | `.fawkespipe.yml.example`   | How builders are configured in pipeline contract |
+| 5        | `examples/`                 | Existing language examples                       |
+| 6        | `Jenkinsfile` (Build stage) | How pack CLI is invoked                          |
 
 ## Language Matrix
 
-| Language | Builder | Build Env Vars | Lint | Test | SAST | Dep Scan |
-|---|---|---|---|---|---|---|
-| Java | `paketobuildpacks/builder:base` | `BP_JVM_VERSION=17` | checkstyle | mvn test | SonarQube | OWASP + Trivy |
-| Python | `paketobuildpacks/builder:base` | `BP_CPYTHON_VERSION=3.11` | pylint/black/flake8 | pytest + cov | Bandit | Safety + Trivy |
-| Node.js | `paketobuildpacks/builder:base` | `BP_NODE_VERSION=20` | npm run lint | npm test + cov | SonarQube + Trivy | Trivy |
-| Go | `paketobuildpacks/builder:base` | `BP_GO_VERSION=1.21` | golangci-lint | go test -v -race | Trivy | Trivy |
-| Ruby | (future) | `BP_RUBY_VERSION=3.2` | rubocop | rspec | brakeman | bundler-audit |
+| Language | Builder                         | Build Env Vars            | Lint                | Test             | SAST              | Dep Scan       |
+| -------- | ------------------------------- | ------------------------- | ------------------- | ---------------- | ----------------- | -------------- |
+| Java     | `paketobuildpacks/builder:base` | `BP_JVM_VERSION=17`       | checkstyle          | mvn test         | SonarQube         | OWASP + Trivy  |
+| Python   | `paketobuildpacks/builder:base` | `BP_CPYTHON_VERSION=3.11` | pylint/black/flake8 | pytest + cov     | Bandit            | Safety + Trivy |
+| Node.js  | `paketobuildpacks/builder:base` | `BP_NODE_VERSION=20`      | npm run lint        | npm test + cov   | SonarQube + Trivy | Trivy          |
+| Go       | `paketobuildpacks/builder:base` | `BP_GO_VERSION=1.21`      | golangci-lint       | go test -v -race | Trivy             | Trivy          |
+| Ruby     | (future)                        | `BP_RUBY_VERSION=3.2`     | rubocop             | rspec            | brakeman          | bundler-audit  |
 
 ## Language Pack Structure
 
@@ -42,6 +42,7 @@ pack/<language>/
 ```
 
 In `.fawkespipe.yml`, packs are referenced via:
+
 ```yaml
 build:
   builder: cnb
@@ -53,17 +54,18 @@ build:
 
 ## Currently Supported Languages
 
-| Language | Status | CI Template | Lint | Test | SAST |
-|---|---|---|---|---|---|
-| Java/Maven | ✅ | `Jenkinsfile` stages | checkstyle | mvn test | SonarQube |
-| Python/Flask | 🔧 (DY-005) | Partial | pylint/black/flake8 | pytest | Bandit/safety |
-| Node.js/Express | ✅ | `Jenkinsfile` stages | npm run lint | npm test | SonarQube + Trivy |
-| Go | ✅ | `Jenkinsfile` stages | golangci-lint | go test -v | Trivy |
-| Ruby | ❌ Missing | — | — | — | — |
+| Language        | Status      | CI Template          | Lint                | Test       | SAST              |
+| --------------- | ----------- | -------------------- | ------------------- | ---------- | ----------------- |
+| Java/Maven      | ✅          | `Jenkinsfile` stages | checkstyle          | mvn test   | SonarQube         |
+| Python/Flask    | 🔧 (DY-005) | Partial              | pylint/black/flake8 | pytest     | Bandit/safety     |
+| Node.js/Express | ✅          | `Jenkinsfile` stages | npm run lint        | npm test   | SonarQube + Trivy |
+| Go              | ✅          | `Jenkinsfile` stages | golangci-lint       | go test -v | Trivy             |
+| Ruby            | ❌ Missing  | —                    | —                   | —          | —                 |
 
 ## Build Standards
 
 ### Pack CLI Arguments
+
 ```bash
 pack build ${IMAGE_TAG} \
   --builder ${CNB_BUILDER:-paketobuildpacks/builder:base} \
@@ -73,25 +75,29 @@ pack build ${IMAGE_TAG} \
 ```
 
 ### Builder Selection
-| Use Case | Builder |
-|---|---|
-| General polyglot | `paketobuildpacks/builder:base` |
-| Java-only | `paketobuildpacks/builder-jammy-base` |
-| Minimal size | `paketobuildpacks/builder-jammy-small` |
-| Full toolchain | `paketobuildpacks/builder-jammy-full` |
+
+| Use Case         | Builder                                |
+| ---------------- | -------------------------------------- |
+| General polyglot | `paketobuildpacks/builder:base`        |
+| Java-only        | `paketobuildpacks/builder-jammy-base`  |
+| Minimal size     | `paketobuildpacks/builder-jammy-small` |
+| Full toolchain   | `paketobuildpacks/builder-jammy-full`  |
 
 ## What You MAY Do
+
 - Add new language packs in `pack/<language>/`
 - Create example `.fawkespipe.yml` files in `examples/`
 - Update `Jenkinsfile` build stage for new builder options
 - Create language-specific documentation in `docs/packs/`
 
 ## What You MUST Ask Before
+
 - Changing the default CNB builder version (affects all builds)
 - Adding a buildpack that requires daemon access
 - Removing a supported language from the pack matrix
 
 ## What You MUST NEVER
+
 - Pin a language version to a non-LTS release
 - Add a buildpack that hasn't been tested with a full pipeline run
 - Include proprietary or licensed buildpacks without maintainer approval

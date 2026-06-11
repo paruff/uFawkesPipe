@@ -142,7 +142,7 @@ for file in k8s_files:
 
 sys.exit(0 if all_valid else 1)
 EOF
-    
+
         if [ $? -eq 0 ]; then
             success "All YAML files are valid"
         else
@@ -199,7 +199,7 @@ echo ""
 echo "Checking environment configuration..."
 if [ -f ".env" ]; then
     success ".env file exists"
-    
+
     # Check required variables
     required_vars=("DOCKERHUB_USERNAME" "DOCKERHUB_TOKEN" "SONAR_DB_PASSWORD" "WEBHOOK_SECRET")
     for var in "${required_vars[@]}"; do
