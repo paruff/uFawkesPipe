@@ -3,6 +3,7 @@ FROM buildpacksio/pack:0.32.1
 USER root
 
 # Install additional tools for build context
+# hadolint ignore=DL3018
 RUN apk add --no-cache \
     bash \
     git \
