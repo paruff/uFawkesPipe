@@ -6,6 +6,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install Docker CLI for Docker-in-Docker
 # NOTE: Versions pinned to Ubuntu 22.04 (Jammy) — update when base image changes
+# hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     docker.io \
@@ -40,6 +41,7 @@ RUN curl -sSLf -o /usr/local/bin/hadolint https://github.com/hadolint/hadolint/r
 RUN curl -fsSLf https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/trivy-archive-keyring.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/trivy.list && \
     apt-get update && \
+    # hadolint ignore=DL3008
     apt-get install -y --no-install-recommends trivy && \
     rm -rf /var/lib/apt/lists/*
 
