@@ -40,13 +40,13 @@ jobs:
                 check-multi-line-strings: false
 
       - name: Hadolint Dockerfiles
-        uses: hadolint/hadolint-action@v3.2.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: jenkins/Dockerfile
           failure-threshold: warning
 
       - name: Hadolint pack Dockerfile
-        uses: hadolint/hadolint-action@v3.2.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: pack/Dockerfile
           failure-threshold: warning
