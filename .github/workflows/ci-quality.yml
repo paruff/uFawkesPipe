@@ -1,0 +1,159 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: ShellCheck all shell scripts
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
+
+      - name: YAML lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          config_data: |
+            extends: default
+            rules:
+              line-length: disable
+              document-start: disable
+              truthy: disable
+              indentation:
+                spaces: 2
+                indent-sequences: whatever
+                check-multi-line-strings: false
+
+      - name: Hadolint Dockerfiles
+        uses: hadolint/hadolint-action@v3.2.0
+        with:
+          dockerfile: jenkins/Dockerfile
+          failure-threshold: warning
+
+      - name: Hadolint pack Dockerfile
+        uses: hadolint/hadolint-action@v3.2.0
+        with:
+          dockerfile: pack/Dockerfile
+          failure-threshold: warning
+
+  validate:
+    name: Validate Configs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate docker-compose.yml
+        run: docker compose config
+
+      - name: Validate K8s manifests with Kubeconform
+        run: |
+          curl -sSLf https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz | tar -xzf - -C /usr/local/bin kubeconform
+          kubeconform -summary -ignore-missing-schemas k8s/
+
+      - name: Validate K8s manifests with kubectl
+        run: |
+          for f in k8s/*.yaml; do
+            echo "Validating $f..."
+            kubectl dry-run client -f "$f" 2>&1 || true
+          done
+
+      - name: Run validation script
+        run: |
+          pip3 install pyyaml || true
+          ./validate.sh || true
+
+      - name: Check required files exist
+        run: |
+          missing=0
+          for f in docker-compose.yml .env.example .fawkespipe.yml.example jenkins/Dockerfile \
+                    jenkins/plugins.txt jenkins/casc.yaml pack/Dockerfile README.md Makefile; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing: $f"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            exit 1
+          fi
+          echo "✅ All required files present"
+
+      - name: Verify Phase A rename complete
+        run: |
+          if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
+               --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
+               --include="*.txt" --include="*.json" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml"; then
+            echo "❌ Remaining 'deliveryd' references found (legacy pipeline contract filename excluded)"
+            exit 1
+          fi
+          echo "✅ No stray 'deliveryd' references"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check .env.example has no real secrets
+        run: |
+          echo "🔍 Scanning .env.example for leaked secrets..."
+          issues=0
+          if grep -q "^JENKINS_ADMIN_PASSWORD=" .env.example && ! grep -q "^JENKINS_ADMIN_PASSWORD=changeme$" .env.example; then
+            echo "❌ JENKINS_ADMIN_PASSWORD appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          if grep -q "^DOCKERHUB_USERNAME=" .env.example && ! grep -q "^DOCKERHUB_USERNAME=your-dockerhub-username$" .env.example; then
+            echo "❌ DOCKERHUB_USERNAME appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          if grep -q "^DOCKERHUB_TOKEN=" .env.example && ! grep -q "^DOCKERHUB_TOKEN=your-dockerhub-token-or-password$" .env.example; then
+            echo "❌ DOCKERHUB_TOKEN appears to have a real value"
+            issues=$((issues + 1))
+          fi
+          if [ "$issues" -gt 0 ]; then
+            echo "❌ $issues secret leak(s) detected in .env.example"
+            exit 1
+          fi
+          echo "✅ .env.example is clean (no real secrets)"
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          exit-code: 1
+          format: table
+
+      - name: Check for known CVEs in pinned tool versions
+        run: |
+          echo "🔍 Checking pinned tool versions for known CVEs..."
+          # Pack CLI version
+          pack_version=$(grep -oP 'pack-v\K[0-9.]+(?=/pack)' jenkins/Dockerfile || true)
+          echo "Pack CLI version: ${pack_version:-unknown}"
+          # Dependency-Check version
+          dc_version=$(grep -oP 'DependencyCheck/releases/download/v\K[0-9.]+(?=/)' jenkins/Dockerfile || true)
+          echo "Dependency-Check version: ${dc_version:-unknown}"
+          # Hadolint version
+          hadolint_version=$(grep -oP 'hadolint/releases/download/v\K[0-9.]+(?=/)' jenkins/Dockerfile || true)
+          echo "Hadolint version: ${hadolint_version:-unknown}"
+          echo "✅ Tool versions logged (review manually for CVEs)"

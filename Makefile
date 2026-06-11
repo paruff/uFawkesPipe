@@ -145,3 +145,12 @@ wait-for-sonar: ## Wait for SonarQube to be ready
 
 wait-all: wait-for-jenkins wait-for-sonar ## Wait for all services to be ready
 	@echo "🎉 All services are ready!"
+
+# GitOps targets
+pre-commit-setup: ## Install pre-commit hooks
+	@pip install pre-commit
+	@pre-commit install
+	@echo "✅ Pre-commit hooks installed"
+
+pre-commit-run: ## Run all pre-commit hooks
+	@pre-commit run --all-files
