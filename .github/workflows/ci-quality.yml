@@ -96,7 +96,9 @@ jobs:
         run: |
           if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
                --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
-               --include="*.txt" --include="*.json" . 2>/dev/null | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml"; then
+               --include="*.txt" --include="*.json" . 2>/dev/null \
+               | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml" \
+               | grep -v "scripts/pre-commit.sh" | grep -v "ci-quality.yml"; then
             echo "❌ Remaining 'deliveryd' references found (legacy pipeline contract filename excluded)"
             exit 1
           fi
