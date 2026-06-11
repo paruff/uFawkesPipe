@@ -38,10 +38,10 @@ RUN curl -sSLf -o /usr/local/bin/hadolint https://github.com/hadolint/hadolint/r
     chmod +x /usr/local/bin/hadolint
 
 # Install trivy for container scanning
+# hadolint ignore=DL3008
 RUN curl -fsSLf https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/trivy-archive-keyring.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/trivy.list && \
     apt-get update && \
-    # hadolint ignore=DL3008
     apt-get install -y --no-install-recommends trivy && \
     rm -rf /var/lib/apt/lists/*
 
