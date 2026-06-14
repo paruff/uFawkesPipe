@@ -40,7 +40,7 @@ class TestDockerComposeValidation:
         for service_name, service_config in docker_compose_config["services"].items():
             if "healthcheck" not in service_config:
                 services_without_healthcheck.append(service_name)
-        
+
         # Warn but don't fail - some services may not need healthchecks
         if services_without_healthcheck:
             import warnings

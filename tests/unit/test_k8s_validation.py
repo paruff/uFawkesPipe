@@ -96,7 +96,7 @@ class TestK8sManifestsValidation:
             labels = config.get("metadata", {}).get("labels", {})
             if len(labels) == 0:
                 resources_without_labels.append(filename)
-        
+
         # Warn but don't fail - some resources may not need labels
         if resources_without_labels:
             import warnings
