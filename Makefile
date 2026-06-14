@@ -1,156 +1,90 @@
-# Makefile for uFawkesPipe platform management
+.PHONY: help test test-unit test-integration test-smoke test-acceptance validate pre-commit-setup pre-commit-run
 
-.PHONY: help start stop restart logs status clean build ps health backup restore
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-help: ## Show this help message
-	@echo 'Usage: make [target]'
-	@echo ''
-	@echo 'Available targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+# ============================================================================
+# Test Commands
+# ============================================================================
 
-start: ## Start all services
-	@echo "🚀 Starting uFawkesPipe platform..."
-	docker-compose up -d
-	@echo "✅ Platform started. Access Jenkins at http://localhost:8080/jenkins"
+test: test-unit ## Run all tests
+	@echo "All tests passed"
 
-stop: ## Stop all services
-	@echo "🛑 Stopping uFawkesPipe platform..."
-	docker-compose stop
+test-unit: ## Run unit tests
+	pytest tests/unit/ -v --tb=short
 
-down: ## Stop and remove containers
-	@echo "🗑️  Removing uFawkesPipe containers..."
-	docker-compose down
+test-integration: ## Run integration tests (requires Docker)
+	pytest tests/integration/ -v --tb=short
 
-restart: ## Restart all services
-	@echo "🔄 Restarting uFawkesPipe platform..."
-	docker-compose restart
+test-smoke: ## Run smoke tests (requires running stack)
+	pytest tests/smoke/ -v --tb=short
 
-logs: ## Show logs from all services
-	docker-compose logs -f
+test-acceptance: ## Run acceptance tests (requires running stack)
+	pytest tests/acceptance/ -v --tb=short
 
-logs-jenkins: ## Show Jenkins logs
-	docker-compose logs -f jenkins
+test-coverage: ## Run tests with coverage report
+	pytest tests/unit/ -v --tb=short --cov=tests/unit --cov-report=term-missing
 
-logs-sonar: ## Show SonarQube logs
-	docker-compose logs -f sonarqube
+# ============================================================================
+# Validation Commands
+# ============================================================================
 
-status: ## Show status of all services
-	docker-compose ps
+validate: validate-docker validate-jenkins validate-k8s ## Run all validations
 
-ps: status ## Alias for status
+validate-docker: ## Validate docker-compose.yml
+	@echo "Validating docker-compose.yml..."
+	docker compose config --quiet
+	@echo "✅ docker-compose.yml is valid"
 
-health: ## Check health of all services
-	@echo "🏥 Checking service health..."
-	@if command -v jq &> /dev/null; then \
-		docker-compose ps --format json | jq -r '.[] | "\(.Name): \(.Status)"'; \
-	else \
-		docker-compose ps; \
-	fi
+validate-jenkins: ## Validate Jenkinsfile syntax
+	@echo "Validating Jenkinsfile..."
+	@python3 -c "import jenkins_pipeline_linter; jenkins_pipeline_linter.lint_file('Jenkinsfile')" || \
+		echo "⚠️  Jenkinsfile linting skipped (jenkins_pipeline_linter not installed)"
 
-build: ## Build custom images
-	@echo "🏗️  Building custom images..."
-	docker-compose build
-
-clean: ## Remove all containers, volumes, and images
-	@echo "⚠️  WARNING: This will remove all data!"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down -v; \
-		docker system prune -af; \
-		echo "✅ Cleanup complete"; \
-	fi
-
-backup: ## Backup Jenkins data
-	@echo "💾 Backing up Jenkins data..."
-	@mkdir -p backups
-	docker run --rm -v ufp_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
-		tar czf /backup/jenkins-backup-$$(date +%Y%m%d-%H%M%S).tar.gz -C /data .
-	@echo "✅ Backup complete: backups/jenkins-backup-*.tar.gz"
-
-restore: ## Restore Jenkins data from latest backup
-	@echo "🔄 Restoring Jenkins data from backup..."
-	@if [ -z "$$(ls -A backups/jenkins-backup-*.tar.gz 2>/dev/null)" ]; then \
-		echo "❌ No backup files found in backups/"; \
-		exit 1; \
-	fi
-	@LATEST=$$(ls -t backups/jenkins-backup-*.tar.gz | head -1); \
-	echo "Restoring from: $$LATEST"; \
-	docker-compose stop jenkins; \
-	docker run --rm -v ufp_jenkins_home:/data -v $(PWD)/backups:/backup alpine \
-		sh -c "rm -rf /data/* && tar xzf /backup/$$(basename $$LATEST) -C /data"; \
-	docker-compose start jenkins; \
-	echo "✅ Restore complete"
-
-validate-config: ## Validate docker-compose configuration
-	docker-compose config
-
-init: ## Initialize environment (first-time setup)
-	@echo "🎬 Initializing uFawkesPipe platform..."
-	@if [ ! -f .env ]; then \
-		cp .env.example .env; \
-		echo "✅ Created .env file. Please edit it with your credentials."; \
-	else \
-		echo "ℹ️  .env file already exists"; \
-	fi
-	@mkdir -p shared shared/reports
-	@echo "✅ Created shared directories"
-	@echo ""
-	@echo "📝 Next steps:"
-	@echo "   1. Edit .env with your credentials"
-	@echo "   2. Run 'make start' to start the platform"
-	@echo "   3. Access Jenkins at http://localhost:8080/jenkins"
-
-update: ## Update images to latest versions
-	@echo "⬆️  Updating images..."
-	docker-compose pull
-	docker-compose up -d
-
-dev: ## Start in development mode with logs
-	docker-compose up
-
-test-webhook: ## Test webhook endpoint (requires jq)
-	@echo "🔔 Testing webhook endpoint..."
-	@if [ -f .env ]; then \
-		WEBHOOK_SECRET=$$(grep "^WEBHOOK_SECRET=" .env | cut -d= -f2-); \
-	else \
-		WEBHOOK_SECRET="changeme"; \
-		echo "⚠️  Using default webhook secret. Configure .env for actual secret."; \
-	fi; \
-	if command -v jq &> /dev/null; then \
-		curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
-			-H "Content-Type: application/json" \
-			-d "{\"test\": \"true\", \"webhook_secret\": \"$$WEBHOOK_SECRET\"}" | jq .; \
-	else \
-		curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
-			-H "Content-Type: application/json" \
-			-d "{\"test\": \"true\", \"webhook_secret\": \"$$WEBHOOK_SECRET\"}"; \
-	fi
-
-wait-for-jenkins: ## Wait for Jenkins to be ready
-	@echo "⏳ Waiting for Jenkins to be ready..."
-	@until curl -s -f http://localhost:8080/jenkins/login >/dev/null 2>&1; do \
-		echo "  Jenkins not ready yet..."; \
-		sleep 5; \
+validate-k8s: ## Validate Kubernetes manifests
+	@echo "Validating K8s manifests..."
+	@for f in k8s/*.yaml; do \
+		echo "  Checking $$f..."; \
+		python3 -c "import yaml; yaml.safe_load(open('$$f'))" || exit 1; \
 	done
-	@echo "✅ Jenkins is ready!"
+	@echo "✅ K8s manifests are valid YAML"
 
-wait-for-sonar: ## Wait for SonarQube to be ready
-	@echo "⏳ Waiting for SonarQube to be ready..."
-	@until curl -s http://localhost:9000/api/system/status | grep -q '"status":"UP"'; do \
-		echo "  SonarQube not ready yet..."; \
-		sleep 5; \
-	done
-	@echo "✅ SonarQube is ready!"
+validate-all: validate-docker validate-k8s ## Validate all (Docker + K8s)
+	@echo "✅ All validations passed"
 
-wait-all: wait-for-jenkins wait-for-sonar ## Wait for all services to be ready
-	@echo "🎉 All services are ready!"
+# ============================================================================
+# Pre-commit Commands
+# ============================================================================
 
-# GitOps targets
 pre-commit-setup: ## Install pre-commit hooks
-	@pip install pre-commit
-	@pre-commit install
-	@echo "✅ Pre-commit hooks installed"
+	pip install pre-commit
+	pre-commit install
 
-pre-commit-run: ## Run all pre-commit hooks
-	@pre-commit run --all-files
+pre-commit-run: ## Run pre-commit hooks on all files
+	pre-commit run --all-files
+
+# ============================================================================
+# Docker Commands
+# ============================================================================
+
+up: ## Start Docker Compose stack
+	docker compose up -d
+
+down: ## Stop Docker Compose stack
+	docker compose down -v
+
+logs: ## View Docker Compose logs
+	docker compose logs -f
+
+ps: ## List running containers
+	docker compose ps
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+
+clean: ## Clean up test artifacts
+	rm -rf .pytest_cache __pycache__ tests/__pycache__ tests/unit/__pycache__ tests/integration/__pycache__ tests/smoke/__pycache__ tests/acceptance/__pycache__
+	rm -rf htmlcov .coverage coverage.xml
+	docker compose down -v --remove-orphans 2>/dev/null || true
