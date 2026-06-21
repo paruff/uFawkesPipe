@@ -14,14 +14,27 @@ def project_root():
 
 @pytest.fixture
 def docker_compose_file(project_root):
-    """Return the docker-compose.yml file path."""
+    """Return the docker-compose.yml file path (deprecated - use compose_file)."""
     return project_root / "docker-compose.yml"
 
 
 @pytest.fixture
 def docker_compose_config(docker_compose_file):
-    """Load and return the docker-compose.yml configuration."""
+    """Load and return the docker-compose.yml configuration (deprecated - use compose_config)."""
     with open(docker_compose_file) as f:
+        return yaml.safe_load(f)
+
+
+@pytest.fixture
+def compose_file(project_root):
+    """Return the compose.yaml file path."""
+    return project_root / "compose.yaml"
+
+
+@pytest.fixture
+def compose_config(compose_file):
+    """Load and return the compose.yaml configuration."""
+    with open(compose_file) as f:
         return yaml.safe_load(f)
 
 
