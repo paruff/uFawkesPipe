@@ -2,7 +2,9 @@
 # DEPRECATED — Use compose.yaml instead
 # =============================================================================
 # This file is retained for reference during the transition from Jenkins to
-# Woodpecker CI + Portainer CD. See compose.yaml for the current stack.
+# Woodpecker CI + Portainer CD.
+# See docs/history/jenkins-migration.md for the full migration history.
+# Do not use this file for new deployments.
 # =============================================================================
 
 services:

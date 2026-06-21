@@ -40,8 +40,8 @@ def compose_config(compose_file):
 
 @pytest.fixture
 def jenkinsfile(project_root):
-    """Return the Jenkinsfile path."""
-    return project_root / "Jenkinsfile"
+    """Return the archived Jenkinsfile path."""
+    return project_root / "docs" / "history" / "Jenkinsfile.archived"
 
 
 @pytest.fixture
@@ -53,8 +53,8 @@ def jenkinsfile_content(jenkinsfile):
 
 @pytest.fixture
 def jcasc_dir(project_root):
-    """Return the JCasC configuration directory."""
-    return project_root / "jenkins"
+    """Return the archived JCasC configuration directory."""
+    return project_root / "docs" / "history" / "jenkins"
 
 
 @pytest.fixture
