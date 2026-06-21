@@ -1,6 +1,6 @@
 # uFawkesPipe
 
-[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml)
+[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
@@ -425,7 +425,7 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
 ## 🙋 Support
 
