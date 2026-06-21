@@ -4,7 +4,7 @@
 
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
-uFawkesPipe is a production-ready CI/CD platform built on Woodpecker CI and Portainer CD, designed for polyglot application development with a standardized pipeline contract. It provides automated build, test, security scanning, and deployment capabilities using Cloud Native Buildpacks and modern DevSecOps practices.
+uFawkesPipe is a Woodpecker CI pipeline engine with Portainer CD, SonarQube SAST, and Cloud Native Buildpacks — the CI/CD plane of the Fawkes IDP.
 
 ## 🚀 Features
 
@@ -19,7 +19,7 @@ uFawkesPipe is a production-ready CI/CD platform built on Woodpecker CI and Port
 
 ## 📋 Pipeline Stages
 
-Every pipeline in uFawkesPipe follows these standardized stages:
+Every pipeline in uFawkesPipe follows these standardized stages, defined in `.woodpecker.yml`:
 
 1. **Lint** - Code quality and style checks (language-specific)
 2. **Unit Tests** - Automated testing with coverage reporting
@@ -37,29 +37,29 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 │                    uFawkesPipe Platform                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Woodpecker  │  │  SonarQube   │  │  Portainer   │      │
-│  │  CI          │  │   (SAST)     │  │   CE (CD)    │      │
-│  │              │  │              │  │              │      │
-│  │  - Pipelines │  │  - Quality   │  │  - Deploy    │      │
-│  │  - Webhooks  │  │    Gates     │  │  - Stacks    │      │
-│  │  - Secrets   │  │  - Coverage  │  │  - Volumes   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                  │                  │              │
-│         └──────────────────┴──────────────────┘              │
-│                           │                                  │
-│                  ┌────────▼────────┐                         │
-│                  │   CNB Builder   │                         │
-│                  │   (Pack CLI)    │                         │
-│                  └────────┬────────┘                         │
-│                           │                                  │
-│                           ▼                                  │
-│                  ┌─────────────────┐                         │
-│                  │   Docker        │                         │
-│                  │   Registry      │                         │
-│                  └─────────────────┘                         │
+│  ┌────────────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ Woodpecker Server  │  │  SonarQube   │  │  Portainer  │  │
+│  │ + Agent            │  │   (SAST)     │  │   CE (CD)   │  │
+│  │                    │  │              │  │            │  │
+│  │  - Pipeline YAML   │  │  - Quality   │  │  - Stacks  │  │
+│  │  - GitHub OAuth    │  │    Gates     │  │  - Secrets │  │
+│  │  - CLI triggers    │  │  - Coverage  │  │  - Volumes │  │
+│  └────────────────────┘  └──────────────┘  └──────────────┘  │
+│         │                          │                │      │
+│         └──────────────────────────┴────────────────┘      │
+│                           │                                 │
+│                  ┌────────▼────────┐                        │
+│                  │  CNB Builder    │                        │
+│                  │  (Buildpacks)   │                        │
+│                  └────────┬────────┘                        │
+│                           │                                 │
+│                           ▼                                 │
+│                  ┌─────────────────┐                        │
+│                  │   Docker        │                        │
+│                  │   Registry      │                        │
+│                  └─────────────────┘                        │
 │                                                               │
-└───────────────────────────────────────┬───────────────────────┘
+└───────────────────────────────────────┬─────────────────────┘
                                         │
                                         │ Promotion Path
                                         ▼
@@ -117,13 +117,16 @@ Every pipeline in uFawkesPipe follows these standardized stages:
    ```
 
 5. **Access the platform**
-   - **Woodpecker CI**: http://localhost:8000
-     - Authenticate via GitHub OAuth
-   - **Portainer CD**: https://localhost:9443
-     - Create admin account on first login
-   - **SonarQube**: http://localhost:9001
-     - Username: `admin`
-     - Password: (from `SONARQUBE_ADMIN_PASSWORD` in `.env`)
+
+   | Service | Port | URL |
+   |--------|------|-----|
+   | Woodpecker CI | 8000 | http://localhost:8000 |
+   | Portainer CE | 9443 | https://localhost:9443 |
+   | SonarQube | 9001 | http://localhost:9001 |
+
+   Authenticate via GitHub OAuth for Woodpecker.
+   Create the first admin account for Portainer.
+   SonarQube uses the password configured in `SONARQUBE_ADMIN_PASSWORD` in `.env` (default: `admin`).
 
 ### First Pipeline
 
@@ -219,19 +222,28 @@ Configure in GitHub: Settings → Webhooks → Add webhook
 - Content type: `application/json`
 - Events: Push, Pull Request
 
-### CLI Trigger
+### CLI Commands
 
-Trigger a pipeline from the command line using the Woodpecker CLI:
+**Woodpecker CI** triggers from the command line:
 
 ```bash
-# Install Woodpecker CLI (if not already installed)
-# See https://woodpecker-ci.org/docs/cli
-
-# Trigger the latest pipeline
-woodpecker-cli exec
+# List repositories and pipelines
+woodpecker-cli repo ls
+woodpecker-cli repo info <org/repo>
+woodpecker-cli pipeline ls --repo <org/repo>
 
 # Trigger a specific pipeline
-woodpecker-cli pipeline start <repository-id> <pipeline-number>
+woodpecker-cli pipeline start <org/repo> <pipeline-number>
+```
+
+**Portainer CE** management via CLI:
+
+```bash
+# List all stacks
+docker exec portainer portainer stack ls
+
+# Inspect stack logs
+docker logs portainer
 ```
 
 ## ☸️ Kubernetes Promotion Path
@@ -412,11 +424,11 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 
 | Stack           | Description                                          | Link                                            |
 | --------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/ufawkesobs)  |
-| **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/ufawkespipe) |
-| **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/ufawkesdora) |
-| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/ufawkessec)  |
-| **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/ufawkesdevx) |
-| **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/ufawkesai)   |
+| **uFawkesObs** | Observability — Prometheus, Grafana, AI dashboards | [GitHub](https://github.com/paruff/uFawkesObs) |
+| **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps | [GitHub](https://github.com/paruff/uFawkesPipe) |
+| **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
+| **uFawkesSec** | Security — policy-as-code, supply chain, guardrails | [GitHub](https://github.com/paruff/uFawkesSec) |
+| **uFawkesDevX** | Developer experience — golden paths, IDP templates | [GitHub](https://github.com/paruff/uFawkesDevX) |
+| **uFawkesAI** | AI agent templates — golden path scaffolding | [GitHub](https://github.com/paruff/uFawkesAI) |
 
 **Product Suite Roadmap**: [fawkes/ROADMAP.md](https://github.com/paruff/fawkes/blob/main/ROADMAP.md)
