@@ -1,0 +1,43 @@
+# uFawkesPipe CI Pipeline
+# Runs on every push and pull request
+
+when:
+  - event: [push, pull_request]
+
+steps:
+  - name: lint-yaml
+    image: python:3.12-slim
+    commands:
+      - pip install yamllint --quiet
+      - yamllint compose.yaml .woodpecker.yml .env.example
+
+  - name: lint-shell
+    image: koalaman/shellcheck-alpine:stable
+    commands:
+      - shellcheck scripts/*.sh validate.sh
+
+  - name: validate-pipeline-contract
+    image: python:3.12-slim
+    commands:
+      - pip install -r tests/requirements.txt --quiet
+      - pytest tests/ -v --tb=short
+
+  # trivy:latest is acceptable for scanner images because the latest tag
+  # includes up-to-date vulnerability database entries. Trivy's release
+  # process is stable and breaking changes are rare. Pinning a scanner
+  # image would risk using stale CVE data.
+  - name: security-scan
+    image: aquasec/trivy:latest
+    commands:
+      - trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress .
+    when:
+      - event: push
+        branch: main
+
+  - name: notify-obs
+    image: curlimages/curl:7.88.1
+    commands:
+      - echo "Pipeline complete — deployment event would be sent to uFawkesObs here"
+    when:
+      - event: push
+        branch: main
