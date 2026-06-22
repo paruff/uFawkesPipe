@@ -14,21 +14,34 @@ def project_root():
 
 @pytest.fixture
 def docker_compose_file(project_root):
-    """Return the docker-compose.yml file path."""
+    """Return the docker-compose.yml file path (deprecated - use compose_file)."""
     return project_root / "docker-compose.yml"
 
 
 @pytest.fixture
 def docker_compose_config(docker_compose_file):
-    """Load and return the docker-compose.yml configuration."""
+    """Load and return the docker-compose.yml configuration (deprecated - use compose_config)."""
     with open(docker_compose_file) as f:
         return yaml.safe_load(f)
 
 
 @pytest.fixture
+def compose_file(project_root):
+    """Return the compose.yaml file path."""
+    return project_root / "compose.yaml"
+
+
+@pytest.fixture
+def compose_config(compose_file):
+    """Load and return the compose.yaml configuration."""
+    with open(compose_file) as f:
+        return yaml.safe_load(f)
+
+
+@pytest.fixture
 def jenkinsfile(project_root):
-    """Return the Jenkinsfile path."""
-    return project_root / "Jenkinsfile"
+    """Return the archived Jenkinsfile path."""
+    return project_root / "docs" / "history" / "Jenkinsfile.archived"
 
 
 @pytest.fixture
@@ -40,8 +53,8 @@ def jenkinsfile_content(jenkinsfile):
 
 @pytest.fixture
 def jcasc_dir(project_root):
-    """Return the JCasC configuration directory."""
-    return project_root / "jenkins"
+    """Return the archived JCasC configuration directory."""
+    return project_root / "docs" / "history" / "jenkins"
 
 
 @pytest.fixture

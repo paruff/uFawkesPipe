@@ -82,7 +82,7 @@ echo -e "${GREEN}✅ Secret scan passed${NC}"
 # 4. Check .env files not staged
 echo ""
 echo "🔍 Checking for .env files..."
-env_files=$(git diff --cached --name-only | grep -E '\.env$|\.env\.' || true)
+env_files=$(git diff --cached --name-only | grep -E '\.env$|\.env\.' | grep -v '\.env\.example$' || true)
 if [ -n "$env_files" ]; then
     echo -e "${RED}❌ The following .env files should not be committed:${NC}"
     echo "$env_files"

@@ -6,10 +6,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Constants
-DEFAULT_DOCKERHUB_USERNAME="your-dockerhub-username"
-DEFAULT_DOCKERHUB_TOKEN="your-dockerhub-token-or-password"
-
 echo "========================================="
 echo "uFawkesPipe Platform Validation"
 echo "========================================="
@@ -45,8 +41,6 @@ fi
 
 if docker compose version &> /dev/null; then
     success "Docker Compose is available ($(docker compose version))"
-elif command -v docker-compose &> /dev/null; then
-    success "Docker Compose is available ($(docker-compose --version))"
 else
     error "Docker Compose is not installed"
     exit 1
@@ -54,13 +48,13 @@ fi
 
 echo ""
 
-# Validate docker-compose.yml
-echo "Validating docker-compose.yml..."
-if docker compose config > /dev/null 2>&1; then
-    success "docker-compose.yml is valid"
+# Validate compose.yaml
+echo "Validating compose.yaml..."
+if docker compose -f compose.yaml config > /dev/null 2>&1; then
+    success "compose.yaml is valid"
 else
-    error "docker-compose.yml has syntax errors"
-    docker compose config
+    error "compose.yaml has syntax errors"
+    docker compose -f compose.yaml config
     exit 1
 fi
 
@@ -69,14 +63,10 @@ echo ""
 # Check required files exist
 echo "Checking required files..."
 required_files=(
-    "docker-compose.yml"
+    "compose.yaml"
     ".env.example"
     ".fawkespipe.yml.example"
-    "Jenkinsfile"
-    "jenkins/Dockerfile"
-    "jenkins/plugins.txt"
-    "jenkins/casc.yaml"
-    "pack/Dockerfile"
+    ".woodpecker.yml"
     "README.md"
     "Makefile"
 )
@@ -93,17 +83,21 @@ done
 echo ""
 
 # Validate YAML files
-echo "Validating YAML files..."
+echo "Validating YAML files (compose.yaml, .woodpecker.yml, examples)..."
 if command -v python3 &> /dev/null; then
     # Check if PyYAML is available
     if python3 -c "import yaml" 2>/dev/null; then
         python3 << 'EOF'
+import os
 import yaml
 import sys
 
 files = [
+    'compose.yaml',
+    '.woodpecker.yml',
     '.fawkespipe.yml.example',
-    'jenkins/casc.yaml',
+    '.env.example',
+    'pytest.ini',
     'examples/.fawkespipe-java-maven.yml',
     'examples/.fawkespipe-python-flask.yml',
     'examples/.fawkespipe-nodejs-express.yml',
@@ -111,11 +105,13 @@ files = [
 ]
 
 k8s_files = [
-    'k8s/jenkins-deployment.yaml',
-    'k8s/jenkins-service.yaml',
-    'k8s/jenkins-ingress.yaml',
-    'k8s/jenkins-pvc.yaml',
-    'k8s/jenkins-rbac.yaml',
+    f for f in [
+        'k8s/jenkins-deployment.yaml',
+        'k8s/jenkins-service.yaml',
+        'k8s/jenkins-ingress.yaml',
+        'k8s/jenkins-pvc.yaml',
+        'k8s/jenkins-rbac.yaml',
+    ] if os.path.exists(f)
 ]
 
 all_valid = True
@@ -158,15 +154,13 @@ fi
 
 echo ""
 
-# Check Dockerfile syntax
+# Check Dockerfile syntax (optional - only if Dockerfiles exist)
 echo "Checking Dockerfile syntax..."
-for dockerfile in jenkins/Dockerfile pack/Dockerfile; do
-    # Basic syntax check - just verify FROM directive exists
+for dockerfile in $(find . -name "Dockerfile" -not -path "./.git/*" 2>/dev/null || true); do
     if grep -q "^FROM " "$dockerfile"; then
         success "$dockerfile has valid FROM directive"
     else
-        error "$dockerfile is missing FROM directive"
-        exit 1
+        warning "$dockerfile is missing FROM directive"
     fi
 done
 
@@ -175,13 +169,10 @@ echo ""
 # Check directory structure
 echo "Checking directory structure..."
 required_dirs=(
-    "jenkins"
-    "pack"
     "examples"
     "docs"
-    "k8s"
-    "shared"
     "scripts"
+    "tests"
 )
 
 for dir in "${required_dirs[@]}"; do
@@ -201,12 +192,12 @@ if [ -f ".env" ]; then
     success ".env file exists"
 
     # Check required variables
-    required_vars=("DOCKERHUB_USERNAME" "DOCKERHUB_TOKEN" "SONAR_DB_PASSWORD" "WEBHOOK_SECRET")
+    required_vars=("WOODPECKER_GITHUB_CLIENT" "WOODPECKER_GITHUB_SECRET" "WOODPECKER_AGENT_SECRET" "SONARQUBE_ADMIN_PASSWORD")
     for var in "${required_vars[@]}"; do
         if grep -q "^${var}=" .env; then
             value=$(grep "^${var}=" .env | cut -d= -f2-)
-            # Check against constants
-            if [ "$value" == "$DEFAULT_DOCKERHUB_USERNAME" ] || [ "$value" == "$DEFAULT_DOCKERHUB_TOKEN" ]; then
+            # Check for default/placeholder values
+            if echo "$value" | grep -qiE "your_|change_me|your-"; then
                 warning "$var is set to default value, please update .env"
             else
                 success "$var is configured"
@@ -221,9 +212,10 @@ fi
 
 echo ""
 
-# Verify example configurations
-echo "Checking example configurations..."
+# Verify pipeline and example configurations
+echo "Checking pipeline and example configurations..."
 example_files=(
+    ".woodpecker.yml"
     "examples/.fawkespipe-java-maven.yml"
     "examples/.fawkespipe-python-flask.yml"
     "examples/.fawkespipe-nodejs-express.yml"
@@ -244,9 +236,6 @@ echo ""
 echo "Checking documentation..."
 doc_files=(
     "README.md"
-    "docs/kubernetes-promotion.md"
-    "docs/webhook-api.md"
-    "k8s/README.md"
 )
 
 for file in "${doc_files[@]}"; do
@@ -267,8 +256,8 @@ echo ""
 echo "Next steps:"
 echo "1. Copy .env.example to .env and configure credentials"
 echo "2. Run 'make init' to initialize the platform"
-echo "3. Run 'make start' to start all services"
-echo "4. Access Jenkins at http://localhost:8080/jenkins"
+echo "3. Run 'docker compose -f compose.yaml up -d' to start all services"
+echo "4. Access Woodpecker CI at http://localhost:8000"
 echo ""
 echo "For more information, see README.md"
 

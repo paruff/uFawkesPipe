@@ -9,8 +9,8 @@ class TestJenkinsfileValidation:
     """Validate Jenkinsfile structure and best practices."""
 
     def test_jenkinsfile_exists(self, jenkinsfile):
-        """Jenkinsfile must exist in project root."""
-        assert jenkinsfile.exists(), "Jenkinsfile not found"
+        """Archived Jenkinsfile must exist."""
+        assert jenkinsfile.exists(), f"Archived Jenkinsfile not found at {jenkinsfile}"
 
     def test_jenkinsfile_not_empty(self, jenkinsfile_content):
         """Jenkinsfile must not be empty."""

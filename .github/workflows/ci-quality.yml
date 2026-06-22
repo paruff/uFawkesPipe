@@ -39,12 +39,6 @@ jobs:
                 indent-sequences: whatever
                 check-multi-line-strings: false
 
-      - name: Hadolint Dockerfiles
-        uses: hadolint/hadolint-action@v3.3.0
-        with:
-          dockerfile: jenkins/Dockerfile
-          failure-threshold: warning
-
       - name: Hadolint pack Dockerfile
         uses: hadolint/hadolint-action@v3.3.0
         with:
@@ -80,8 +74,8 @@ jobs:
       - name: Check required files exist
         run: |
           missing=0
-          for f in docker-compose.yml .env.example .fawkespipe.yml.example jenkins/Dockerfile \
-                    jenkins/plugins.txt jenkins/casc.yaml pack/Dockerfile README.md Makefile; do
+          for f in docker-compose.yml .env.example .fawkespipe.yml.example \
+                    pack/Dockerfile README.md Makefile; do
             if [ ! -f "$f" ]; then
               echo "❌ Missing: $f"
               missing=$((missing + 1))
@@ -95,7 +89,7 @@ jobs:
       - name: Verify Phase A rename complete
         run: |
           if grep -rn "deliveryd" --include="*.md" --include="*.sh" --include="Makefile" \
-               --include="*.yml" --include="*.yaml" --include="*.groovy" --include="Jenkinsfile" \
+               --include="*.yml" --include="*.yaml" --include="*.groovy" \
                --include="*.txt" --include="*.json" . 2>/dev/null \
                | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml" \
                | grep -v "scripts/pre-commit.sh" | grep -v "ci-quality.yml"; then
@@ -152,12 +146,12 @@ jobs:
         run: |
           echo "🔍 Checking pinned tool versions for known CVEs..."
           # Pack CLI version
-          pack_version=$(grep -oP 'pack-v\K[0-9.]+(?=/pack)' jenkins/Dockerfile || true)
+          pack_version=$(grep -oP 'pack-v\K[0-9.]+(?=/pack)' docs/history/jenkins/Dockerfile || true)
           echo "Pack CLI version: ${pack_version:-unknown}"
           # Dependency-Check version
-          dc_version=$(grep -oP 'DependencyCheck/releases/download/v\K[0-9.]+(?=/)' jenkins/Dockerfile || true)
+          dc_version=$(grep -oP 'DependencyCheck/releases/download/v\K[0-9.]+(?=/)' docs/history/jenkins/Dockerfile || true)
           echo "Dependency-Check version: ${dc_version:-unknown}"
           # Hadolint version
-          hadolint_version=$(grep -oP 'hadolint/releases/download/v\K[0-9.]+(?=/)' jenkins/Dockerfile || true)
+          hadolint_version=$(grep -oP 'hadolint/releases/download/v\K[0-9.]+(?=/)' docs/history/jenkins/Dockerfile || true)
           echo "Hadolint version: ${hadolint_version:-unknown}"
           echo "✅ Tool versions logged (review manually for CVEs)"

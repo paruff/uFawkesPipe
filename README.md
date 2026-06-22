@@ -1,10 +1,10 @@
 # uFawkesPipe
 
-[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml)
+[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
-uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for polyglot application development with a standardized pipeline contract. It provides automated build, test, security scanning, and deployment capabilities using Cloud Native Buildpacks and modern DevSecOps practices.
+uFawkesPipe is a Woodpecker CI pipeline engine with Portainer CD, SonarQube SAST, and Cloud Native Buildpacks — the CI/CD plane of the Fawkes IDP.
 
 ## 🚀 Features
 
@@ -12,14 +12,14 @@ uFawkesPipe is a production-ready CI/CD platform built on Jenkins, designed for 
 - **Standard Pipeline Contract** - Define CI/CD behavior via `.fawkespipe.yml` configuration
 - **Cloud Native Buildpacks** - Build OCI-compliant container images without Dockerfiles
 - **Security First** - Integrated SAST, dependency scanning, and container image scanning
-- **Jenkins-based** - Robust, battle-tested CI/CD orchestration
+- **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration
 - **Webhook APIs** - External planes can trigger pipelines via REST APIs
 - **K8s Ready** - Clear promotion path to Kubernetes production environments
-- **Single-node Dev** - Full stack runs on docker-compose for local development
+- **Single-node Dev** - Full stack runs on Docker Compose for local development
 
 ## 📋 Pipeline Stages
 
-Every pipeline in uFawkesPipe follows these standardized stages:
+Every pipeline in uFawkesPipe follows these standardized stages, defined in `.woodpecker.yml`:
 
 1. **Lint** - Code quality and style checks (language-specific)
 2. **Unit Tests** - Automated testing with coverage reporting
@@ -37,29 +37,29 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 │                    uFawkesPipe Platform                      │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Jenkins    │  │  SonarQube   │  │  Dependency  │      │
-│  │   Master     │  │   (SAST)     │  │    Check     │      │
-│  │              │  │              │  │              │      │
-│  │  - Webhooks  │  │  - Quality   │  │  - OWASP DC  │      │
-│  │  - Pipelines │  │    Gates     │  │  - Trivy     │      │
-│  │  - JCasC     │  │  - Coverage  │  │              │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│         │                  │                  │              │
-│         └──────────────────┴──────────────────┘              │
-│                           │                                  │
-│                  ┌────────▼────────┐                         │
-│                  │   CNB Builder   │                         │
-│                  │   (Pack CLI)    │                         │
-│                  └────────┬────────┘                         │
-│                           │                                  │
-│                           ▼                                  │
-│                  ┌─────────────────┐                         │
-│                  │   DockerHub     │                         │
-│                  │   Registry      │                         │
-│                  └─────────────────┘                         │
+│  ┌────────────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ Woodpecker Server  │  │  SonarQube   │  │  Portainer  │  │
+│  │ + Agent            │  │   (SAST)     │  │   CE (CD)   │  │
+│  │                    │  │              │  │            │  │
+│  │  - Pipeline YAML   │  │  - Quality   │  │  - Stacks  │  │
+│  │  - GitHub OAuth    │  │    Gates     │  │  - Secrets │  │
+│  │  - CLI triggers    │  │  - Coverage  │  │  - Volumes │  │
+│  └────────────────────┘  └──────────────┘  └──────────────┘  │
+│         │                          │                │      │
+│         └──────────────────────────┴────────────────┘      │
+│                           │                                 │
+│                  ┌────────▼────────┐                        │
+│                  │  CNB Builder    │                        │
+│                  │  (Buildpacks)   │                        │
+│                  └────────┬────────┘                        │
+│                           │                                 │
+│                           ▼                                 │
+│                  ┌─────────────────┐                        │
+│                  │   Docker        │                        │
+│                  │   Registry      │                        │
+│                  └─────────────────┘                        │
 │                                                               │
-└───────────────────────────────────────┬───────────────────────┘
+└───────────────────────────────────────┬─────────────────────┘
                                         │
                                         │ Promotion Path
                                         ▼
@@ -91,36 +91,42 @@ Every pipeline in uFawkesPipe follows these standardized stages:
 
    ```bash
    cp .env.example .env
-   # Edit .env with your credentials
+   # Edit .env with your credentials and OAuth keys
    nano .env
    ```
 
    **Required configuration:**
 
-   - `DOCKERHUB_USERNAME` - Your DockerHub username
-   - `DOCKERHUB_TOKEN` - DockerHub access token or password
-   - `JENKINS_ADMIN_PASSWORD` - Change default admin password
+   - `REGISTRY_USERNAME` - Your registry username
+   - `REGISTRY_TOKEN` - DockerHub access token or password
+   - `WOODPECKER_GITHUB_CLIENT` - GitHub OAuth client ID
+   - `WOODPECKER_GITHUB_SECRET` - GitHub OAuth client secret
+   - `WOODPECKER_AGENT_SECRET` - Shared secret between server and agent
+   - `SONARQUBE_ADMIN_PASSWORD` - Change default SonarQube admin password
 
 3. **Start the platform**
 
    ```bash
-   docker-compose up -d
+   make up
    ```
 
-4. **Wait for services to start** (2-3 minutes)
+4. **Wait for services to start** (<30 seconds)
 
    ```bash
-   docker-compose logs -f jenkins
-   # Wait for "Jenkins is fully up and running"
+   make logs
    ```
 
 5. **Access the platform**
-   - **Jenkins**: http://localhost:8080/jenkins
-     - Username: `admin`
-     - Password: (from `.env` file)
-   - **SonarQube**: http://localhost:9000
-     - Username: `admin`
-     - Password: `admin` (change on first login) # pragma: allowlist secret
+
+   | Service       | Port | URL                    |
+   | ------------- | ---- | ---------------------- |
+   | Woodpecker CI | 8000 | http://localhost:8000  |
+   | Portainer CE  | 9443 | https://localhost:9443 |
+   | SonarQube     | 9001 | http://localhost:9001  |
+
+   Authenticate via GitHub OAuth for Woodpecker.
+   Create the first admin account for Portainer.
+   SonarQube uses the password configured in `SONARQUBE_ADMIN_PASSWORD` in `.env` (default: `admin`).
 
 ### First Pipeline
 
@@ -163,18 +169,24 @@ Every pipeline in uFawkesPipe follows these standardized stages:
        enabled: true
    ```
 
-2. **Copy the standard Jenkinsfile to your repo**
+2. **Create a `.woodpecker.yml` in your application repository**
 
-   ```bash
-    cp /path/to/uFawkesPipe/Jenkinsfile /path/to/your/repo/
+   ```yaml
+   pipeline:
+     build:
+       image: alpine:3.20
+       commands:
+         - echo "Building $(basename $(pwd))..."
    ```
 
-3. **Create a pipeline job in Jenkins**
-   - Go to Jenkins → New Item
-   - Choose "Pipeline"
-   - Configure Git repository URL
-   - Set Script Path to `Jenkinsfile`
-   - Save and run!
+3. **Add the pipeline to Woodpecker CI**
+
+   - Go to Woodpecker CI → Repositories
+   - Activate your repository
+   - Woodpecker will automatically discover `.woodpecker.yml`
+   - Push code to trigger the pipeline!
+
+   See `.woodpecker.yml` for uFawkesPipe's own pipeline definition.
 
 ## 📖 Pipeline Contract Reference
 
@@ -197,45 +209,42 @@ The `.fawkespipe.yml` file defines how your application should be built and depl
 
 ## 🔌 Webhook API
 
-uFawkesPipe exposes Jenkins webhook APIs for external plane integration.
+uFawkesPipe exposes Woodpecker CI webhooks for external plane integration.
 
 ### Trigger Pipeline via Webhook
 
-**Generic Webhook Trigger** (recommended for external systems):
-
-```bash
-curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "repo_url": "https://github.com/user/repo",
-    "branch": "main",
-    "webhook_secret": "your-secret" # pragma: allowlist secret
-  }'
-```
+Woodpecker CI automatically receives push webhooks from GitHub when a repository is activated.
 
 **GitHub Webhook Integration**:
 
 Configure in GitHub: Settings → Webhooks → Add webhook
 
-- Payload URL: `http://your-jenkins:8080/jenkins/github-webhook/`
+- Payload URL: `http://your-woodpecker:8000/api/hooks/<repository-id>`
 - Content type: `application/json`
 - Events: Push, Pull Request
 
-### REST API
+### CLI Commands
 
-Jenkins provides a full REST API:
+**Woodpecker CI** triggers from the command line:
 
 ```bash
-# Get job info
-curl -u admin:password "http://localhost:8080/jenkins/job/my-job/api/json"
+# List repositories and pipelines
+woodpecker-cli repo ls
+woodpecker-cli repo info <org/repo>
+woodpecker-cli pipeline ls --repo <org/repo>
 
-# Trigger build with parameters
-curl -X POST -u admin:password \
-  "http://localhost:8080/jenkins/job/my-job/buildWithParameters?BRANCH=develop"
+# Trigger a specific pipeline
+woodpecker-cli pipeline start <org/repo> <pipeline-number>
+```
 
-# Get build status
-curl -u admin:password \
-  "http://localhost:8080/jenkins/job/my-job/lastBuild/api/json"
+**Portainer CE** management via CLI:
+
+```bash
+# List all stacks
+docker exec portainer portainer stack ls
+
+# Inspect stack logs
+docker logs portainer
 ```
 
 ## ☸️ Kubernetes Promotion Path
@@ -250,34 +259,9 @@ uFawkesPipe is designed for single-node development but provides a clear path to
 
 ### Migration to Kubernetes
 
-**Replace docker-compose services with K8s manifests:**
+**Deploy uFawkesPipe services on Kubernetes using the manifests in `k8s/`:**
 
-```yaml
-# Jenkins on K8s
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: jenkins
-spec:
-  serviceName: jenkins
-  replicas: 1
-  template:
-    spec:
-      containers:
-        - name: jenkins
-          image: ufawkespipe/jenkins:latest
-          volumeMounts:
-            - name: jenkins-home
-              mountPath: /var/jenkins_home
-  volumeClaimTemplates:
-    - metadata:
-        name: jenkins-home
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 20Gi
-```
+See [`k8s/`](./k8s/) for example Kubernetes manifests for Woodpecker, Portainer, and SonarQube.
 
 **Kubernetes Pipeline Integration:**
 
@@ -331,18 +315,18 @@ kubernetes:
 
 ## 🔧 Configuration
 
-### Jenkins Configuration as Code (JCasC)
+### Pipeline Configuration
 
-Jenkins is configured via `jenkins/casc.yaml`. Modify this file to:
+The pipeline is defined in `.woodpecker.yml`. Customize it to:
 
-- Add users and permissions
-- Configure external integrations
-- Set up pipeline libraries
-- Define global tool installations
+- Add or remove pipeline steps
+- Configure Docker-in-Docker for container builds
+- Set environment variables for different stages
+- Define secrets for registry authentication
 
 ### Service Configuration
 
-Edit `docker-compose.yml` to:
+Edit `compose.yaml` to:
 
 - Change exposed ports
 - Add more services (Nexus, Harbor, etc.)
@@ -353,44 +337,43 @@ Edit `docker-compose.yml` to:
 
 Persistent data is stored in Docker volumes:
 
-- `jenkins_home` - Jenkins data and jobs
+- `woodpecker_data` - Woodpecker CI database and config
+- `portainer_data` - Portainer CD data
 - `sonarqube_data` - SonarQube analysis data
-- `sonarqube_db` - PostgreSQL database
-- `dependency_check_data` - CVE database cache
 - `pack_cache` - CNB build cache
 
 **Backup volumes:**
 
 ```bash
-docker run --rm -v ufp_jenkins_home:/data -v $(pwd):/backup alpine \
-  tar czf /backup/jenkins-backup.tar.gz -C /data .
+docker run --rm -v ufp_woodpecker_data:/data -v $(pwd):/backup alpine \
+  tar czf /backup/woodpecker-backup.tar.gz -C /data .
 ```
 
 ## 🐛 Troubleshooting
 
-### Jenkins won't start
+### Woodpecker won't start
 
 ```bash
 # Check logs
-docker-compose logs jenkins
+make logs
 
-# Increase memory
-# Edit docker-compose.yml: JAVA_OPTS=-Xmx4g
+# Check Woodpecker status
+make status
 
-# Reset Jenkins
-docker-compose down
-docker volume rm ufp_jenkins_home
-docker-compose up -d
+# Reset Woodpecker data
+make down
+docker volume rm ufp_woodpecker_data
+make up
 ```
 
 ### SonarQube quality gate fails
 
 ```bash
 # Check SonarQube logs
-docker-compose logs sonarqube
+make logs sonarqube
 
 # Access SonarQube UI to review quality gate rules
-# http://localhost:9000
+# http://localhost:9001
 ```
 
 ### Pack build fails
@@ -402,7 +385,7 @@ docker ps
 # Verify builder image
 docker pull paketobuildpacks/builder:base
 
-# Check pack logs in Jenkins build console
+# Check pack logs in Woodpecker CI build output
 ```
 
 ### Dependency-Check is slow
@@ -413,7 +396,7 @@ docker pull paketobuildpacks/builder:base
 
 ## 📚 Additional Resources
 
-- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
+- [Woodpecker CI Documentation](https://woodpecker-ci.org/docs/intro)
 - [Cloud Native Buildpacks](https://buildpacks.io/)
 - [SonarQube Documentation](https://docs.sonarqube.org/)
 - [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/)
@@ -425,7 +408,7 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
 ## 🙋 Support
 
@@ -442,11 +425,11 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 
 | Stack           | Description                                          | Link                                            |
 | --------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/ufawkesobs)  |
-| **uFawkesPipe** | CI/CD — Jenkins, Buildpacks, DevSecOps               | [GitHub](https://github.com/paruff/ufawkespipe) |
-| **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/ufawkesdora) |
-| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/ufawkessec)  |
-| **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/ufawkesdevx) |
-| **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/ufawkesai)   |
+| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/uFawkesObs)  |
+| **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
+| **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
+| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/uFawkesSec)  |
+| **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |
+| **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/uFawkesAI)   |
 
 **Product Suite Roadmap**: [fawkes/ROADMAP.md](https://github.com/paruff/fawkes/blob/main/ROADMAP.md)

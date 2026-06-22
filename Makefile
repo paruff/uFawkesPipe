@@ -1,4 +1,4 @@
-.PHONY: help test test-unit test-integration test-smoke test-acceptance validate pre-commit-setup pre-commit-run
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-jenkins validate-k8s pre-commit-setup pre-commit-run up down logs status clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -32,10 +32,10 @@ test-coverage: ## Run tests with coverage report
 
 validate: validate-docker validate-jenkins validate-k8s ## Run all validations
 
-validate-docker: ## Validate docker-compose.yml
-	@echo "Validating docker-compose.yml..."
-	docker compose config --quiet
-	@echo "✅ docker-compose.yml is valid"
+validate-docker: ## Validate compose.yaml
+	@echo "Validating compose.yaml..."
+	docker compose -f compose.yaml config --quiet
+	@echo "✅ compose.yaml is valid"
 
 validate-jenkins: ## Validate Jenkinsfile syntax
 	@echo "Validating Jenkinsfile..."
@@ -68,17 +68,17 @@ pre-commit-run: ## Run pre-commit hooks on all files
 # Docker Commands
 # ============================================================================
 
-up: ## Start Docker Compose stack
-	docker compose up -d
+up: ## Start uFawkesPipe stack (compose.yaml)
+	docker compose -f compose.yaml up -d
 
-down: ## Stop Docker Compose stack
-	docker compose down -v
+down: ## Stop uFawkesPipe stack (compose.yaml)
+	docker compose -f compose.yaml down -v
 
-logs: ## View Docker Compose logs
-	docker compose logs -f
+logs: ## View uFawkesPipe stack logs (compose.yaml)
+	docker compose -f compose.yaml logs -f
 
-ps: ## List running containers
-	docker compose ps
+status: ## List running containers in uFawkesPipe stack
+	docker compose -f compose.yaml ps
 
 # ============================================================================
 # Cleanup
@@ -87,4 +87,30 @@ ps: ## List running containers
 clean: ## Clean up test artifacts
 	rm -rf .pytest_cache __pycache__ tests/__pycache__ tests/unit/__pycache__ tests/integration/__pycache__ tests/smoke/__pycache__ tests/acceptance/__pycache__
 	rm -rf htmlcov .coverage coverage.xml
-	docker compose down -v --remove-orphans 2>/dev/null || true
+	docker compose -f compose.yaml down -v --remove-orphans 2>/dev/null || true
+
+init: ## Initialize .env from .env.example if not present
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "✅ Created .env from .env.example — edit it with your secrets"; \
+	else \
+		echo "⚠️  .env already exists — skipping"; \
+	fi
+
+check-env: ## Validate required environment variables
+	@echo "Checking required environment variables..."
+	@MISSING=0; \
+	for var in WOODPECKER_GITHUB_CLIENT WOODPECKER_GITHUB_SECRET WOODPECKER_AGENT_SECRET; do \
+		if [ -z "$${!var}" ]; then \
+			echo "  ❌ $$var is not set"; \
+			MISSING=1; \
+		else \
+			echo "  ✅ $$var is set"; \
+		fi; \
+	done; \
+	if [ "$$MISSING" -eq 1 ]; then \
+		echo "⚠️  Some required variables are missing. Check your .env file."; \
+		exit 1; \
+	else \
+		echo "✅ All required environment variables are set."; \
+	fi
