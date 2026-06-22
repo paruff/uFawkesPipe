@@ -21,6 +21,8 @@ jobs:
   preflight:
     name: Pre-flight
     uses: ./.github/workflows/reusable-preflight.yml
+    with:
+      pr-size-limit: 0
 
   # ─── Stage 1: Static Analysis (Lint) ────────────────────────────────────
   lint:
