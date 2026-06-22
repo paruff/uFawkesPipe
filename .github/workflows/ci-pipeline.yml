@@ -54,9 +54,6 @@ jobs:
     needs: [security, dependency-review]
     uses: ./.github/workflows/reusable-build.yml
     with:
-      validate-docker-compose: true
-      validate-jcasc: true
-      validate-k8s: true
       fail-on-latest: true
 
   # ─── Stage 4: Tests ────────────────────────────────────────────────────

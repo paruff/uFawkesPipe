@@ -118,11 +118,11 @@ Every pipeline in uFawkesPipe follows these standardized stages, defined in `.wo
 
 5. **Access the platform**
 
-   | Service | Port | URL |
-   |--------|------|-----|
-   | Woodpecker CI | 8000 | http://localhost:8000 |
-   | Portainer CE | 9443 | https://localhost:9443 |
-   | SonarQube | 9001 | http://localhost:9001 |
+   | Service       | Port | URL                    |
+   | ------------- | ---- | ---------------------- |
+   | Woodpecker CI | 8000 | http://localhost:8000  |
+   | Portainer CE  | 9443 | https://localhost:9443 |
+   | SonarQube     | 9001 | http://localhost:9001  |
 
    Authenticate via GitHub OAuth for Woodpecker.
    Create the first admin account for Portainer.
@@ -180,6 +180,7 @@ Every pipeline in uFawkesPipe follows these standardized stages, defined in `.wo
    ```
 
 3. **Add the pipeline to Woodpecker CI**
+
    - Go to Woodpecker CI → Repositories
    - Activate your repository
    - Woodpecker will automatically discover `.woodpecker.yml`
@@ -424,11 +425,11 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 
 | Stack           | Description                                          | Link                                            |
 | --------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| **uFawkesObs** | Observability — Prometheus, Grafana, AI dashboards | [GitHub](https://github.com/paruff/uFawkesObs) |
-| **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps | [GitHub](https://github.com/paruff/uFawkesPipe) |
+| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/uFawkesObs)  |
+| **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
-| **uFawkesSec** | Security — policy-as-code, supply chain, guardrails | [GitHub](https://github.com/paruff/uFawkesSec) |
-| **uFawkesDevX** | Developer experience — golden paths, IDP templates | [GitHub](https://github.com/paruff/uFawkesDevX) |
-| **uFawkesAI** | AI agent templates — golden path scaffolding | [GitHub](https://github.com/paruff/uFawkesAI) |
+| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/uFawkesSec)  |
+| **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |
+| **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/uFawkesAI)   |
 
 **Product Suite Roadmap**: [fawkes/ROADMAP.md](https://github.com/paruff/fawkes/blob/main/ROADMAP.md)

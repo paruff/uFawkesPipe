@@ -4,15 +4,15 @@
 
 **Jenkins** (CI/CD orchestrator) → **Woodpecker CI** (pipeline engine) + **Portainer CE** (deployment management)
 
-| Component | Pre-migration | Post-migration |
-|-----------|--------------|----------------|
-| Pipeline engine | Jenkins Master (v2.492.x) | Woodpecker Server + Agent (v3.15.0) |
-| Pipeline definition | Jenkinsfile (Groovy/Jenkins DSL) | `.woodpecker.yml` (YAML) |
+| Component             | Pre-migration                    | Post-migration                        |
+| --------------------- | -------------------------------- | ------------------------------------- |
+| Pipeline engine       | Jenkins Master (v2.492.x)        | Woodpecker Server + Agent (v3.15.0)   |
+| Pipeline definition   | Jenkinsfile (Groovy/Jenkins DSL) | `.woodpecker.yml` (YAML)              |
 | Configuration as code | JCasC YAML (`jenkins/casc.yaml`) | Woodpecker UI + environment variables |
-| Deployment/CD | Jenkins pipeline stages | Portainer CE (Docker management UI) |
-| Service orchestration | `docker-compose.yml` | `compose.yaml` |
-| Plugin management | `jenkins/plugins.txt` | Not applicable (Woodpecker built-in) |
-| Shared libraries | `shared/vars/*.groovy` | Woodpecker pipeline workflows |
+| Deployment/CD         | Jenkins pipeline stages          | Portainer CE (Docker management UI)   |
+| Service orchestration | `docker-compose.yml`             | `compose.yaml`                        |
+| Plugin management     | `jenkins/plugins.txt`            | Not applicable (Woodpecker built-in)  |
+| Shared libraries      | `shared/vars/*.groovy`           | Woodpecker pipeline workflows         |
 
 ## Why
 
@@ -26,14 +26,14 @@
 
 **June 2026** — uFawkesPipe migrated from Jenkins to Woodpecker CI + Portainer CD as part of the PIPE-01 feature set.
 
-| Migration Step | Date | Commit |
-|----------------|------|--------|
-| LICENSE change (MIT → Apache 2.0) | Jun 2026 | `PIPE-01-01` |
+| Migration Step                                             | Date     | Commit       |
+| ---------------------------------------------------------- | -------- | ------------ |
+| LICENSE change (MIT → Apache 2.0)                          | Jun 2026 | `PIPE-01-01` |
 | `compose.yaml` created with Woodpecker/Portainer/SonarQube | Jun 2026 | `PIPE-01-02` |
-| `.env.example` updated for Woodpecker | Jun 2026 | `PIPE-01-03` |
-| `.woodpecker.yml` pipeline created | Jun 2026 | `PIPE-01-04` |
-| Test suite migrated from Jenkins to woodpecker-validated | Jun 2026 | `PIPE-01-05` |
-| Jenkins artifacts archived | Jun 2026 | `PIPE-01-06` |
+| `.env.example` updated for Woodpecker                      | Jun 2026 | `PIPE-01-03` |
+| `.woodpecker.yml` pipeline created                         | Jun 2026 | `PIPE-01-04` |
+| Test suite migrated from Jenkins to woodpecker-validated   | Jun 2026 | `PIPE-01-05` |
+| Jenkins artifacts archived                                 | Jun 2026 | `PIPE-01-06` |
 
 ## How to Access Historical Jenkins Pipeline Runs
 

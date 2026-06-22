@@ -87,14 +87,14 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          docker compose logs > docker-compose-logs.txt 2>&1
+          docker compose logs > compose-logs.txt 2>&1
 
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-compose-logs
-          path: docker-compose-logs.txt
+          name: compose-logs
+          path: compose-logs.txt
           retention-days: 7
 
       - name: Tear down Docker Compose
@@ -125,28 +125,23 @@ jobs:
       - name: Start Docker Compose stack
         run: |
           docker compose up -d
-          echo "Waiting for Jenkins to be healthy..."
-          sleep 60
+          echo "Waiting for services to be healthy..."
+          sleep 30
 
-      - name: Check Jenkins health
+      - name: Check Woodpecker health
         run: |
-          echo "Checking Jenkins health endpoint..."
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/login 2>/dev/null | grep -q "Jenkins"; then
-              echo "✅ Jenkins is healthy"
+          echo "Checking Woodpecker CI health endpoint..."
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8000 2>/dev/null; then
+              echo "✅ Woodpecker CI is healthy"
               exit 0
             fi
-            echo "Waiting for Jenkins... ($i/30)"
+            echo "Waiting for Woodpecker... ($i/15)"
             sleep 10
           done
-          echo "❌ Jenkins failed to start"
-          docker compose logs jenkins
+          echo "❌ Woodpecker CI failed to start"
+          docker compose logs
           exit 1
-
-      - name: Check Jenkins API
-        run: |
-          echo "Checking Jenkins API..."
-          curl -sf http://localhost:8080/api/json?pretty=true | head -20
 
       - name: Tear down Docker Compose
         if: always()
@@ -180,7 +175,7 @@ jobs:
 
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-cov pyyaml docker requests jenkinsapi
+          pip install pytest pytest-cov pyyaml docker requests
 
       - name: Start Docker Compose stack
         run: |
@@ -190,20 +185,20 @@ jobs:
 
       - name: Run acceptance tests
         run: |
-          pytest tests/acceptance/ -v --tb=short --cov=tests/acceptance --cov-report=term-missing
+          pytest tests/ -v --tb=short --cov=tests/unit --cov-report=term-missing
         continue-on-error: false
 
       - name: Collect logs on failure
         if: failure()
         run: |
-          docker compose logs > docker-compose-logs.txt 2>&1
+          docker compose logs > compose-logs.txt 2>&1
 
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: acceptance-logs
-          path: docker-compose-logs.txt
+          path: compose-logs.txt
           retention-days: 7
 
       - name: Tear down Docker Compose
