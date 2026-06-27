@@ -22,7 +22,7 @@ on:
         description: "Comma-separated test tiers: unit, compose-smoke, integration, e2e, docs"
         required: false
         type: string
-        default: "unit,compose-smoke,integration,docs"
+        default: "unit,compose-smoke,integration,e2e,docs"
       python-version:
         description: "Python version for test runners"
         required: false
@@ -63,6 +63,11 @@ on:
         required: false
         type: number
         default: 80
+      coverage-paths:
+        description: "Comma-separated package paths to measure coverage (e.g. 'compute,ingestion')"
+        required: false
+        type: string
+        default: ""
       setup-command:
         description: "Setup command to run before tests"
         required: false
@@ -116,7 +121,19 @@ jobs:
         run: ${{ inputs.setup-command }}
 
       - name: Run unit tests
-        run: ${{ inputs.unit-test-command }}
+        run: |
+          COV_ARGS=""
+          THRESHOLD="${{ inputs.coverage-threshold }}"
+          PATHS="${{ inputs.coverage-paths }}"
+          if [ -n "$THRESHOLD" ] && [ "$THRESHOLD" != "0" ] && [ -n "$PATHS" ]; then
+            IFS=',' read -ra PKG <<< "$PATHS"
+            for pkg in "${PKG[@]}"; do
+              pkg=$(echo "$pkg" | xargs)
+              COV_ARGS="$COV_ARGS --cov=$pkg"
+            done
+            COV_ARGS="$COV_ARGS --cov-report=term-missing --cov-fail-under=$THRESHOLD"
+          fi
+          ${{ inputs.unit-test-command }} $COV_ARGS
 
       - name: Upload test results
         if: always()
