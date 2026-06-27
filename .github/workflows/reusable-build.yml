@@ -43,12 +43,33 @@ on:
         required: false
         type: boolean
         default: true
+      enable-coverage-gate:
+        description: "Enable coverage quality gate"
+        required: false
+        type: boolean
+        default: true
+      coverage-threshold:
+        description: "Minimum coverage percentage for quality gate"
+        required: false
+        type: number
+        default: 60
+      python-version:
+        description: "Python version for coverage gate"
+        required: false
+        type: string
+        default: "3.11"
+      coverage-paths:
+        description: "Comma-separated package paths to measure coverage"
+        required: false
+        type: string
+        default: "compute,ingestion"
 
-permissions:
-  contents: read
+permissions: {}  # deny all at workflow level; grant per job below
 
 jobs:
   build-validate:
+    permissions:
+      contents: read
     name: Build & Validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -62,7 +83,7 @@ jobs:
           echo "job:${{ github.job }}"
 
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.1
 
       # ─── Supply Chain ────────────────────────────────────────────────────
       - name: Fail if ':latest' is used
@@ -123,6 +144,53 @@ jobs:
             echo "⚠️  No Grafana provisioning directory found"
           fi
 
+      # ─── Coverage Quality Gate ─────────────────────────────────────────
+      - name: Set up Python for coverage
+        if: inputs.enable-coverage-gate
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.1.1
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install test dependencies
+        if: inputs.enable-coverage-gate
+        run: |
+          pip install -r requirements-test.txt
+
+      - name: Run coverage quality gate
+        if: inputs.enable-coverage-gate
+        id: coverage
+        continue-on-error: true
+        run: |
+          THRESHOLD=${{ inputs.coverage-threshold }}
+          PATHS="${{ inputs.coverage-paths }}"
+          COV_ARGS=""
+          IFS=',' read -ra PKG <<< "$PATHS"
+          for pkg in "${PKG[@]}"; do
+            pkg=$(echo "$pkg" | xargs)
+            COV_ARGS="$COV_ARGS --cov=$pkg"
+          done
+
+          # Run unit tests with coverage, fail if below threshold
+          if [ -d "tests/unit" ]; then
+            echo "Running coverage gate at ${THRESHOLD}%..."
+            if pytest tests/unit/ -v --tb=short $COV_ARGS \
+              --cov-report=term-missing \
+              --cov-fail-under=$THRESHOLD; then
+              echo "coverage_result=pass" >> $GITHUB_OUTPUT
+            else
+              echo "coverage_result=failure" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No unit tests found, skipping coverage gate"
+            echo "coverage_result=skip" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check coverage result
+        if: inputs.enable-coverage-gate && steps.coverage.outputs.coverage_result == 'failure'
+        run: |
+          echo "::error::Coverage gate FAILED — below ${{ inputs.coverage-threshold }}% threshold"
+          exit 1
+
       # ─── Build Summary ──────────────────────────────────────────────────
       - name: Generate build summary
         if: always()
@@ -145,6 +213,15 @@ jobs:
           fi
           if [ "${{ inputs.validate-grafana }}" == "true" ]; then
             echo "- ✅ Grafana provisioning validated" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "${{ inputs.enable-coverage-gate }}" == "true" ]; then
+            if [ "${{ steps.coverage.outputs.coverage_result }}" == "pass" ]; then
+              echo "- ✅ Coverage gate: ${{ inputs.coverage-threshold }}% threshold met" >> $GITHUB_STEP_SUMMARY
+            elif [ "${{ steps.coverage.outputs.coverage_result }}" == "skip" ]; then
+              echo "- ⏭️ Coverage gate: skipped (no unit tests)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ❌ Coverage gate: BELOW ${{ inputs.coverage-threshold }}% threshold" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
 
       - name: DORA job finish

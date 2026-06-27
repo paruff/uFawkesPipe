@@ -15,8 +15,9 @@ application development with a standardised pipeline contract. It provides autom
 build, test, security scanning, and deployment capabilities via Docker Compose.
 
 **Stack:**
+
 | Component | Role |
-|---|---|
+| --- | --- |
 | Jenkins (via Docker Compose) | Pipeline orchestration |
 | Docker Compose | Service orchestration for the platform itself |
 | `jenkins/` | Jenkins configuration as code (JCasC), plugin lists |
