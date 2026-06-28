@@ -57,6 +57,7 @@ jobs:
     uses: ./.github/workflows/reusable-build.yml
     with:
       fail-on-latest: true
+      coverage-paths: "tests"
 
   # ─── Stage 4: Tests ────────────────────────────────────────────────────
   tests:
