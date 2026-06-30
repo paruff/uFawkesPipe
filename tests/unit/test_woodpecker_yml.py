@@ -4,8 +4,6 @@ Validates step ordering, image pinning, and required commands
 for the v0.2 pipeline specification.
 """
 
-import pytest
-
 
 class TestWoodpeckerYamlValid:
     """Basic structural validation of .woodpecker.yml."""
@@ -80,12 +78,10 @@ class TestSecretsScanStep:
         steps = woodpecker_config["steps"]
         commands = steps[1].get("commands", [])
         command_str = " ".join(commands)
-        assert (
-            "--report-format=json" in command_str
-        ), f"secrets-scan must use '--report-format=json', got: {command_str}"
-        assert (
-            "--report-path=artifacts/security/gitleaks.json" in command_str
-        ), (
+        assert "--report-format=json" in command_str, (
+            f"secrets-scan must use '--report-format=json', got: {command_str}"
+        )
+        assert "--report-path=artifacts/security/gitleaks.json" in command_str, (
             f"secrets-scan must write to 'artifacts/security/gitleaks.json', "
             f"got: {command_str}"
         )
@@ -109,9 +105,7 @@ class TestSecretsScanStep:
         assert "latest" not in image, (
             f"secrets-scan image must be pinned, got '{image}'"
         )
-        assert ":" in image, (
-            f"secrets-scan image must have a tag, got '{image}'"
-        )
+        assert ":" in image, f"secrets-scan image must have a tag, got '{image}'"
 
 
 class TestInitStep:
@@ -131,6 +125,4 @@ class TestInitStep:
         commands = steps[0].get("commands", [])
         command_str = " ".join(commands)
         for d in ["artifacts/security", "artifacts/coverage", "artifacts/tests"]:
-            assert d in command_str, (
-                f"init must create '{d}', got: {command_str}"
-            )
+            assert d in command_str, f"init must create '{d}', got: {command_str}"
