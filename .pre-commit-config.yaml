@@ -88,3 +88,16 @@ repos:
         entry: scripts/commit-msg.sh
         language: script
         stages: [commit-msg]
+
+  # ============================================================================
+  # Pre-push Validation (safety net)
+  # ============================================================================
+  - repo: local
+    hooks:
+      - id: pre-push-validation
+        name: Pre-push validation
+        entry: pre-commit run --all-files
+        language: system
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false
