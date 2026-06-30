@@ -96,7 +96,7 @@ repos:
     hooks:
       - id: pre-push-validation
         name: Pre-push validation
-        entry: pre-commit run --all-files
+        entry: bash -c 'pre-commit run --all-files'
         language: system
-        stages: [push]
+        stages: [pre-push]
         always_run: true
