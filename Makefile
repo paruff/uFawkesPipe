@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean network
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -68,7 +68,10 @@ pre-commit-run: ## Run pre-commit hooks on all files
 # Docker Commands
 # ============================================================================
 
-up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
+network: ## Ensure fawkes-net Docker network exists
+	docker network create fawkes-net 2>/dev/null || true
+
+up: network ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
 down: ## Stop uFawkesPipe stack — standalone mode (compose.yaml)
