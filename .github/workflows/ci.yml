@@ -30,8 +30,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pre-commit
-        run: pip install pre-commit
+      - name: Install pre-commit and ruff
+        run: pip install pre-commit ruff
 
       - name: Cache pre-commit environments
         uses: actions/cache@v6
@@ -41,5 +41,11 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Run pre-commit hooks
-        run: pre-commit run --all-files
+      - name: Run pre-commit hooks (non-fixing)
+        run: SKIP="ruff,ruff-format" pre-commit run --all-files
+
+      - name: Check Python lint (read-only)
+        run: ruff check .
+
+      - name: Check Python format (read-only)
+        run: ruff format --check .

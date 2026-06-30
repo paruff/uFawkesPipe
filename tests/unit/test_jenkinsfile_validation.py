@@ -17,15 +17,15 @@ class TestJenkinsfileValidation:
 
     def test_has_pipeline_block(self, jenkinsfile_content):
         """Jenkinsfile must have a pipeline block."""
-        assert re.search(r"pipeline\s*\{", jenkinsfile_content), (
-            "Jenkinsfile missing 'pipeline {' block"
-        )
+        assert re.search(
+            r"pipeline\s*\{", jenkinsfile_content
+        ), "Jenkinsfile missing 'pipeline {' block"
 
     def test_has_agent(self, jenkinsfile_content):
         """Jenkinsfile must specify an agent."""
-        assert re.search(r"agent\s+(any|none|\{)", jenkinsfile_content), (
-            "Jenkinsfile missing 'agent' declaration"
-        )
+        assert re.search(
+            r"agent\s+(any|none|\{)", jenkinsfile_content
+        ), "Jenkinsfile missing 'agent' declaration"
 
     def test_has_stages(self, jenkinsfile_content):
         """Jenkinsfile must have at least one stage."""
@@ -34,9 +34,9 @@ class TestJenkinsfileValidation:
 
     def test_has_post_block(self, jenkinsfile_content):
         """Jenkinsfile should have a post block for cleanup."""
-        assert re.search(r"post\s*\{", jenkinsfile_content), (
-            "Jenkinsfile missing 'post {' block"
-        )
+        assert re.search(
+            r"post\s*\{", jenkinsfile_content
+        ), "Jenkinsfile missing 'post {' block"
 
     def test_no_hardcoded_credentials(self, jenkinsfile_content):
         """Jenkinsfile must not contain hardcoded credentials."""
@@ -48,9 +48,9 @@ class TestJenkinsfileValidation:
         ]
         for pattern in sensitive_patterns:
             matches = re.findall(pattern, jenkinsfile_content, re.IGNORECASE)
-            assert len(matches) == 0, (
-                f"Jenkinsfile contains hardcoded credential: {pattern}"
-            )
+            assert (
+                len(matches) == 0
+            ), f"Jenkinsfile contains hardcoded credential: {pattern}"
 
     def test_has_timeout(self, jenkinsfile_content):
         """Jenkinsfile should have a timeout to prevent hung builds."""
@@ -67,6 +67,6 @@ class TestJenkinsfileValidation:
         stages = re.findall(r"stage\s*\(\s*['\"](.+?)['\"]", jenkinsfile_content)
         for stage_name in stages:
             assert len(stage_name) > 0, "Stage has empty name"
-            assert not stage_name.startswith("Stage"), (
-                f"Stage name '{stage_name}' is generic"
-            )
+            assert not stage_name.startswith(
+                "Stage"
+            ), f"Stage name '{stage_name}' is generic"

@@ -74,9 +74,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pre-commit
+      - name: Install pre-commit and ruff
         if: steps.bypass.outputs.skipped != 'true'
-        run: pip install pre-commit
+        run: pip install pre-commit ruff
 
       - name: Cache pre-commit environments
         if: steps.bypass.outputs.skipped != 'true'
@@ -87,9 +87,17 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Run pre-commit hooks
+      - name: Run pre-commit hooks (non-fixing)
         if: steps.bypass.outputs.skipped != 'true'
-        run: pre-commit run --all-files
+        run: SKIP="ruff,ruff-format" pre-commit run --all-files
+
+      - name: Check Python lint (read-only)
+        if: steps.bypass.outputs.skipped != 'true'
+        run: ruff check .
+
+      - name: Check Python format (read-only)
+        if: steps.bypass.outputs.skipped != 'true'
+        run: ruff format --check .
 
       # ── Local Preflight Script ──────────────────────────────────────────────
       - name: Run local preflight checks
