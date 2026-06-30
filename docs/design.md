@@ -1,4 +1,5 @@
 # uFawkesPipe — Design v0.2
+
 *CI/CD Plane of the Fawkes IDP Family*
 
 **Status:** Draft — 2026-06-23
@@ -324,7 +325,7 @@ validation, required fields, valid language values). These tests run in CI in th
 ### 6.2 New tests for v0.2
 
 | Test file | What it validates |
-|---|---|
+| --- | --- |
 | `tests/test_woodpecker_yml.py` | `.woodpecker.yml` parses as valid YAML; required step names present; `secrets-scan` appears before `build` |
 | `tests/test_artifact_dirs.py` | `init` step commands create the three expected artifact directories |
 | `tests/test_compose_network.py` | `compose.yaml` declares `fawkes-net`; Woodpecker agent has `WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net` |
@@ -339,7 +340,7 @@ a v0.3 item.
 ## 7. File Change Summary
 
 | File | Action | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `.woodpecker.yml` | **Replace** | Full rewrite per section 5 above |
 | `compose.yaml` | **Modify** | Add `fawkes-net` external network; update agent env var |
 | `Makefile` | **Modify** | Add `network` target; update `up` to depend on it |
@@ -354,6 +355,7 @@ a v0.3 item.
 
 ## 8. Risks and Mitigations
 
+<!-- markdownlint-disable MD056 MD060 -->
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | DefectDojo `import-scan` API signature differs from assumed | Medium | Verify against running DefectDojo instance before implementing WP-003; `|| echo WARN` prevents hard fail |
@@ -361,3 +363,4 @@ a v0.3 item.
 | `fawkes-net` not created before `make up` | High | `make network` target creates it idempotently (`docker network create fawkes-net || true`) |
 | Trivy image scan fails if build skipped on PR branch | Medium | `when: branch: main` on both build and image-scan steps; they share the same condition |
 | SonarQube community edition limits on analysis frequency | Low | Single-node dev; not a concern at current scale |
+<!-- markdownlint-enable MD056 MD060 -->

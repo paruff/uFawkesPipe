@@ -1,4 +1,5 @@
 # uFawkesPipe — Specification v0.2
+
 *CI/CD Plane of the Fawkes IDP Family*
 
 **Status:** Draft — 2026-06-23
@@ -37,7 +38,7 @@ Portainer + CNB) to the v0.2 target state that adds:
 ## 2. Personas and JTBD
 
 | Persona | Job To Be Done |
-|---|---|
+| --- | --- |
 | **App developer** | Push code and get a pass/fail signal with actionable security findings in under 10 min |
 | **Platform engineer** | Onboard a new repo to the pipeline in < 30 min with zero per-app pipeline YAML |
 | **Security engineer** | See all secret and CVE findings aggregated in DefectDojo without touching CI config |
@@ -59,7 +60,7 @@ Portainer + CNB) to the v0.2 target state that adds:
 ### 3.2 Pipeline Stages (ordered, all run in Woodpecker workspace)
 
 | # | Stage | Image (pinned) | Artifact written | Hard gate? |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | 1 | `init` | `alpine:3.20` | Creates `artifacts/{security,coverage,tests}/` dirs | No |
 | 2 | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | `artifacts/security/gitleaks.json` | **Yes** (`--exit-code 1`) |
 | 3 | `lint-yaml` | `python:3.12-slim` | — | No (warn) |
@@ -132,7 +133,7 @@ skipped; the `upload-defectdojo` step must check for file existence before POSTi
 All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` or `.woodpecker.yml`.
 
 | Secret name | Used by stage | Description |
-|---|---|---|
+| --- | --- | --- |
 | `sonar_token` | `sast-sonarqube` | SonarQube user token |
 | `defectdojo_api_token` | `upload-defectdojo` | DefectDojo API token |
 | `portainer_webhook_stack_url` | `deploy-portainer` | Full Portainer webhook URL |
@@ -145,7 +146,7 @@ All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` 
 ## 4. Non-Functional Requirements
 
 | Concern | Requirement |
-|---|---|
+| --- | --- |
 | **Pipeline duration** | End-to-end (excl. first-run CVE DB download) < 10 min on a 4-core dev node |
 | **Image pinning** | All non-scanner images pinned to tag; Trivy exception documented in `.woodpecker.yml` comment |
 | **Secret hygiene** | No secrets in repo files; pre-commit Gitleaks hook enforces this locally |
@@ -171,7 +172,7 @@ All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` 
 ## 6. Open Questions (block implementation if unresolved)
 
 | # | Question | Owner | Target |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Q1 | Is DefectDojo deployed on `fawkes-net` before this work starts? | Platform engineer | Before issue WP-003 |
 | Q2 | Which OCI registry is canonical for v0.2? DockerHub or self-hosted Harbor? | Platform engineer | Before issue WP-005 |
 | Q3 | `notify-obs` payload schema — confirm field names with uFawkesObs team | Platform engineer | Before issue WP-006 |

@@ -1,4 +1,5 @@
 # uFawkesPipe — Implementation Plan v0.2
+
 *Lean issues for Deepseek v4 flash implementation*
 
 **Status:** Draft — 2026-06-23
@@ -11,7 +12,7 @@
 ## Existing open issues — disposition
 
 | Issue | Action |
-|---|---|
+| --- | --- |
 | DY-001 README value proposition | Label `v0.2` — update README after WP-008 |
 | DY-002 GitHub Actions CI | Label `v0.3` — superseded by Woodpecker self-CI; close with comment |
 | DY-003 Pipeline contract explainer | Becomes `docs/pipeline-contract.md` in WP-008 |
@@ -31,16 +32,19 @@
 **Branch:** `feat/WP-001-artifact-dirs`
 
 ### Context
+
 The pipeline currently has no shared artifact directory structure. Scanner steps have
 nowhere standard to write output, and downstream steps have no contract to read from.
 
 ### Acceptance criteria
+
 - [ ] `.woodpecker.yml` first step is named `init`, image `alpine:3.20`
 - [ ] `init` commands: `mkdir -p artifacts/security artifacts/coverage artifacts/tests`
 - [ ] `tests/test_artifact_dirs.py` exists and asserts the three paths appear in `init` commands
 - [ ] `pytest tests/test_artifact_dirs.py` passes
 
 ### Implementation notes
+
 Parse `.woodpecker.yml` in the test using the `pyyaml` library (already in `tests/requirements.txt`
 — verify this; if not present, add it). Assert `steps[0].name == "init"` and that
 `artifacts/security` appears in the commands string.
@@ -55,12 +59,14 @@ Parse `.woodpecker.yml` in the test using the `pyyaml` library (already in `test
 **Branch:** `feat/WP-002-fawkes-net`
 
 ### Context
+
 Pipeline step containers must reach `defectdojo:8080` and `sonarqube:9000` by DNS name.
 This requires the Woodpecker agent and all services to share a named Docker network.
 Currently the stack uses the implicit `ufawkespipe_default` network, which isolates it
 from other stacks.
 
 ### Acceptance criteria
+
 - [ ] `compose.yaml` bottom section declares:
   ```yaml
   networks:
@@ -79,6 +85,7 @@ from other stacks.
 - [ ] `pytest tests/test_compose_network.py` passes
 
 ### Implementation notes
+
 Use `pyyaml` to parse `compose.yaml` in the test. Check
 `parsed["networks"]["fawkes-net"]["external"] == True` and
 `"WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net"` in the agent environment list.
@@ -93,11 +100,13 @@ Use `pyyaml` to parse `compose.yaml` in the test. Check
 **Branch:** `feat/WP-003-secrets-scan`
 
 ### Context
+
 There is currently no secret leak detection in the pipeline. The repo has `.gitleaks.toml`
 and `.secrets.baseline` but CI does not enforce scanning. This step must be the second step
 (after `init`) and must fail the pipeline if any secret is detected.
 
 ### Acceptance criteria
+
 - [ ] Step named `secrets-scan` uses image `zricethezav/gitleaks:v8.18.2`
 - [ ] Command: `gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1`
 - [ ] Step appears in `.woodpecker.yml` immediately after `init`
@@ -106,6 +115,7 @@ and `.secrets.baseline` but CI does not enforce scanning. This step must be the 
 - [ ] `pytest tests/test_woodpecker_yml.py` passes
 
 ### Implementation notes
+
 The `--exit-code=1` flag causes Gitleaks to return exit code 1 on findings, which Woodpecker
 treats as step failure. Verify this flag exists in Gitleaks v8 docs before using
 (it does exist in v8.x; you may want to double-check the exact flag name in the
@@ -121,12 +131,14 @@ Gitleaks v8.18 release notes).
 **Branch:** `feat/WP-004-trivy-scan`
 
 ### Context
+
 The current `.woodpecker.yml` has a single `security-scan` step that exits with code 1 on
 HIGH/CRITICAL. The v0.2 design separates filesystem scan (runs on every push) from image
 scan (runs on `main` only after build), and both write JSON artifacts for DefectDojo
 rather than failing the pipeline directly.
 
 ### Acceptance criteria
+
 - [ ] Step `vuln-scan-fs` uses `aquasec/trivy:latest` with comment explaining unpinned exception
 - [ ] Command: `trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress .`
 - [ ] Step `vuln-scan-image` uses `aquasec/trivy:latest` with `when: branch: main`
@@ -137,6 +149,7 @@ rather than failing the pipeline directly.
 - [ ] `pytest tests/test_woodpecker_yml.py` passes
 
 ### Implementation notes
+
 Woodpecker built-in variable for the short SHA: you will need to verify the exact variable
 name in Woodpecker v3 documentation. The design uses `${CI_COMMIT_SHA:0:7}` (bash substring);
 confirm this works inside Woodpecker step containers or use a separate `export` command.
@@ -151,11 +164,13 @@ confirm this works inside Woodpecker step containers or use a separate `export` 
 **Branch:** `feat/WP-005-defectdojo-upload`
 
 ### Context
+
 Security findings from Gitleaks and Trivy currently go nowhere after the scan steps. This
 step collects the three JSON artifact files and POSTs them to DefectDojo's import-scan API.
 The step is non-blocking (individual upload failures are warned, not fatal).
 
 ### Acceptance criteria
+
 - [ ] Step named `upload-defectdojo` uses `curlimages/curl:8.6.0`
 - [ ] Secret `defectdojo_api_token` injected via `from_secret`
 - [ ] Step only runs on `branch: main`
@@ -181,11 +196,13 @@ depends on your DefectDojo version and configuration. Update the step accordingl
 **Branch:** `feat/WP-006-notify-obs`
 
 ### Context
+
 uFawkesObs needs a deployment event to calculate DORA deployment frequency and lead time.
 This stub step POSTs a structured JSON payload after a successful deploy. It is
 non-blocking.
 
 ### Acceptance criteria
+
 - [ ] Step named `notify-obs` uses `curlimages/curl:8.6.0`
 - [ ] Secret `obs_webhook_url` injected via `from_secret`
 - [ ] Step only runs on `branch: main`
@@ -207,10 +224,12 @@ before this step can be integration-tested. The stub is safe to merge without a 
 **Branch:** `feat/WP-007-quickstart`
 
 ### Context
+
 The current QUICKSTART.md does not mention `fawkes-net`, DefectDojo, or the new Woodpecker
 secrets. A developer following the current guide will get a broken pipeline. Closes DY-004.
 
 ### Acceptance criteria
+
 - [ ] Prerequisites section adds: `docker network create fawkes-net` as step 1
 - [ ] Prerequisites section adds: DefectDojo reachable on `fawkes-net` at `defectdojo:8080`
   (or documents how to skip DefectDojo for local dev by setting `upload-defectdojo`
@@ -231,10 +250,12 @@ secrets. A developer following the current guide will get a broken pipeline. Clo
 **Branch:** `feat/WP-008-docs`
 
 ### Context
+
 README still says "Jenkins-based" in the GitHub description. The pipeline contract explainer
 (DY-003) is missing. Closes DY-001 and DY-003.
 
 ### Acceptance criteria
+
 - [ ] README title and description updated: remove "Jenkins-based"; replace with
   "Woodpecker CI pipeline engine with Portainer CD, SonarQube SAST, DefectDojo security
   ingestion, and Cloud Native Buildpacks"
@@ -254,11 +275,13 @@ README still says "Jenkins-based" in the GitHub description. The pipeline contra
 **Branch:** `feat/WP-009-woodpecker-yml-final`
 
 ### Context
+
 Issues WP-001 through WP-006 each patch `.woodpecker.yml` incrementally. This final issue
 replaces the file with the canonical v0.2 version from design.md §5, ensures all tests
 pass against the complete file, and removes any dead steps from the v0.1 version.
 
 ### Acceptance criteria
+
 - [ ] `.woodpecker.yml` matches the canonical v0.2 structure in design.md §5 exactly
 - [ ] Old `notify-obs` stub step (current `echo "Pipeline complete..."`) removed
 - [ ] All 12 steps present in correct order: init, secrets-scan, lint-yaml, lint-shell,
@@ -273,7 +296,7 @@ pass against the complete file, and removes any dead steps from the v0.1 version
 ## Milestone summary
 
 | Milestone | Issues | Target |
-|---|---|---|
+| --- | --- | --- |
 | **v0.2-core** | WP-001, WP-002, WP-003, WP-004 | Week 3 (per roadmap sequencing) |
 | **v0.2-telemetry** | WP-005, WP-006 | Week 3 |
 | **v0.2-docs** | WP-007, WP-008 | Week 4 |
