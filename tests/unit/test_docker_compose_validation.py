@@ -19,18 +19,18 @@ class TestDockerComposeValidation:
     def test_all_services_have_image_or_build(self, docker_compose_config):
         """Every service must have either 'image' or 'build' specified."""
         for service_name, service_config in docker_compose_config["services"].items():
-            assert (
-                "image" in service_config or "build" in service_config
-            ), f"Service '{service_name}' must have 'image' or 'build'"
+            assert "image" in service_config or "build" in service_config, (
+                f"Service '{service_name}' must have 'image' or 'build'"
+            )
 
     def test_no_latest_tags(self, docker_compose_config):
         """No service should use ':latest' image tags."""
         for service_name, service_config in docker_compose_config["services"].items():
             if "image" in service_config:
                 image = service_config["image"]
-                assert not image.endswith(
-                    ":latest"
-                ), f"Service '{service_name}' uses ':latest' tag: {image}"
+                assert not image.endswith(":latest"), (
+                    f"Service '{service_name}' uses ':latest' tag: {image}"
+                )
 
     def test_all_services_have_healthcheck(self, docker_compose_config):
         """Every service should have a healthcheck defined (soft check)."""
@@ -53,9 +53,9 @@ class TestDockerComposeValidation:
         for service_name, service_config in docker_compose_config["services"].items():
             if "healthcheck" in service_config:
                 healthcheck = service_config["healthcheck"]
-                assert (
-                    "retries" in healthcheck or "test" in healthcheck
-                ), f"Service '{service_name}' healthcheck missing retries/test"
+                assert "retries" in healthcheck or "test" in healthcheck, (
+                    f"Service '{service_name}' healthcheck missing retries/test"
+                )
 
     def test_no_secrets_in_compose(self, docker_compose_config):
         """No hardcoded secrets or credentials in docker-compose.yml."""
@@ -71,9 +71,9 @@ class TestDockerComposeValidation:
             "PRIVATE_KEY: -----BEGIN",
         ]
         for pattern in sensitive_patterns:
-            assert (
-                pattern.lower() not in content.lower()
-            ), f"Found hardcoded secret '{pattern}' in docker-compose.yml"
+            assert pattern.lower() not in content.lower(), (
+                f"Found hardcoded secret '{pattern}' in docker-compose.yml"
+            )
 
     def test_volumes_are_named(self, docker_compose_config):
         """Volumes should be named, not host paths."""
@@ -101,30 +101,30 @@ class TestComposeYamlValidation:
     def test_all_services_have_image(self, compose_config):
         """Every service must have an 'image' specified."""
         for service_name, service_config in compose_config["services"].items():
-            assert (
-                "image" in service_config
-            ), f"Service '{service_name}' must have 'image'"
+            assert "image" in service_config, (
+                f"Service '{service_name}' must have 'image'"
+            )
 
     def test_no_latest_tags(self, compose_config):
         """No service should use ':latest' image tags."""
         for service_name, service_config in compose_config["services"].items():
             if "image" in service_config:
                 image = service_config["image"]
-                assert not image.endswith(
-                    ":latest"
-                ), f"Service '{service_name}' uses ':latest' tag: {image}"
+                assert not image.endswith(":latest"), (
+                    f"Service '{service_name}' uses ':latest' tag: {image}"
+                )
 
     def test_all_services_have_labels(self, compose_config):
         """Every service must have plane/managed-by labels."""
         for service_name, service_config in compose_config["services"].items():
             labels = service_config.get("labels", [])
             label_str = " ".join(labels)
-            assert (
-                "plane=ufawkespipe" in label_str
-            ), f"Service '{service_name}' missing 'plane=ufawkespipe' label"
-            assert (
-                "managed-by=fawkes" in label_str
-            ), f"Service '{service_name}' missing 'managed-by=fawkes' label"
+            assert "plane=ufawkespipe" in label_str, (
+                f"Service '{service_name}' missing 'plane=ufawkespipe' label"
+            )
+            assert "managed-by=fawkes" in label_str, (
+                f"Service '{service_name}' missing 'managed-by=fawkes' label"
+            )
 
     def test_has_volume_declarations(self, compose_config):
         """Top-level volumes must be declared."""
@@ -143,9 +143,9 @@ class TestComposeYamlValidation:
             "PRIVATE_KEY: -----BEGIN",
         ]
         for pattern in sensitive_patterns:
-            assert (
-                pattern.lower() not in content.lower()
-            ), f"Found hardcoded secret '{pattern}' in compose.yaml"
+            assert pattern.lower() not in content.lower(), (
+                f"Found hardcoded secret '{pattern}' in compose.yaml"
+            )
 
     def test_volumes_are_named(self, compose_config):
         """Volumes should be named, not host paths."""

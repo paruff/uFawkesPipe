@@ -52,9 +52,9 @@ class TestK8sManifestsValidation:
     def test_metadata_has_name(self, k8s_configs):
         """All K8s resources must have metadata.name."""
         for filename, config in k8s_configs:
-            assert "name" in config.get(
-                "metadata", {}
-            ), f"{filename} missing 'metadata.name'"
+            assert "name" in config.get("metadata", {}), (
+                f"{filename} missing 'metadata.name'"
+            )
 
     def test_no_host_network(self, k8s_configs):
         """No pod should use hostNetwork (security risk)."""
@@ -62,9 +62,9 @@ class TestK8sManifestsValidation:
             if config.get("kind") in ["Deployment", "StatefulSet", "DaemonSet"]:
                 spec = config.get("spec", {})
                 template = spec.get("template", {}).get("spec", {})
-                assert not template.get(
-                    "hostNetwork", False
-                ), f"{filename} uses hostNetwork (security risk)"
+                assert not template.get("hostNetwork", False), (
+                    f"{filename} uses hostNetwork (security risk)"
+                )
 
     def test_no_privileged_containers(self, k8s_configs):
         """No container should run in privileged mode."""
@@ -78,9 +78,9 @@ class TestK8sManifestsValidation:
                 )
                 for container in containers:
                     security = container.get("securityContext", {})
-                    assert not security.get(
-                        "privileged", False
-                    ), f"{filename} container '{container.get('name')}' runs privileged"
+                    assert not security.get("privileged", False), (
+                        f"{filename} container '{container.get('name')}' runs privileged"
+                    )
 
     def test_has_labels(self, k8s_configs):
         """K8s resources should have labels (soft check)."""
