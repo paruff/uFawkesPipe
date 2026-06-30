@@ -17,7 +17,36 @@
 
 ---
 
-## Jenkins Configuration (jenkins/)
+## Compose (standalone mode — compose.yaml)
+
+| If you change...                                   | You must also update...                                                |
+| -------------------------------------------------- | ---------------------------------------------------------------------- |
+| Woodpecker image version                           | Check compatibility with `.woodpecker.yml` step images; test run       |
+| Woodpecker port (8000 UI / 9000 gRPC)              | `.env.example`; `Makefile`; `docs/`; GitHub webhook URL               |
+| SonarQube image version                            | Test SAST pipeline step; `docs/`                                      |
+| SonarQube port (9001→9000)                         | `docs/`; user access instructions                                     |
+| Portainer image version                            | Test Portainer webhook stack redeploy                                  |
+| Portainer port (9443 HTTPS / 9002 edge)            | `docs/`; user access instructions                                     |
+| Volume names                                       | `make down -v` would lose data; document backup                       |
+| Network name (`ufawkespipe_default`)               | `compose.suite.yaml` reference; step container network configuration   |
+
+---
+
+## Compose (suite mode — compose.suite.yaml)
+
+| If you change...                                   | You must also update...                                                |
+| -------------------------------------------------- | ---------------------------------------------------------------------- |
+| External network name (`fawkes-backbone-net`)      | Must match uFawkesRes `compose.yaml` network name                     |
+| External network name (`observability-lab`)         | Must match uFawkesObs `compose.yaml` network name                     |
+| PostgreSQL connection string for Woodpecker        | Must match uFawkesRes `compose.yaml` credentials                      |
+| PostgreSQL connection string for SonarQube         | Must match uFawkesRes `compose.yaml` credentials                      |
+| OTEL exporter endpoint                            | Must match uFawkesObs `compose.yaml` OTEL collector address          |
+| OTEL exporter protocol                            | Must match uFawkesObs collector receiver config                       |
+| `WOODPECKER_PROMETHEUS_AUTH_TOKEN` format          | Must match Prometheus scrape config in uFawkesObs                     |
+
+---
+
+## Jenkins Configuration (jenkins/) — DEPRECATED
 
 | If you change...            | You must also update...                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------------------- |
@@ -29,7 +58,7 @@
 
 ---
 
-## Shared Library (shared/)
+## Shared Library (shared/) — DEPRECATED
 
 | If you change...                    | You must also update...                                                   |
 | ----------------------------------- | ------------------------------------------------------------------------- |
@@ -39,7 +68,19 @@
 
 ---
 
-## docker-compose.yml
+## Pipeline Definition (.woodpecker.yml)
+
+| If you change...                    | You must also update...                                                   |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| Pipeline step names                 | `docs/ARCHITECTURE.md` step table; uFawkesObs Grafana dashboards          |
+| `notify-obs` event format           | uFawkesObs OTEL log parsing; `docs/` telemetry reference                  |
+| Structured JSON log format           | uFawkesObs Alloy log parsing config; `docs/` logging reference            |
+| Adding or removing a step           | `docs/ARCHITECTURE.md`; test pipeline contract validation                 |
+| Security scan severity thresholds   | `docs/`; team notification about changed gate                            |
+
+---
+
+## docker-compose.yml — DEPRECATED (Jenkins legacy)
 
 | If you change...                   | You must also update...                                    |
 | ---------------------------------- | ---------------------------------------------------------- |
@@ -53,9 +94,15 @@
 
 ## Cross-Plane Impact
 
-| If you change...              | Impact on other planes                                       |
-| ----------------------------- | ------------------------------------------------------------ |
-| OTEL exporter endpoint format | **Obstackd**: pipeline traces may stop arriving              |
-| Jenkins webhook port          | **fawkes**: GitHub webhook configuration for the full IDP    |
-| `.fawkespipe.yml` contract    | **developerd**: developer tooling that reads pipeline status |
-| Pipeline stage names          | **Obstackd**: Grafana dashboards that filter by stage name   |
+| If you change...                    | Impact on other planes                                             |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| OTEL exporter endpoint format       | **uFawkesObs**: pipeline traces/metrics/logs may stop arriving     |
+| OTEL exporter protocol (gRPC→HTTP)  | **uFawkesObs**: collector receiver config must match               |
+| Shared network name (`fawkes-backbone-net`) | **uFawkesRes**: must create network; **uFawkesSec**, **uFawkesDevX**: must attach |
+| Shared network name (`observability-lab`)    | **uFawkesObs**: must create network; telemetry won't flow          |
+| Woodpecker PostgreSQL connection     | **uFawkesRes**: `fawkes-postgres:5432` must accept the connection  |
+| SonarQube PostgreSQL connection       | **uFawkesRes**: `fawkes-postgres:5432` must have `sonar` database  |
+| `.fawkespipe.yml` contract           | **developerd**: developer tooling that reads pipeline status       |
+| Pipeline stage names                 | **uFawkesObs**: Grafana dashboards that filter by stage name       |
+| Deployment event format              | **uFawkesObs**: DORA metrics pipeline that consumes deployment events |
+| Jenkins webhook port (legacy)        | **fawkes**: GitHub webhook configuration for the full IDP          |

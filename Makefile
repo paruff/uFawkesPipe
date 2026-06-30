@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-jenkins validate-k8s pre-commit-setup pre-commit-run up down logs status clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-jenkins validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -42,15 +42,20 @@ validate-jenkins: ## Validate Jenkinsfile syntax
 	@python3 -c "import jenkins_pipeline_linter; jenkins_pipeline_linter.lint_file('Jenkinsfile')" || \
 		echo "⚠️  Jenkinsfile linting skipped (jenkins_pipeline_linter not installed)"
 
-validate-k8s: ## Validate Kubernetes manifests
+validate-k8s: ## Validate Kubernetes manifests (supports multi-document YAML)
 	@echo "Validating K8s manifests..."
 	@for f in k8s/*.yaml; do \
-		echo "  Checking $$f..."; \
-		python3 -c "import yaml; yaml.safe_load(open('$$f'))" || exit 1; \
+		res=$$(python3 -c "import yaml; docs=list(yaml.safe_load_all(open('$$f'))); print(f'  ✅ $$f ({len([d for d in docs if d])} resources)')" 2>&1) || exit 1; \
+		echo "$$res"; \
 	done
 	@echo "✅ K8s manifests are valid YAML"
 
-validate-all: validate-docker validate-k8s ## Validate all (Docker + K8s)
+validate-suite: validate-docker ## Validate suite mode (compose.yaml + compose.suite.yaml)
+	@echo "Validating suite mode compose files..."
+	docker compose -f compose.yaml -f compose.suite.yaml config --quiet
+	@echo "✅ compose.yaml + compose.suite.yaml composition is valid"
+
+validate-all: validate-docker validate-k8s validate-suite ## Validate all (Docker + K8s + Suite)
 	@echo "✅ All validations passed"
 
 # ============================================================================
@@ -68,17 +73,40 @@ pre-commit-run: ## Run pre-commit hooks on all files
 # Docker Commands
 # ============================================================================
 
-up: ## Start uFawkesPipe stack (compose.yaml)
+up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
-down: ## Stop uFawkesPipe stack (compose.yaml)
+down: ## Stop uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml down -v
 
-logs: ## View uFawkesPipe stack logs (compose.yaml)
+logs: ## View uFawkesPipe stack logs — standalone mode (compose.yaml)
 	docker compose -f compose.yaml logs -f
 
-status: ## List running containers in uFawkesPipe stack
+status: ## List running containers — standalone mode
 	docker compose -f compose.yaml ps
+
+# ============================================================================
+# Suite Mode — connects to uFawkesRes + uFawkesObs
+# Prerequisites: uFawkesRes and uFawkesObs stacks must be running
+#   cd ../uFawkesRes && make up
+#   cd ../uFawkesObs && make up
+# ============================================================================
+
+up-suite: ## Start uFawkesPipe stack — suite mode (compose + compose.suite)
+	@echo "ℹ️  Suite mode requires uFawkesRes and uFawkesObs to be running."
+	@echo "   cd ../uFawkesRes && make up"
+	@echo "   cd ../uFawkesObs && make up"
+	@echo ""
+	docker compose -f compose.yaml -f compose.suite.yaml up -d
+
+down-suite: ## Stop uFawkesPipe stack — suite mode (compose + compose.suite)
+	docker compose -f compose.yaml -f compose.suite.yaml down -v
+
+logs-suite: ## View uFawkesPipe stack logs — suite mode
+	docker compose -f compose.yaml -f compose.suite.yaml logs -f
+
+status-suite: ## List running containers — suite mode
+	docker compose -f compose.yaml -f compose.suite.yaml ps
 
 # ============================================================================
 # Cleanup
