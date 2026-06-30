@@ -1,0 +1,58 @@
+# uFawkesPipe — Suite Mode Overlay
+# ==============================================================================
+# Extends compose.yaml to connect uFawkesPipe to the full uFawkesAI suite:
+#   - uFawkesRes: shared PostgreSQL, Valkey cache, Traefik ingress, Authelia SSO
+#   - uFawkesObs: OTEL Collector for metrics/traces/logs, Grafana dashboards
+#
+# Usage:
+#   Standalone: docker compose -f compose.yaml up -d
+#   Suite:      docker compose -f compose.yaml -f compose.suite.yaml up -d
+# ==============================================================================
+
+services:
+  woodpecker-server:
+    environment:
+      # --- Database: uFawkesRes PostgreSQL instead of SQLite ---
+      - WOODPECKER_DATABASE_DRIVER=postgres
+      - WOODPECKER_DATABASE_DATASOURCE=postgres://fawkes:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/woodpecker?sslmode=disable
+      # --- Metrics: Prometheus scrape endpoint ---
+      - WOODPECKER_PROMETHEUS_AUTH_TOKEN=${WOODPECKER_METRICS_TOKEN:-}
+      # --- OTEL: export traces, metrics, logs to uFawkesObs ---
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=ufawkespipe
+      - OTEL_RESOURCE_ATTRIBUTES=service.version=0.3.0,deployment.environment=${UFAWKES_ENVIRONMENT:-development}
+    networks:
+      - fawkes-backbone-net
+      - observability-lab
+
+  woodpecker-agent:
+    networks:
+      - fawkes-backbone-net
+      - observability-lab
+
+  sonarqube:
+    environment:
+      # --- Database: uFawkesRes PostgreSQL instead of embedded H2 ---
+      - SONAR_JDBC_URL=jdbc:postgresql://fawkes-postgres:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD:?}
+    networks:
+      - fawkes-backbone-net
+      - observability-lab
+
+  portainer:
+    networks:
+      - fawkes-backbone-net
+      - observability-lab
+
+# ==============================================================================
+# External networks from other planes
+# ==============================================================================
+networks:
+  fawkes-backbone-net:
+    name: ufawkes-resources_fawkes-backbone-net
+    external: true
+  observability-lab:
+    name: observability-lab
+    external: true

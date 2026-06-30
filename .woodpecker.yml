@@ -1,5 +1,15 @@
 # uFawkesPipe CI Pipeline
 # Runs on every push and pull request
+#
+# Structured JSON logging: All steps emit JSON log entries that uFawkesObs
+# Alloy scrapes from Docker container logs. In standalone mode, these are
+# visible via `docker logs`. In suite mode, Alloy ships them to Loki.
+#
+# Telemetry:
+#   Metrics — Woodpecker server exposes /metrics (prometheus scrape)
+#   Logs — Alloy scrapes Docker container logs (structured JSON)
+#   Traces — future (Woodpecker OTEL native support not yet available)
+#   Events — notify-step emits deployment events (structured JSON)
 
 when:
   - event: [push, pull_request]
@@ -8,28 +18,40 @@ steps:
   - name: lint-yaml
     image: python:3.12-slim
     commands:
-      - pip install yamllint --quiet
-      - yamllint compose.yaml .woodpecker.yml .env.example
+      - pip install yamllint pyyaml --quiet
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"validate","message":"Running yamllint on compose.yaml, .woodpecker.yml, .env.example","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-yaml"}'
+      - yamllint compose.yaml .woodpecker.yml .env.example && rc=$? || rc=$?
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)"'","logger":"validate","message":"yamllint completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-yaml"}'
+      - exit $rc
 
   - name: lint-shell
     image: koalaman/shellcheck-alpine:stable
     commands:
-      - shellcheck scripts/*.sh validate.sh
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"validate","message":"Running shellcheck on scripts/*.sh validate.sh","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-shell"}'
+      - shellcheck scripts/*.sh validate.sh && rc=$? || rc=$?
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)"'","logger":"validate","message":"shellcheck completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-shell"}'
+      - exit $rc
 
   - name: validate-pipeline-contract
     image: python:3.12-slim
     commands:
       - pip install -r tests/requirements.txt --quiet
-      - pytest tests/ -v --tb=short
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"test","message":"Running pipeline contract tests","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
+      - pytest tests/ -v --tb=short --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"test","message":"Pipeline contract tests completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
+      - mkdir -p artifacts/tests
+      - exit $rc
 
-  # trivy:latest is acceptable for scanner images because the latest tag
-  # includes up-to-date vulnerability database entries. Trivy's release
-  # process is stable and breaking changes are rare. Pinning a scanner
-  # image would risk using stale CVE data.
+  # aquasec/trivy:latest is intentionally unpinned — scanner images need
+  # current CVE databases. This is a documented exception to pinned-image policy.
   - name: security-scan
     image: aquasec/trivy:latest
     commands:
-      - trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress .
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Running Trivy filesystem vulnerability scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"security-scan"}'
+      - mkdir -p artifacts/security
+      - trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress --format json --output artifacts/security/trivy-repo.json . && rc=$? || rc=$?
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Trivy scan completed","exit_code":'$rc',"vulnerabilities_found":'$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi)',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"security-scan"}'
+      - exit $rc
     when:
       - event: push
         branch: main
@@ -37,7 +59,49 @@ steps:
   - name: notify-obs
     image: curlimages/curl:7.88.1
     commands:
-      - echo "Pipeline complete — deployment event would be sent to uFawkesObs here"
+      # Emit structured deployment event to stdout (scraped by Alloy in suite mode)
+      - |
+        EVENT_TS=$(date -u +%s%N)
+        cat <<EOF
+        {"@timestamp":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","level":"info","logger":"pipeline","event.type":"deploy","pipeline.number":"${CI_PIPELINE_NUMBER:-0}","git.commit":"${CI_COMMIT_SHA:-unknown}","git.repo":"${CI_REPO:-unknown}","git.branch":"${CI_COMMIT_BRANCH:-unknown}","pipeline":"deployment-event","step":"notify-obs"}
+        EOF
+      # Attempt to send event to uFawkesObs OTEL collector (suite mode only)
+      # Falls back gracefully with warning if otel-collector is unreachable
+      - |
+        curl -sf -X POST "http://otel-collector:4318/v1/logs" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "resourceLogs": [{
+              "resource": {
+                "attributes": [
+                  {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
+                  {"key": "service.version", "value": {"stringValue": "0.3.0"}},
+                  {"key": "deployment.environment", "value": {"stringValue": "'"${UFAWKES_ENVIRONMENT:-development}"'"}}
+                ]
+              },
+              "scopeLogs": [{
+                "scope": {"name": "ufawkespipe.pipeline"},
+                "logRecords": [{
+                  "timeUnixNano": "'"$(date -u +%s%N)"'",
+                  "observedTimeUnixNano": "'"$(date -u +%s%N)"'",
+                  "severityNumber": 9,
+                  "severityText": "Info",
+                  "body": {"stringValue": "Pipeline completed"},
+                  "attributes": [
+                    {"key": "event.type", "value": {"stringValue": "deploy"}},
+                    {"key": "pipeline.number", "value": {"stringValue": "'"${CI_PIPELINE_NUMBER:-0}"'"}},
+                    {"key": "git.commit", "value": {"stringValue": "'"${CI_COMMIT_SHA:-unknown}"'"}},
+                    {"key": "git.repo", "value": {"stringValue": "'"${CI_REPO:-unknown}"'"}},
+                    {"key": "git.branch", "value": {"stringValue": "'"${CI_COMMIT_BRANCH:-unknown}"'"}},
+                    {"key": "pipeline.duration_ms", "value": {"stringValue": "'"${CI_PIPELINE_DURATION:-0}"'"}},
+                    {"key": "pipeline.status", "value": {"stringValue": "success"}}
+                  ]
+                }]
+              }]
+            }]
+          }' \
+          && echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"pipeline","message":"Deployment event sent to uFawkesObs OTEL collector","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs","otel_endpoint":"otel-collector:4318"}' \
+          || echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"pipeline","message":"uFawkesObs OTEL collector not reachable — event logged to stdout only","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'
     when:
       - event: push
         branch: main
