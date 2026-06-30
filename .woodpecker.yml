@@ -15,6 +15,13 @@ when:
   - event: [push, pull_request]
 
 steps:
+  - name: init
+    image: alpine:3.20
+    commands:
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"init","message":"Creating artifact directories","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"init"}'
+      - mkdir -p artifacts/security artifacts/coverage artifacts/tests
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"init","message":"Artifact directories created","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"init"}'
+
   - name: lint-yaml
     image: python:3.12-slim
     commands:
@@ -39,7 +46,6 @@ steps:
       - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"test","message":"Running pipeline contract tests","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
       - pytest tests/ -v --tb=short --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
       - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"test","message":"Pipeline contract tests completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
-      - mkdir -p artifacts/tests
       - exit $rc
 
   # aquasec/trivy:latest is intentionally unpinned — scanner images need
@@ -48,7 +54,6 @@ steps:
     image: aquasec/trivy:latest
     commands:
       - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Running Trivy filesystem vulnerability scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"security-scan"}'
-      - mkdir -p artifacts/security
       - trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress --format json --output artifacts/security/trivy-repo.json . && rc=$? || rc=$?
       - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Trivy scan completed","exit_code":'$rc',"vulnerabilities_found":'$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi)',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"security-scan"}'
       - exit $rc
