@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run network up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite validate-agents pre-commit-setup pre-commit-run fix-and-commit network up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -30,7 +30,7 @@ test-coverage: ## Run tests with coverage report
 # Validation Commands
 # ============================================================================
 
-validate: validate-docker validate-k8s ## Run all validations (Docker + K8s)
+validate: validate-docker validate-k8s validate-agents ## Run all validations (Docker + K8s + Agents)
 
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
@@ -50,8 +50,12 @@ validate-suite: validate-docker ## Validate suite mode (compose.yaml + compose.s
 	docker compose -f compose.yaml -f compose.suite.yaml config --quiet
 	@echo "✅ compose.yaml + compose.suite.yaml composition is valid"
 
-validate-all: validate-docker validate-k8s validate-suite ## Validate all (Docker + K8s + Suite)
+validate-all: validate-docker validate-k8s validate-suite validate-agents ## Validate all (Docker + K8s + Suite + Agents)
 	@echo "✅ All validations passed"
+
+validate-agents: ## Validate agent and skill definitions
+	@echo "Validating agent and skill definitions..."
+	bash scripts/validate-agents.sh
 
 # ============================================================================
 # Pre-commit Commands
@@ -60,9 +64,16 @@ validate-all: validate-docker validate-k8s validate-suite ## Validate all (Docke
 pre-commit-setup: ## Install pre-commit hooks
 	pip install pre-commit
 	pre-commit install
+	pre-commit install --hook-type pre-push
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
+
+fix-and-commit: ## Run pre-commit, stage fixes, commit with conventional message
+	@pre-commit run --all-files
+	@git add -u
+	@read -p "Commit message (type(scope): desc): " msg; \
+	git commit -m "$$msg"
 
 # ============================================================================
 # Docker Commands
