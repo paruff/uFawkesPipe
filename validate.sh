@@ -96,8 +96,6 @@ files = [
     'compose.yaml',
     '.woodpecker.yml',
     '.fawkespipe.yml.example',
-    '.env.example',
-    'pytest.ini',
     'examples/.fawkespipe-java-maven.yml',
     'examples/.fawkespipe-python-flask.yml',
     'examples/.fawkespipe-nodejs-express.yml',

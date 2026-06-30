@@ -351,7 +351,7 @@ compose.yaml + compose.suite.yaml → make up-suite
 
 The current stack uses **Woodpecker CI** as its pipeline engine. The previous architecture used **Jenkins**. The deprecated `docker-compose.yml` and `k8s/` manifests still reference Jenkins.
 
-### Deprecated Jenkins stack:
+### Deprecated Jenkins stack
 
 ```
 docker-compose.yml (deprecated):
@@ -362,7 +362,7 @@ docker-compose.yml (deprecated):
   - (optional) nexus (artifact repository)
 ```
 
-### Migration status:
+### Migration status
 
 | Component | Old (Jenkins) | New (Woodpecker) | Status |
 | --------- | ------------- | ----------------- | ------ |
@@ -376,7 +376,7 @@ docker-compose.yml (deprecated):
 | Shared lib | `shared/` (Jenkins vars/) | `.fawkespipe.yml` contract | 🔄 Partial |
 | K8s manifests | Jenkins-based | Needs update | ❌ Pending |
 
-### Why the migration happened:
+### Why the migration happened
 
 1. **Simpler configuration** — Woodpecker uses a single `.woodpecker.yml` file vs Jenkins' JCasC + plugin matrix
 2. **Lighter footprint** — Woodpecker is lighter than Jenkins (SQLite vs no DB for basic use)

@@ -42,11 +42,11 @@ validate-jenkins: ## Validate Jenkinsfile syntax
 	@python3 -c "import jenkins_pipeline_linter; jenkins_pipeline_linter.lint_file('Jenkinsfile')" || \
 		echo "⚠️  Jenkinsfile linting skipped (jenkins_pipeline_linter not installed)"
 
-validate-k8s: ## Validate Kubernetes manifests
+validate-k8s: ## Validate Kubernetes manifests (supports multi-document YAML)
 	@echo "Validating K8s manifests..."
 	@for f in k8s/*.yaml; do \
-		echo "  Checking $$f..."; \
-		python3 -c "import yaml; yaml.safe_load(open('$$f'))" || exit 1; \
+		res=$$(python3 -c "import yaml; docs=list(yaml.safe_load_all(open('$$f'))); print(f'  ✅ $$f ({len([d for d in docs if d])} resources)')" 2>&1) || exit 1; \
+		echo "$$res"; \
 	done
 	@echo "✅ K8s manifests are valid YAML"
 
