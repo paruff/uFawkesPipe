@@ -22,6 +22,16 @@ steps:
       - mkdir -p artifacts/security artifacts/coverage artifacts/tests
       - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"init","message":"Artifact directories created","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"init"}'
 
+  # Gitleaks secret scan — hard gate. Uses .gitleaks.toml for custom rules
+  # and .secrets.baseline for known false positives.
+  - name: secrets-scan
+    image: zricethezav/gitleaks:v8.18.2
+    commands:
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting Gitleaks secret scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"secrets-scan"}'
+      - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1 && rc=$? || rc=$?
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Gitleaks scan completed","exit_code":'$rc',"secrets_found":$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi),"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"secrets-scan"}'
+      - exit $rc
+
   - name: lint-yaml
     image: python:3.12-slim
     commands:

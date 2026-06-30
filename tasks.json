@@ -1,0 +1,57 @@
+{
+  "feature": "WP-003",
+  "title": "Add secrets-scan (Gitleaks) as hard gate step",
+  "description": "Add a Gitleaks secrets-scan step as the second step in .woodpecker.yml, immediately after init. Must fail the pipeline with exit code 1 on any secret detection.",
+  "depends_on": ["WP-001"],
+  "branch": "feat/WP-003-secrets-scan",
+  "tasks": [
+    {
+      "id": "WP-003-01",
+      "title": "Add secrets-scan step to .woodpecker.yml",
+      "description": "Insert a new step named 'secrets-scan' at index 1 (after 'init') using image zricethezav/gitleaks:v8.18.2. Command: gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1. Add a comment referencing .gitleaks.toml and .secrets.baseline above the step.",
+      "depends_on": [],
+      "acceptance": [
+        "Step named 'secrets-scan' exists at index 1 (zero-based) in steps list",
+        "Image is zricethezav/gitleaks:v8.18.2",
+        "Command includes --exit-code=1",
+        "Command includes --report-path=artifacts/security/gitleaks.json",
+        "Comment references .gitleaks.toml and .secrets.baseline"
+      ]
+    },
+    {
+      "id": "WP-003-02",
+      "title": "Create test_woodpecker_yml.py to validate pipeline structure",
+      "description": "Create tests/unit/test_woodpecker_yml.py with tests that parse .woodpecker.yml via pyyaml and assert: valid YAML, step index 1 is 'secrets-scan', step names in order (init, secrets-scan, lint-yaml, ...), image pinning, and required commands.",
+      "depends_on": ["WP-003-01"],
+      "acceptance": [
+        "tests/unit/test_woodpecker_yml.py exists",
+        "Test asserts 'secrets-scan' is at index 1 (zero-based) in steps list",
+        "Test asserts init is at index 0",
+        "Test asserts secrets-scan uses correct image",
+        "Test asserts secrets-scan has --exit-code=1 flag",
+        "pytest tests/unit/test_woodpecker_yml.py passes"
+      ]
+    },
+    {
+      "id": "WP-003-03",
+      "title": "Update docs/plan.md to mark WP-003 acceptance as test-covered",
+      "description": "Update docs/plan.md to check off the acceptance criteria boxes for WP-003 and note that automated tests exist.",
+      "depends_on": ["WP-003-02"],
+      "acceptance": [
+        "docs/plan.md WP-003 acceptance checkboxes updated"
+      ]
+    },
+    {
+      "id": "WP-003-04",
+      "title": "Run full validation suite",
+      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions.",
+      "depends_on": ["WP-003-02"],
+      "acceptance": [
+        "pytest tests/ passes with zero failures",
+        "make validate passes",
+        "yamllint .woodpecker.yml reports zero errors",
+        "pre-commit run --all-files passes"
+      ]
+    }
+  ]
+}
