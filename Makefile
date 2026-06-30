@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run network up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -68,6 +68,9 @@ pre-commit-run: ## Run pre-commit hooks on all files
 # Docker Commands
 # ============================================================================
 
+network: ## Ensure fawkes-net Docker network exists
+	docker network create fawkes-net 2>/dev/null || true
+
 up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
@@ -87,7 +90,7 @@ status: ## List running containers — standalone mode
 #   cd ../uFawkesObs && make up
 # ============================================================================
 
-up-suite: ## Start uFawkesPipe stack — suite mode (compose + compose.suite)
+up-suite: network ## Start uFawkesPipe stack — suite mode (compose + compose.suite)
 	@echo "ℹ️  Suite mode requires uFawkesRes and uFawkesObs to be running."
 	@echo "   cd ../uFawkesRes && make up"
 	@echo "   cd ../uFawkesObs && make up"

@@ -25,11 +25,16 @@ services:
     networks:
       - fawkes-backbone-net
       - observability-lab
+      - fawkes-net
 
   woodpecker-agent:
+    environment:
+      # Pipeline step containers join fawkes-net to reach suite services
+      - WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net
     networks:
       - fawkes-backbone-net
       - observability-lab
+      - fawkes-net
 
   sonarqube:
     environment:
@@ -40,11 +45,13 @@ services:
     networks:
       - fawkes-backbone-net
       - observability-lab
+      - fawkes-net
 
   portainer:
     networks:
       - fawkes-backbone-net
       - observability-lab
+      - fawkes-net
 
 # ==============================================================================
 # External networks from other planes
@@ -55,4 +62,7 @@ networks:
     external: true
   observability-lab:
     name: observability-lab
+    external: true
+  fawkes-net:
+    name: fawkes-net
     external: true

@@ -51,7 +51,7 @@ Parse `.woodpecker.yml` in the test using the `pyyaml` library (already in `test
 
 ---
 
-## WP-002 · Add `fawkes-net` external network to `compose.yaml` and `Makefile`
+## WP-002 · Add `fawkes-net` external network for suite mode
 
 **Type:** chore / infra
 **Estimated effort:** 45 min
@@ -62,33 +62,35 @@ Parse `.woodpecker.yml` in the test using the `pyyaml` library (already in `test
 
 Pipeline step containers must reach `defectdojo:8080` and `sonarqube:9000` by DNS name.
 This requires the Woodpecker agent and all services to share a named Docker network.
-Currently the stack uses the implicit `ufawkespipe_default` network, which isolates it
-from other stacks.
+The `fawkes-net` network is only needed in **suite mode** (when running with uFawkesRes
+and uFawkesObs). Standalone mode uses the default Docker Compose network.
 
 ### Acceptance criteria
 
-- [ ] `compose.yaml` bottom section declares:
-  ```yaml
-  networks:
-    fawkes-net:
-      external: true
-      name: fawkes-net
-  ```
-- [ ] All four services (`woodpecker-server`, `woodpecker-agent`, `sonarqube`, `portainer`)
-  have `networks: [fawkes-net]`
-- [ ] `woodpecker-agent` env var changed from `WOODPECKER_BACKEND_DOCKER_NETWORK=ufawkespipe_default`
-  to `WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net`
-- [ ] `Makefile` has a `network` target: `docker network create fawkes-net || true`
-- [ ] `Makefile` `up` target calls `make network` before `docker compose up`
-- [ ] `tests/test_compose_network.py` asserts `fawkes-net` external network declared and
-  agent env var is correct
-- [ ] `pytest tests/test_compose_network.py` passes
+#### Standalone mode (`compose.yaml` alone)
+
+- [x] Standalone `compose.yaml` does NOT declare `fawkes-net` — uses default compose network
+- [x] No service explicitly attaches to a named network — compose creates `ufawkespipe_default` automatically
+- [x] `woodpecker-agent` does NOT set `WOODPECKER_BACKEND_DOCKER_NETWORK` — step containers use agent's default network
+- [x] `Makefile` `up` target does NOT depend on `network`
+
+#### Suite mode (`compose.yaml` + `compose.suite.yaml`)
+
+- [x] `compose.suite.yaml` bottom section declares `fawkes-net` as an external network
+- [x] All four services (`woodpecker-server`, `woodpecker-agent`, `sonarqube`, `portainer`)
+  attach to `fawkes-net` in addition to `fawkes-backbone-net` and `observability-lab`
+- [x] `woodpecker-agent` sets `WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net` (override in suite file)
+- [x] `Makefile` has a `network` target: `docker network create fawkes-net || true`
+- [x] `Makefile` `up-suite` target depends on `network`
+- [x] `tests/unit/test_compose_network.py` asserts standalone/suite split is correct
+- [x] `pytest tests/unit/test_compose_network.py` passes (11 tests)
 
 ### Implementation notes
 
-Use `pyyaml` to parse `compose.yaml` in the test. Check
-`parsed["networks"]["fawkes-net"]["external"] == True` and
-`"WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net"` in the agent environment list.
+The `fawkes-net` network is declared in `compose.suite.yaml` (not `compose.yaml`) so that
+standalone mode (`docker compose up`) works without any external network dependency.
+Suite mode (`docker compose -f compose.yaml -f compose.suite.yaml up`) adds `fawkes-net`
+alongside the `fawkes-backbone-net` and `observability-lab` networks.
 
 ---
 
