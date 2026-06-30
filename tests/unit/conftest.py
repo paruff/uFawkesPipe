@@ -63,6 +63,19 @@ def k8s_dir(project_root):
 
 
 @pytest.fixture
+def woodpecker_file(project_root):
+    """Return the .woodpecker.yml file path."""
+    return project_root / ".woodpecker.yml"
+
+
+@pytest.fixture
+def woodpecker_config(woodpecker_file):
+    """Load and return the .woodpecker.yml configuration."""
+    with open(woodpecker_file) as f:
+        return yaml.safe_load(f)
+
+
+@pytest.fixture
 def fawkespipe_example(project_root):
     """Return the .fawkespipe.yml.example file path."""
     return project_root / ".fawkespipe.yml.example"

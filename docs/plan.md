@@ -107,12 +107,12 @@ and `.secrets.baseline` but CI does not enforce scanning. This step must be the 
 
 ### Acceptance criteria
 
-- [ ] Step named `secrets-scan` uses image `zricethezav/gitleaks:v8.18.2`
-- [ ] Command: `gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1`
-- [ ] Step appears in `.woodpecker.yml` immediately after `init`
-- [ ] `.gitleaks.toml` and `.secrets.baseline` referenced in comment above the step
-- [ ] `tests/test_woodpecker_yml.py` asserts `secrets-scan` is at index 1 (zero-based) in steps list
-- [ ] `pytest tests/test_woodpecker_yml.py` passes
+- [x] Step named `secrets-scan` uses image `zricethezav/gitleaks:v8.18.2` — `test_woodpecker_yml.py::TestSecretsScanStep::test_uses_correct_image`
+- [x] Command: `gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1` — `test_woodpecker_yml.py::TestSecretsScanStep::test_has_exit_code_one_flag` + `test_has_json_report_output`
+- [x] Step appears in `.woodpecker.yml` immediately after `init` — `test_woodpecker_yml.py::TestStepOrdering::test_second_step_is_secrets_scan`
+- [x] `.gitleaks.toml` and `.secrets.baseline` referenced in comment above the step — inline in `.woodpecker.yml`
+- [x] `tests/unit/test_woodpecker_yml.py` asserts `secrets-scan` is at index 1 (zero-based) in steps list — `test_second_step_is_secrets_scan`
+- [x] `pytest tests/` passes — 47/47 (34 existing + 13 new)
 
 ### Implementation notes
 
