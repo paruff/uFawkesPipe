@@ -51,7 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Validate docker-compose.yml
+      - name: Validate compose.yaml (current active stack)
         run: docker compose config
 
       - name: Validate K8s manifests with Kubeconform

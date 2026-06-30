@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-jenkins validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite pre-commit-setup pre-commit-run up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -30,17 +30,12 @@ test-coverage: ## Run tests with coverage report
 # Validation Commands
 # ============================================================================
 
-validate: validate-docker validate-jenkins validate-k8s ## Run all validations
+validate: validate-docker validate-k8s ## Run all validations (Docker + K8s)
 
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
 	docker compose -f compose.yaml config --quiet
 	@echo "✅ compose.yaml is valid"
-
-validate-jenkins: ## Validate Jenkinsfile syntax
-	@echo "Validating Jenkinsfile..."
-	@python3 -c "import jenkins_pipeline_linter; jenkins_pipeline_linter.lint_file('Jenkinsfile')" || \
-		echo "⚠️  Jenkinsfile linting skipped (jenkins_pipeline_linter not installed)"
 
 validate-k8s: ## Validate Kubernetes manifests (supports multi-document YAML)
 	@echo "Validating K8s manifests..."
