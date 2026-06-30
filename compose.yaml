@@ -12,7 +12,6 @@ services:
       - WOODPECKER_SERVER=woodpecker-server:9000
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND=docker
-      - WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -22,14 +21,12 @@ services:
       - "component=ci-agent"
       - "managed-by=fawkes"
     restart: unless-stopped
-    networks:
-      - fawkes-net
 
   woodpecker-server:
     image: woodpeckerci/woodpecker-server:v3.15.0
     ports:
-      - "8000:8000" # UI
-      - "9000:9000" # gRPC agent communication
+      - "8000:8000"  # UI
+      - "9000:9000"  # gRPC agent communication
     environment:
       - WOODPECKER_OPEN=true
       - WOODPECKER_HOST=${WOODPECKER_HOST:-http://localhost:8000}
@@ -46,8 +43,6 @@ services:
       - "component=ci-server"
       - "managed-by=fawkes"
     restart: unless-stopped
-    networks:
-      - fawkes-net
 
   sonarqube:
     image: sonarqube:lts-community
@@ -64,14 +59,12 @@ services:
       - "component=sast"
       - "managed-by=fawkes"
     restart: unless-stopped
-    networks:
-      - fawkes-net
 
   portainer:
     image: portainer/portainer-ce:2.39.3
     ports:
-      - "9443:9443" # HTTPS UI (default from CE 2.9+)
-      - "9002:8000" # Edge agent tunnel
+      - "9443:9443"  # HTTPS UI (default from CE 2.9+)
+      - "9002:8000"  # Edge agent tunnel
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -80,8 +73,6 @@ services:
       - "component=cd-engine"
       - "managed-by=fawkes"
     restart: unless-stopped
-    networks:
-      - fawkes-net
 
 volumes:
   woodpecker_data:
@@ -89,8 +80,3 @@ volumes:
   sonarqube_logs:
   sonarqube_extensions:
   portainer_data:
-
-networks:
-  fawkes-net:
-    external: true
-    name: fawkes-net
