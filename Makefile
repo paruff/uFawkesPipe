@@ -65,9 +65,16 @@ validate-all: validate-docker validate-k8s validate-suite ## Validate all (Docke
 pre-commit-setup: ## Install pre-commit hooks
 	pip install pre-commit
 	pre-commit install
+	pre-commit install --hook-type push
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
+
+fix-and-commit: ## Run pre-commit, stage fixes, commit with conventional message
+	@pre-commit run --all-files
+	@git add -u
+	@read -p "Commit message (type(scope): desc): " msg; \
+	git commit -m "$$msg"
 
 # ============================================================================
 # Docker Commands
