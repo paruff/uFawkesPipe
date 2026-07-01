@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-k8s validate-suite validate-agents pre-commit-setup pre-commit-run fix-and-commit network up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-suite validate-agents pre-commit-setup pre-commit-run fix-and-commit network up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -30,27 +30,19 @@ test-coverage: ## Run tests with coverage report
 # Validation Commands
 # ============================================================================
 
-validate: validate-docker validate-k8s validate-agents ## Run all validations (Docker + K8s + Agents)
+validate: validate-docker validate-agents ## Run all validations (Docker + Agents)
 
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
 	docker compose -f compose.yaml config --quiet
 	@echo "✅ compose.yaml is valid"
 
-validate-k8s: ## Validate Kubernetes manifests (supports multi-document YAML)
-	@echo "Validating K8s manifests..."
-	@for f in k8s/*.yaml; do \
-		res=$$(python3 -c "import yaml; docs=list(yaml.safe_load_all(open('$$f'))); print(f'  ✅ $$f ({len([d for d in docs if d])} resources)')" 2>&1) || exit 1; \
-		echo "$$res"; \
-	done
-	@echo "✅ K8s manifests are valid YAML"
-
 validate-suite: validate-docker ## Validate suite mode (compose.yaml + compose.suite.yaml)
 	@echo "Validating suite mode compose files..."
 	docker compose -f compose.yaml -f compose.suite.yaml config --quiet
 	@echo "✅ compose.yaml + compose.suite.yaml composition is valid"
 
-validate-all: validate-docker validate-k8s validate-suite validate-agents ## Validate all (Docker + K8s + Suite + Agents)
+validate-all: validate-docker validate-suite validate-agents ## Validate all (Docker + Suite + Agents)
 	@echo "✅ All validations passed"
 
 validate-agents: ## Validate agent and skill definitions

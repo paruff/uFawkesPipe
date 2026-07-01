@@ -38,31 +38,6 @@ def compose_config(compose_file):
 
 
 @pytest.fixture
-def jenkinsfile(project_root):
-    """Return the archived Jenkinsfile path."""
-    return project_root / "docs" / "history" / "Jenkinsfile.archived"
-
-
-@pytest.fixture
-def jenkinsfile_content(jenkinsfile):
-    """Read and return the Jenkinsfile content."""
-    with open(jenkinsfile) as f:
-        return f.read()
-
-
-@pytest.fixture
-def jcasc_dir(project_root):
-    """Return the archived JCasC configuration directory."""
-    return project_root / "docs" / "history" / "jenkins"
-
-
-@pytest.fixture
-def k8s_dir(project_root):
-    """Return the Kubernetes manifests directory."""
-    return project_root / "k8s"
-
-
-@pytest.fixture
 def woodpecker_file(project_root):
     """Return the .woodpecker.yml file path."""
     return project_root / ".woodpecker.yml"

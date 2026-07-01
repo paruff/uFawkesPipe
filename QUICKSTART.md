@@ -1,234 +1,238 @@
 # Quick Start Guide
 
-Get uFawkesPipe up and running in 5 minutes!
+Get uFawkesPipe v0.2 up and running in 5 minutes.
 
 ## Prerequisites
 
-- Docker 20.10+
-- Docker Compose v2.0+
-- 4GB+ RAM available
-- DockerHub account
+| Requirement | Version | Purpose |
+|---|---|---|
+| Docker | 20.10+ | Container runtime |
+| Docker Compose | v2.0+ | Service orchestration (`docker compose` plugin) |
+| RAM | 4GB+ | Woodpecker CI + SonarQube |
+| GitHub OAuth App | — | Woodpecker authentication |
+| DockerHub account | — | Container registry (username + access token) |
+
+**Optional:**
+
+| Requirement | Purpose |
+|---|---|
+| DefectDojo instance | Security scan ingestion (API token) |
+| `pack` CLI | Cloud Native Buildpacks for local builds |
+| uFawkesRes + uFawkesObs | Suite mode with PostgreSQL, OTEL telemetry |
+
+**GitHub OAuth App setup:**
+
+1. Go to <https://github.com/settings/developers> → OAuth Apps → New OAuth App
+2. Set **Authorization callback URL** to `http://localhost:8000/authorize`
+3. Note the **Client ID** and generate a **Client Secret**
+
+**DockerHub access token:**
+
+1. Go to <https://hub.docker.com/settings/security>
+2. Click New Access Token
+3. Copy the token for your `.env` file
 
 ## Installation
 
-### 1. Clone the Repository
+### Standalone Mode
+
+Runs Woodpecker CI + SonarQube with SQLite/H2 storage — no external dependencies.
 
 ```bash
 git clone https://github.com/paruff/uFawkesPipe.git
 cd uFawkesPipe
+make init          # creates .env from .env.example
+nano .env          # fill in your credentials
+make up            # start the stack
 ```
 
-### 2. Configure Environment
+### Suite Mode
+
+Connects to uFawkesRes (shared PostgreSQL, Valkey, Traefik) and uFawkesObs (OTEL Collector).
 
 ```bash
-# Copy environment template
-cp .env.example .env
+# Start dependencies first
+cd ../uFawkesRes && make up
+cd ../uFawkesObs && make up
 
-# Edit with your credentials
-nano .env  # or vim, code, etc.
+# Then start uFawkesPipe in suite mode
+cd ../uFawkesPipe
+make init          # creates .env from .env.example
+nano .env          # fill in your credentials (see Suite section below)
+make up-suite      # start the stack with suite overlays
 ```
 
-**Required settings in `.env`:**
+Wait 1-2 minutes for services to become healthy.
 
-```bash
-DOCKERHUB_USERNAME=your-dockerhub-username
-DOCKERHUB_TOKEN=your-dockerhub-token
-JENKINS_ADMIN_PASSWORD=your-secure-password
-```
+## Configuration
 
-**Get DockerHub token:**
+All settings live in `.env` (created from `.env.example` by `make init`).
 
-1. Go to https://hub.docker.com/settings/security
-2. Click "New Access Token"
-3. Copy the token to `.env`
+### Core Variables
 
-### 3. Start the Platform
+| Variable | Source | Description |
+|---|---|---|
+| `WOODPECKER_GITHUB_CLIENT` | GitHub OAuth App | Client ID |
+| `WOODPECKER_GITHUB_SECRET` | GitHub OAuth App | Client Secret |
+| `WOODPECKER_AGENT_SECRET` | Generate: `openssl rand -hex 32` | Shared secret between server and agent |
+| `WOODPECKER_HOST` | Your hostname | Server URL (default: `http://localhost:8000`) |
+| `SONARQUBE_ADMIN_PASSWORD` | Your choice | Admin password (change on first login) |
+| `REGISTRY_USERNAME` | DockerHub | DockerHub username |
+| `REGISTRY_TOKEN` | DockerHub | DockerHub access token |
+| `DOJO_API_TOKEN` | DefectDojo (optional) | API token for security scan ingestion |
 
-```bash
-# Initialize (first time only)
-make init
+### Suite Mode Variables
 
-# Start all services
-make start
+| Variable | Source | Description |
+|---|---|---|
+| `POSTGRES_PASSWORD` | Must match uFawkesRes | Shared PostgreSQL password |
+| `WOODPECKER_METRICS_TOKEN` | Your choice | Prometheus `/metrics` endpoint token |
+| `UFAWKES_ENVIRONMENT` | Your choice | Environment label for OTEL events (default: `development`) |
+| `OTEL_ENDPOINT` | uFawkesObs | OTEL Collector URL (e.g. `http://otel-collector:4318`) |
+| `OTEL_HEADERS` | Optional | Auth headers for OTEL endpoint |
 
-# Watch the logs
-make logs
-```
+## Service Access
 
-Wait 2-3 minutes for services to start. You'll see:
-
-```
-Jenkins is fully up and running
-```
-
-### 4. Access Services
-
-- **Jenkins**: http://localhost:8080/jenkins
-
-  - Username: `admin`
-  - Password: (from `.env`)
-
-- **SonarQube**: http://localhost:9000
-  - Username: `admin`
-  - Password: `admin` (change on first login) # pragma: allowlist secret
+| Service | URL | Authentication |
+|---|---|---|
+| Woodpecker CI | <http://localhost:8000> | GitHub OAuth |
+| SonarQube | <http://localhost:9001> | `admin` / `admin` (change on first login) |
+| Portainer | <https://localhost:9443> | Create admin user on first visit |
 
 ## Create Your First Pipeline
 
-### Option 1: Use Example Job
+### 1. Add `.fawkespipe.yml` to your repository
 
-Jenkins comes with a pre-configured example pipeline:
+See `.fawkespipe.yml.example` for the full contract, or start with an example:
 
-1. Navigate to Jenkins → `pipelines/example-polyglot-pipeline`
-2. Click "Build with Parameters"
-3. Enter your repository URL and branch
-4. Click "Build"
+| Stack | Example |
+|---|---|
+| Node.js + Express | `examples/.fawkespipe-nodejs-express.yml` |
+| Python + Flask | `examples/.fawkespipe-python-flask.yml` |
+| Go | `examples/.fawkespipe-go.yml` |
+| Java + Maven | `examples/.fawkespipe-java-maven.yml` |
 
-### Option 2: Create Custom Pipeline
+### 2. Enable the repository in Woodpecker
 
-1. **Add `.fawkespipe.yml` to your repository**
+1. Open <http://localhost:8000> and sign in with GitHub
+2. Navigate to Repositories → Add repository
+3. Find your repository and click Enable
+4. Woodpecker auto-creates a GitHub webhook
 
-   Example for Node.js:
-
-   ```yaml
-   app:
-     name: my-app
-     type: service
-     language: nodejs
-
-   build:
-     builder: cnb
-     image:
-       namespace: myorg
-       name: my-app
-
-   stages:
-     lint:
-       enabled: true
-       commands:
-         - language: nodejs
-           cmd: npm run lint
-
-     test:
-       enabled: true
-       commands:
-         - language: nodejs
-           cmd: npm test
-
-     push:
-       enabled: true
-   ```
-
-2. **Copy standard Jenkinsfile**
-
-   ```bash
-   cp uFawkesPipe/Jenkinsfile your-repo/Jenkinsfile
-   git add Jenkinsfile .fawkespipe.yml
-   git commit -m "Add CI/CD configuration"
-   git push
-   ```
-
-3. **Create Pipeline in Jenkins**
-
-   - Jenkins → New Item
-   - Name: `my-app`
-   - Type: Pipeline
-   - Pipeline → Definition: Pipeline script from SCM
-   - SCM: Git
-   - Repository URL: `https://github.com/yourorg/your-repo`
-   - Script Path: `Jenkinsfile`
-   - Save
-
-4. **Run the Pipeline**
-   - Click "Build Now"
-   - Watch the pipeline execute through all stages
-   - Images are pushed to DockerHub
-
-## Webhook Integration
-
-### GitHub Webhook
-
-1. Go to your repository → Settings → Webhooks → Add webhook
-2. Configure:
-   - **Payload URL**: `http://your-jenkins:8080/jenkins/github-webhook/`
-   - **Content type**: `application/json`
-   - **Events**: Just the push event
-   - **Active**: ✓
-3. Push code → Pipeline auto-triggers!
-
-### Manual Webhook Trigger
+### 3. Push code
 
 ```bash
-curl -X POST "http://localhost:8080/jenkins/generic-webhook-trigger/invoke" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "repo_url": "https://github.com/user/repo",
-    "branch": "main",
-    "webhook_secret": "changeme" # pragma: allowlist secret
-  }'
+git add .fawkespipe.yml
+git commit -m "feat(ci): add pipeline contract"
+git push
 ```
+
+The pipeline triggers automatically via the GitHub webhook.
+
+### 4. Monitor the pipeline
+
+- Open <http://localhost:8000> → select your repository → view the pipeline run
+- Pipeline stages: `init` → `secrets-scan` → `lint-yaml` → `lint-shell` → `validate-pipeline-contract` → `vuln-scan-fs` → `vuln-scan-image` → `upload-defectdojo` → `notify-obs`
+
+## Smoke Test
+
+Verify the installation is healthy:
+
+```bash
+# 1. Validate all configuration and contracts
+make validate
+
+# 2. Run unit tests
+make test
+
+# 3. Check Woodpecker health
+curl -sf http://localhost:8000/healthz && echo "Woodpecker OK"
+
+# 4. Check SonarQube health
+curl -sf http://localhost:9001/api/system/status | grep -q '"status":"UP"' && echo "SonarQube OK"
+
+# 5. Verify pipeline contract
+make validate-docker
+```
+
+All commands should exit 0 with no errors.
 
 ## Common Commands
 
-```bash
-# Start platform
-make start
+### Lifecycle
 
-# Stop platform
-make stop
+| Command | Description |
+|---|---|
+| `make init` | Create `.env` from `.env.example` |
+| `make up` | Start stack (standalone) |
+| `make up-suite` | Start stack (suite mode) |
+| `make down` | Stop stack (standalone) |
+| `make down-suite` | Stop stack (suite mode) |
+| `make clean` | Remove test artifacts and stop containers |
 
-# View logs
-make logs
+### Observability
 
-# View specific service logs
-make logs-jenkins
-make logs-sonar
+| Command | Description |
+|---|---|
+| `make logs` | View stack logs (standalone) |
+| `make logs-suite` | View stack logs (suite mode) |
+| `make status` | List running containers |
+| `make status-suite` | List running containers (suite mode) |
 
-# Check service status
-make status
+### Validation
 
-# Restart services
-make restart
+| Command | Description |
+|---|---|
+| `make validate` | Validate Docker + agents |
+| `make validate-docker` | Validate `compose.yaml` |
+| `make validate-suite` | Validate suite mode compose files |
+| `make validate-agents` | Validate agent and skill definitions |
+| `make check-env` | Check required environment variables |
 
-# Backup Jenkins data
-make backup
+### Testing
 
-# Update to latest images
-make update
+| Command | Description |
+|---|---|
+| `make test` | Run all tests |
+| `make test-unit` | Run unit tests |
+| `make test-coverage` | Run tests with coverage report |
 
-# Clean everything (⚠️ destroys data)
-make clean
-```
+### Pre-commit
 
-## Verify Installation
-
-Run the validation script:
-
-```bash
-./validate.sh
-```
+| Command | Description |
+|---|---|
+| `make pre-commit-setup` | Install pre-commit hooks |
+| `make pre-commit-run` | Run hooks on all files |
 
 ## Troubleshooting
 
-### Jenkins won't start
+### Woodpecker won't start
 
 ```bash
-# Check logs
-make logs-jenkins
+# Check server logs
+docker compose -f compose.yaml logs woodpecker-server
 
-# Increase memory if needed (edit docker-compose.yml)
-# JAVA_OPTS=-Xmx4g
+# Verify GitHub OAuth credentials in .env
+grep WOODPECKER_GITHUB .env
 
-# Reset Jenkins (⚠️ destroys data)
-docker-compose down
-docker volume rm ufp_jenkins_home
-make start
+# Verify agent secret matches
+grep WOODPECKER_AGENT_SECRET .env
 ```
 
-### Can't access Jenkins
+### Port 8000 already in use
 
-- Ensure port 8080 is not in use: `lsof -i :8080`
-- Check firewall rules
-- Verify Docker networking: `docker network ls`
+```bash
+# Find the process using port 8000
+lsof -i :8000
+
+# Kill it or change the port in compose.yaml
+```
+
+### GitHub webhook fails
+
+- Verify `WOODPECKER_HOST` in `.env` matches the URL GitHub can reach
+- For local development, use a tunnel tool (e.g. `ngrok`, `cloudflared`) to expose port 8000
+- Check webhook delivery status in GitHub repository Settings → Webhooks
 
 ### SonarQube won't start
 
@@ -237,36 +241,31 @@ make start
 sudo sysctl -w vm.max_map_count=262144
 
 # Check logs
-make logs-sonar
+docker compose -f compose.yaml logs sonarqube
 ```
 
-### Pipeline fails to build image
+### OTEL Collector unreachable (suite mode)
 
-- Verify Docker socket is mounted: `ls -la /var/run/docker.sock`
-- Check DockerHub credentials in `.env`
-- Ensure sufficient disk space: `df -h`
+```bash
+# Verify OTEL_ENDPOINT in .env
+grep OTEL_ENDPOINT .env
+
+# Check uFawkesObs is running
+cd ../uFawkesObs && make status
+
+# Check connectivity from Woodpecker agent container
+docker compose -f compose.yaml exec woodpecker-agent wget -qO- http://otel-collector:4318
+```
 
 ## Next Steps
 
-- 📚 Read the [Full Documentation](README.md)
-- 🔌 Set up [Webhooks and APIs](docs/webhook-api.md)
-- ☸️ Plan [Kubernetes Promotion](docs/kubernetes-promotion.md)
-- 📝 Review [Example Configs](examples/)
-
-## Learn More
-
-- Pipeline stages and configuration
-- Multi-language support (Java, Python, Go, Node.js, Ruby)
-- Security scanning (SAST, dependency scanning, image scanning)
-- Kubernetes deployment
-- Custom pipeline libraries
+- Read the [Architecture Documentation](docs/ARCHITECTURE.md)
+- Set up [Webhooks and APIs](docs/webhook-api.md)
+- Review [Example Configs](examples/)
+- Check [Known Limitations](docs/KNOWN_LIMITATIONS.md)
 
 ## Support
 
-- 📖 Documentation: https://github.com/paruff/uFawkesPipe
-- 🐛 Issues: https://github.com/paruff/uFawkesPipe/issues
-- 💬 Discussions: https://github.com/paruff/uFawkesPipe/discussions
-
----
-
-**Happy building! 🚀**
+- Documentation: <https://github.com/paruff/uFawkesPipe>
+- Issues: <https://github.com/paruff/uFawkesPipe/issues>
+- Discussions: <https://github.com/paruff/uFawkesPipe/discussions>

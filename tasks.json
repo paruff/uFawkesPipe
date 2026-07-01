@@ -1,67 +1,119 @@
 {
-  "feature": "WP-006",
-  "title": "Add notify-obs deployment event step",
-  "description": "Add a notify-obs step to the Woodpecker pipeline that emits a structured deployment event to uFawkesObs via OTEL Collector HTTP endpoint. Runs on main branch only, non-blocking, with DORA structured logging.",
-  "depends_on": ["WP-001", "WP-005"],
-  "branch": "feature/wp-006-notify-obs",
+  "feature": "WP-007",
+  "title": "Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test",
+  "description": "Rewrite QUICKSTART.md to document v0.2 Woodpecker CI + CNB stack: prerequisites, standalone/suite installation, .fawkespipe.yml pipeline contract, smoke test verification, and updated troubleshooting.",
+  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006"],
+  "branch": "feature/wp-007-quickstart-v02",
   "tasks": [
     {
-      "id": "WP-006-01",
-      "title": "Add notify-obs step to .woodpecker.yml",
-      "description": "Add a new step named notify-obs using curlimages/curl:latest. Position after upload-defectdojo. Has when: branch: main condition. Uses OTEL_ENDPOINT and OTEL_HEADERS from_secret. Commands POST OTEL deployment event JSON to ${OTEL_ENDPOINT}/v1/traces with required attributes (service.name, deployment.environment, deployment.version, deployment.status, git.commit.sha, git.branch, pipeline.duration_ms). Non-blocking (|| true). DORA structured JSON logging at start and end.",
+      "id": "WP-007-01",
+      "title": "Update Prerequisites section for v0.2 stack",
+      "description": "Replace Jenkins/Docker Compose legacy prerequisites with v0.2: Docker 20.10+, Docker Compose v2, GitHub OAuth for Woodpecker, DockerHub account, DefectDojo (optional), pack CLI (optional), uFawkesRes/uFawkesObs for suite mode.",
       "depends_on": [],
       "acceptance": [
-        "Step named 'notify-obs' exists in .woodpecker.yml steps list",
-        "Image is curlimages/curl:latest",
-        "Step has when: condition with branch: main",
-        "Step has environment.OTEL_ENDPOINT.from_secret: otel_endpoint",
-        "Step has environment.OTEL_HEADERS.from_secret: otel_headers",
-        "Commands POST to ${OTEL_ENDPOINT}/v1/traces with JSON payload",
-        "Payload includes service.name: ufawkespipe",
-        "Payload includes deployment.environment: production",
-        "Payload includes deployment.version: ${CI_COMMIT_SHA:0:7}",
-        "Payload includes deployment.status: success",
-        "Payload includes git.commit.sha: ${CI_COMMIT_SHA}",
-        "Payload includes git.branch: ${CI_COMMIT_BRANCH}",
-        "Payload includes pipeline.duration_ms: ${PIPELINE_DURATION_MS:-0}",
-        "Commands use curl || true (non-blocking)",
-        "DORA structured JSON logging at step start",
-        "DORA structured JSON logging at step end",
-        "Comment explains non-blocking nature"
+        "Prerequisites lists Docker, Docker Compose v2, 4GB+ RAM",
+        "Prerequisites includes GitHub OAuth App for Woodpecker",
+        "Prerequisites includes DockerHub account for registry",
+        "Prerequisites mentions pack CLI as optional",
+        "Prerequisites mentions DefectDojo as optional",
+        "Prerequisites mentions uFawkesRes/uFawkesObs for suite mode"
       ]
     },
     {
-      "id": "WP-006-02",
-      "title": "Add OTEL_ENDPOINT and OTEL_HEADERS to .env.example",
-      "description": "Add placeholder entries for OTEL_ENDPOINT and OTEL_HEADERS to .env.example following the your_ prefix convention for sensitive values.",
-      "depends_on": ["WP-006-01"],
+      "id": "WP-007-02",
+      "title": "Update Installation section with make up / make up-suite",
+      "description": "Replace legacy make init/make start with make up (standalone) and make up-suite (suite mode with dependencies). Document both modes clearly with separate command blocks.",
+      "depends_on": ["WP-007-01"],
       "acceptance": [
-        "OTEL_ENDPOINT=your_otel_endpoint entry exists in .env.example",
-        "OTEL_HEADERS=your_otel_headers entry exists in .env.example",
-        "Both entries have descriptive comments",
-        "CI preflight check 'Verify .env.example has no concrete secrets' passes"
+        "Standalone mode uses `make up`",
+        "Suite mode uses `make up-suite` with uFawkesRes/uFawkesObs prerequisites",
+        "Both modes include `cp .env.example .env` and edit step",
+        "No references to legacy `make init` or Jenkins"
       ]
     },
     {
-      "id": "WP-006-03",
-      "title": "Add TestNotifyObsStep test class",
-      "description": "Add TestNotifyObsStep class to tests/unit/test_woodpecker_yml.py with minimum 10 test methods covering all acceptance criteria from WP-006-01 and WP-006-02.",
-      "depends_on": ["WP-006-01"],
+      "id": "WP-007-03",
+      "title": "Update Configuration section with v0.2 .env.example variables",
+      "description": "Document all v0.2 environment variables from .env.example with descriptions and where to obtain values: WOODPECKER_GITHUB_CLIENT, WOODPECKER_GITHUB_SECRET, WOODPECKER_AGENT_SECRET, WOODPECKER_HOST, SONARQUBE_ADMIN_PASSWORD, REGISTRY_USERNAME, REGISTRY_TOKEN, DOJO_API_TOKEN, POSTGRES_PASSWORD, WOODPECKER_METRICS_TOKEN, UFAWKES_ENVIRONMENT, OTEL_ENDPOINT, OTEL_HEADERS.",
+      "depends_on": ["WP-007-02"],
       "acceptance": [
-        "TestNotifyObsStep class exists in test_woodpecker_yml.py",
-        "At least 10 test methods covering: step existence, image, branch condition, OTEL_ENDPOINT secret, OTEL_HEADERS secret, DORA start log, DORA end log, POST command, non-blocking curl, payload attributes",
-        "pytest tests/unit/test_woodpecker_yml.py::TestNotifyObsStep passes with zero failures"
+        "All 14 variables from .env.example are documented",
+        "Each variable has description and source (GitHub, DockerHub, DefectDojo, etc.)",
+        "Placeholder values use `your_` prefix convention",
+        "No hardcoded secrets"
       ]
     },
     {
-      "id": "WP-006-04",
-      "title": "Run full validation suite and verify no regressions",
-      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
-      "depends_on": ["WP-006-02", "WP-006-03"],
+      "id": "WP-007-04",
+      "title": "Update Service Access with Woodpecker + SonarQube ports",
+      "description": "Replace Jenkins (8080) with Woodpecker CI (8000) and SonarQube (9000). Document authentication: GitHub OAuth for Woodpecker, admin/admin for SonarQube.",
+      "depends_on": ["WP-007-03"],
       "acceptance": [
-        "pytest tests/ passes with zero failures",
-        "yamllint .woodpecker.yml reports zero errors",
-        "pre-commit run --all-files passes"
+        "Woodpecker listed at http://localhost:8000 with GitHub OAuth",
+        "SonarQube listed at http://localhost:9000 with admin/admin",
+        "No Jenkins references"
+      ]
+    },
+    {
+      "id": "WP-007-05",
+      "title": "Update Pipeline Creation with .fawkespipe.yml contract",
+      "description": "Replace Jenkinsfile instructions with .fawkespipe.yml pipeline contract: add to repo, push, enable in Woodpecker UI, GitHub webhook auto-triggers.",
+      "depends_on": ["WP-007-04"],
+      "acceptance": [
+        "References .fawkespipe.yml.example for contract template",
+        "Describes Woodpecker UI repository enablement",
+        "Mentions GitHub webhook auto-configuration",
+        "No Jenkinsfile references"
+      ]
+    },
+    {
+      "id": "WP-007-06",
+      "title": "Add Smoke Test section with verification commands",
+      "description": "Add new Smoke Test section with: `make validate`, `make test`, Woodpecker health check (curl /healthz), SonarQube health check (curl /api/system/status), pipeline contract validation.",
+      "depends_on": ["WP-007-05"],
+      "acceptance": [
+        "Smoke Test section exists with clear header",
+        "Includes `make validate` command",
+        "Includes `make test` command",
+        "Includes Woodpecker health check curl command",
+        "Includes SonarQube health check curl command",
+        "All commands have expected success indicators"
+      ]
+    },
+    {
+      "id": "WP-007-07",
+      "title": "Update Common Commands for v0.2 Makefile targets",
+      "description": "Update command table: make up, make up-suite, make down, make logs, make status, make validate, make test, make validate-pipeline-contract. Remove legacy targets.",
+      "depends_on": ["WP-007-06"],
+      "acceptance": [
+        "All v0.2 Makefile targets documented",
+        "Legacy targets (make start, make stop, make init) removed",
+        "Commands grouped logically (lifecycle, logs, validation)"
+      ]
+    },
+    {
+      "id": "WP-007-08",
+      "title": "Update Troubleshooting for v0.2 stack",
+      "description": "Update troubleshooting: Woodpecker won't start, port 8000 conflicts, GitHub OAuth/webhook issues, SonarQube vm.max_map_count, OTEL collector connectivity (suite mode). Remove Jenkins troubleshooting.",
+      "depends_on": ["WP-007-07"],
+      "acceptance": [
+        "Woodpecker startup issues covered",
+        "Port 8000 conflict resolution",
+        "GitHub OAuth/webhook troubleshooting",
+        "SonarQube vm.max_map_count fix",
+        "OTEL collector connectivity (suite mode)",
+        "No Jenkins troubleshooting"
+      ]
+    },
+    {
+      "id": "WP-007-09",
+      "title": "Run validation: markdownlint, pre-commit, links",
+      "description": "Run `markdownlint QUICKSTART.md`, `pre-commit run --all-files`, verify all internal links resolve.",
+      "depends_on": ["WP-007-08"],
+      "acceptance": [
+        "markdownlint passes with 0 errors",
+        "pre-commit run --all-files passes",
+        "Links to .fawkespipe.yml.example, compose.yaml, .woodpecker.yml are valid"
       ]
     }
   ]

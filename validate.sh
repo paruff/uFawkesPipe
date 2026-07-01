@@ -102,16 +102,6 @@ files = [
     'examples/.fawkespipe-go.yml',
 ]
 
-k8s_files = [
-    f for f in [
-        'k8s/jenkins-deployment.yaml',
-        'k8s/jenkins-service.yaml',
-        'k8s/jenkins-ingress.yaml',
-        'k8s/jenkins-pvc.yaml',
-        'k8s/jenkins-rbac.yaml',
-    ] if os.path.exists(f)
-]
-
 all_valid = True
 
 # Single document YAML files
@@ -124,8 +114,8 @@ for file in files:
         print(f'❌ {file} has errors: {str(e)}')
         all_valid = False
 
-# Multi-document YAML files (K8s)
-for file in k8s_files:
+# Multi-document YAML files
+for file in []:
     try:
         with open(file, 'r') as f:
             docs = list(yaml.safe_load_all(f))

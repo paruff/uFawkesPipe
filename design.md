@@ -1,245 +1,175 @@
-# WP-006 — Design: `notify-obs` Deployment Event Step
+# WP-007 — Design: Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test
 
-## 1. Architecture Overview
+## 1. Impacted Components
 
-The `notify-obs` step is the final stage in the v0.2 pipeline, responsible for emitting a **deployment event** to the observability backend (uFawkesObs via OTEL Collector). This event enables DORA metrics calculation (deployment frequency, change lead time).
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                        WOODPECKER PIPELINE (v0.2)                           │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ init → secrets-scan → lint-yaml → lint-shell → validate-contract →          │
-│ vuln-scan-fs → vuln-scan-image → upload-defectdojo → notify-obs             │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                                                       │
-                                                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          uFawkesObs (OTEL Collector)                        │
-│  Receives deployment event → enriches with trace context → stores in Loki   │
-│  DORA measurement queries Loki for deployment frequency / lead time         │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-## 2. Component Design
-
-### 2.1 Pipeline Step: `notify-obs`
-
-| Property | Value |
-|---|---|
-| **Name** | `notify-obs` |
-| **Image** | `curlimages/curl:latest` (pinned to latest — documented exception for scanner/curl images) |
-| **When** | `branch: main` |
-| **Secrets** | `OTEL_ENDPOINT.from_secret: otel_endpoint`<br>`OTEL_HEADERS.from_secret: otel_headers` (optional) |
-| **Commands** | See §2.2 |
-| **Exit Behavior** | Always exit 0 (non-blocking) |
-
-### 2.2 Command Sequence
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# DORA start log
-echo '{"level":"info","event":"notify-obs:start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
-
-# Build deployment event payload
-DEPLOYMENT_EVENT=$(cat <<EOF
-{
-  "resourceSpans": [{
-    "resource": {
-      "attributes": [
-        {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
-        {"key": "deployment.environment", "value": {"stringValue": "production"}},
-        {"key": "deployment.version", "value": {"stringValue": "${CI_COMMIT_SHA:0:7}"}},
-        {"key": "deployment.status", "value": {"stringValue": "success"}}
-      ]
-    },
-    "scopeSpans": [{
-      "spans": [{
-        "name": "deployment",
-        "kind": "SPAN_KIND_INTERNAL",
-        "startTimeUnixNano": "$(date -u +%s)000000000",
-        "endTimeUnixNano": "$(date -u +%s)000000000",
-        "attributes": [
-          {"key": "git.commit.sha", "value": {"stringValue": "${CI_COMMIT_SHA}"}},
-          {"key": "git.branch", "value": {"stringValue": "${CI_COMMIT_BRANCH}"}},
-          {"key": "pipeline.duration_ms", "value": {"intValue": "${PIPELINE_DURATION_MS:-0}"}}
-        ]
-      }]
-    }]
-  }]
-}
-EOF
-)
-
-# POST to OTEL collector (non-blocking)
-if [ -n "${OTEL_ENDPOINT:-}" ]; then
-  curl -s -X POST "${OTEL_ENDPOINT}/v1/traces" \
-    -H "Content-Type: application/json" \
-    ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
-    -d "${DEPLOYMENT_EVENT}" \
-    -w "\nHTTP %{http_code}\n" \
-    -o /dev/null || true
-else
-  echo '{"level":"warn","event":"notify-obs:skipped","reason":"OTEL_ENDPOINT not set","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
-fi
-
-# DORA finish log
-echo '{"level":"info","event":"notify-obs:end","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
-```
-
-### 2.3 Woodpecker YAML Representation
-
-```yaml
-notify-obs:
-  image: curlimages/curl:latest
-  when:
-    branch: main
-  environment:
-    OTEL_ENDPOINT:
-      from_secret: otel_endpoint
-    OTEL_HEADERS:
-      from_secret: otel_headers
-  commands:
-    - |
-      set -euo pipefail
-      echo '{"level":"info","event":"notify-obs:start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
-      DEPLOYMENT_EVENT=$(cat <<'EOF'
-      {
-        "resourceSpans": [{
-          "resource": {
-            "attributes": [
-              {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
-              {"key": "deployment.environment", "value": {"stringValue": "production"}},
-              {"key": "deployment.version", "value": {"stringValue": "${CI_COMMIT_SHA:0:7}"}},
-              {"key": "deployment.status", "value": {"stringValue": "success"}}
-            ]
-          },
-          "scopeSpans": [{
-            "spans": [{
-              "name": "deployment",
-              "kind": "SPAN_KIND_INTERNAL",
-              "startTimeUnixNano": "$(date -u +%s)000000000",
-              "endTimeUnixNano": "$(date -u +%s)000000000",
-              "attributes": [
-                {"key": "git.commit.sha", "value": {"stringValue": "${CI_COMMIT_SHA}"}},
-                {"key": "git.branch", "value": {"stringValue": "${CI_COMMIT_BRANCH}"}},
-                {"key": "pipeline.duration_ms", "value": {"intValue": "${PIPELINE_DURATION_MS:-0}"}}
-              ]
-            }]
-          }]
-        }]
-      }
-EOF'
-      )
-      if [ -n "${OTEL_ENDPOINT:-}" ]; then
-        curl -s -X POST "${OTEL_ENDPOINT}/v1/traces" \
-          -H "Content-Type: application/json" \
-          ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
-          -d "${DEPLOYMENT_EVENT}" \
-          -w "\nHTTP %{http_code}\n" \
-          -o /dev/null || true
-      else
-        echo '{"level":"warn","event":"notify-obs:skipped","reason":"OTEL_ENDPOINT not set","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
-      fi
-      echo '{"level":"info","event":"notify-obs:end","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
-```
-
-## 3. Data Flow
-
-```
-Woodpecker CI (main branch)
-         │
-         ▼
-notify-obs step
-         │
-         ├─ Reads CI_COMMIT_SHA, CI_COMMIT_BRANCH from Woodpecker env
-         ├─ Reads PIPELINE_DURATION_MS from previous step (or computes)
-         ├─ Reads OTEL_ENDPOINT from secret
-         ├─ Reads OTEL_HEADERS from secret (optional)
-         │
-         ▼
-POST /v1/traces to OTEL Collector (HTTP)
-         │
-         ▼
-uFawkesObs → Loki → DORA Measurement
-```
-
-## 4. Integration Points
-
-| Interface | Provider | Consumer | Protocol |
-|---|---|---|---|
-| OTEL HTTP endpoint | uFawkesObs (OTEL Collector) | notify-obs | HTTP/JSON (OTLP HTTP) |
-| Woodpecker secrets | Woodpecker server | notify-obs | `from_secret:` |
-| CI env vars | Woodpecker runner | notify-obs | `CI_COMMIT_SHA`, `CI_COMMIT_BRANCH`, etc. |
-
-## 5. Security
-
-- No credentials in YAML — all via `from_secret:`
-- `OTEL_HEADERS` optional (supports bearer tokens, API keys)
-- Step runs only on `main` branch (production deployments only)
-- Non-blocking: observability failure never fails deployment
-
-## 6. Error Handling
-
-| Scenario | Behavior |
-|---|---|
-| OTEL_ENDPOINT secret not set | Log warning, skip POST, exit 0 |
-| Network timeout / unreachable | curl OR true — log warning, exit 0 |
-| HTTP 4xx/5xx response | Log response code, exit 0 |
-| Malformed JSON payload | Independent of shell expansion; exit 0 |
-
-## 7. Testing Strategy
-
-### Unit Tests (test_woodpecker_yml.py)
-
-- `TestNotifyObsStep::test_step_exists`
-- `TestNotifyObsStep::test_uses_curl_image`
-- `TestNotifyObsStep::test_branch_main_only`
-- `TestNotifyObsStep::test_has_otel_endpoint_secret`
-- `TestNotifyObsStep::test_has_otel_headers_secret_optional`
-- `TestNotifyObsStep::test_commands_include_dora_start_log`
-- `TestNotifyObsStep::test_commands_include_dora_end_log`
-- `TestNotifyObsStep::test_commands_post_to_otel_endpoint`
-- `TestNotifyObsStep::test_non_blocking_curl_or_true`
-- `TestNotifyObsStep::test_payload_includes_required_attributes`
-- `TestNotifyObsStep::test_comment_non_blocking_nature`
-
-### Integration Test (future)
-
-- Spin up OTEL Collector locally, run notify-obs, verify trace received
-
-## 8. Environment Configuration
-
-### `.env.example` additions
-
-```bash
-# Observability — OTEL Collector endpoint for deployment events
-# Suite mode: http://otel-collector:4318
-OTEL_ENDPOINT=
-
-# Optional auth headers for OTEL endpoint (e.g., "Authorization: Bearer <token>")
-OTEL_HEADERS=
-```
-
-### Woodpecker Secrets Required
-
-| Secret Name | Value Example | Notes |
+| Component | File | Change |
 |---|---|---|
-| `otel_endpoint` | `http://otel-collector:4318` | OTEL Collector HTTP endpoint |
-| `otel_headers` | `Authorization: Bearer <token>` | Optional, for authenticated collectors |
+| Quick Start Documentation | `QUICKSTART.md` | Full rewrite for v0.2 stack |
+| Makefile targets | `Makefile` | Reference only (no changes) |
+| Pipeline contract example | `examples/` | Reference only |
 
-## 9. DORA Metrics Impact
+---
 
-| Metric | How notify-obs Enables |
+## 2. Document Structure Redesign
+
+### 2.1 New Section Organization
+
+```
+# Quick Start Guide (v0.2)
+
+## Prerequisites (updated)
+## Installation (updated: make up / make up-suite)
+## Configuration (updated: v0.2 .env.example)
+## Service Access (updated: Woodpecker + SonarQube)
+## Create Your First Pipeline (updated: .fawkespipe.yml)
+## Smoke Test (new)
+## Common Commands (updated)
+## Troubleshooting (updated)
+## Next Steps (updated)
+```
+
+### 2.2 Key Content Changes
+
+| Old Section | New Content |
 |---|---|
-| **Deployment Frequency** | Each successful `main` pipeline emits one deployment event |
-| **Change Lead Time** | `git.commit.sha` + pipeline start time → deployment timestamp |
-| **Change Failure Rate** | `deployment.status: success` vs failed pipeline events |
-| **MTTR** | Correlated with rollback events (future work) |
+| Prerequisites | Add Woodpecker GitHub OAuth, CNB/pack, Docker Compose v2 |
+| Installation | `make up` (standalone) / `make up-suite` (suite mode) |
+| Configuration | All v0.2 env vars with descriptions |
+| Service Access | Woodpecker (8000), SonarQube (9000) — no Jenkins |
+| Pipeline Creation | `.fawkespipe.yml` contract + Woodpecker UI |
+| Smoke Test | `make validate`, health checks, pipeline dry-run |
+| Common Commands | v0.2 Makefile targets |
 
-## 10. References
+---
 
-- [OTLP HTTP Protocol](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
-- [DORA Deployment Events](https://dora.dev/capabilities/continuous-delivery/)
-- [uFawkesObs Architecture](../../../uFawkesObs/docs/ARCHITECTURE.md)
+## 3. Detailed Content Specification
+
+### 3.1 Prerequisites
+
+```markdown
+## Prerequisites
+
+- **Docker 20.10+** — Container runtime
+- **Docker Compose v2.0+** — `docker compose` (plugin, not standalone `docker-compose`)
+- **4GB+ RAM** — For Woodpecker + SonarQube
+- **GitHub OAuth App** — For Woodpecker authentication (Client ID + Secret)
+- **DockerHub Account** — For image registry (username + access token)
+- **DefectDojo Instance** (optional) — For security scan ingestion (API token)
+- **`pack` CLI (optional)** — Cloud Native Buildpacks for local builds
+- **uFawkesRes + uFawkesObs (optional)** — For suite mode (`make up-suite`)
+```
+
+### 3.2 Installation Modes
+
+```markdown
+## Installation
+
+### Standalone Mode (make up)
+Runs Woodpecker + SonarQube locally with SQLite/H2 storage.
+
+```bash
+git clone https://github.com/paruff/uFawkesPipe.git
+cd uFawkesPipe
+cp .env.example .env
+# Edit .env with your credentials
+make up
+```
+
+### Suite Mode (make up-suite)
+
+Connects to uFawkesRes (PostgreSQL, Valkey, Traefik) and uFawkesObs (OTEL Collector).
+
+```bash
+# Terminal 1: Start dependencies
+cd ../uFawkesRes && make up
+cd ../uFawkesObs && make up
+
+# Terminal 2: Start uFawkesPipe in suite mode
+cd ../uFawkesPipe
+make up-suite
+```
+```
+
+### 3.3 Configuration (.env.example reference)
+
+Document all variables with purpose and where to get values.
+
+### 3.4 Service Access
+
+| Service | URL | Credentials |
+|---|---|---|
+| Woodpecker CI | `http://localhost:8000` | GitHub OAuth |
+| SonarQube | `http://localhost:9000` | admin / admin (change on first login) |
+
+### 3.5 Pipeline Creation
+
+```markdown
+## Create Your First Pipeline
+
+1. Add `.fawkespipe.yml` to your repository (see `.fawkespipe.yml.example`)
+2. Push to GitHub
+3. In Woodpecker UI: Add repository → Enable
+4. Push code → Pipeline auto-triggers via GitHub webhook
+```
+
+### 3.6 Smoke Test
+
+```markdown
+## Smoke Test
+
+Verify the installation is healthy:
+
+```bash
+# 1. Validate configuration and contracts
+make validate
+
+# 2. Run unit tests
+make test
+
+# 3. Check Woodpecker health
+curl -sf http://localhost:8000/healthz && echo "Woodpecker OK"
+
+# 4. Check SonarQube health
+curl -sf http://localhost:9000/api/system/status | grep -q '"status":"UP"' && echo "SonarQube OK"
+
+# 5. Verify pipeline contract
+make validate-pipeline-contract
+```
+
+All commands should exit 0 with no errors.
+```
+
+### 3.7 Common Commands
+
+Updated to v0.2 Makefile targets.
+
+### 3.8 Troubleshooting
+
+| Issue | Resolution |
+|---|---|
+| Woodpecker won't start | Check `make logs-woodpecker`, verify GitHub OAuth config |
+| Port 8000 in use | `lsof -i :8000` |
+| GitHub webhook fails | Verify `WOODPECKER_HOST` matches webhook URL |
+| SonarQube won't start | Increase `vm.max_map_count`, check `make logs-sonar` |
+| OTEL collector unreachable | Verify `OTEL_ENDPOINT`, check `make logs-otel` (suite mode) |
+
+---
+
+## 4. File Mapping
+
+| Source | Lines | Action |
+|---|---|---|
+| `QUICKSTART.md` | 1-272 | Full rewrite |
+| `.env.example` | 1-54 | Reference for config section |
+| `compose.yaml` | — | Reference for services |
+| `.fawkespipe.yml.example` | — | Reference for pipeline creation |
+
+---
+
+## 5. Risks
+
+| Risk | Likelihood | Mitigation |
+|---|---|---|
+| Missing env var in docs | Medium | Cross-reference with `.env.example` |
+| Broken links to examples | Low | Verify paths exist in repo |
+| Outdated Makefile targets | Medium | Run `make help` to verify |
