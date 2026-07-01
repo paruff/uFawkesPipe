@@ -1,6 +1,7 @@
 # Pre-commit hooks for uFawkes product suite repos
 # Install: make pre-commit-setup
 # Run manually: pre-commit run --all-files
+# Version sync: Managed by Renovate (see renovate.json) — do not edit versions manually
 
 repos:
   # ============================================================================
@@ -33,7 +34,7 @@ repos:
   # Python Linting & Formatting
   # ============================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.19
+    rev: v0.15.20
     hooks:
       - id: ruff
         name: Lint Python with Ruff
@@ -66,7 +67,7 @@ repos:
   # Security Scanning
   # ============================================================================
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+    rev: v8.30.1
     hooks:
       - id: gitleaks
         name: Detect secrets with Gitleaks

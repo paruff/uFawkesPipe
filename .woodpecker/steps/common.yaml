@@ -97,7 +97,7 @@ x-trivy-image: &trivy-image
   image: aquasec/trivy:latest
   environment:
     REGISTRY_USERNAME:
-      from_secret: registry_username
+      from_secret: registry_username  # pragma: allowlist secret
   commands:
     - source /drone/src/scripts/dora-log.sh
     - dora_start "vuln-scan-image"
@@ -155,7 +155,7 @@ x-defectdojo-upload: &defectdojo-upload
   <<: *curl-base
   environment:
     DOJO_API_TOKEN:
-      from_secret: defectdojo_api_token
+      from_secret: defectdojo_api_token  # pragma: allowlist secret
   commands:
     - source /drone/src/scripts/dora-log.sh
     - dora_start "upload-defectdojo"
@@ -190,9 +190,9 @@ x-notify-obs: &notify-obs
   <<: *curl-base
   environment:
     OTEL_ENDPOINT:
-      from_secret: otel_endpoint
+      from_secret: otel_endpoint  # pragma: allowlist secret
     OTEL_HEADERS:
-      from_secret: otel_headers
+      from_secret: otel_headers  # pragma: allowlist secret
   commands:
     - source /drone/src/scripts/dora-log.sh
     - dora_start "notify-obs"

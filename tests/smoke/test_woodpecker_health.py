@@ -2,7 +2,6 @@
 
 import pytest
 import subprocess
-import sys
 
 
 @pytest.mark.smoke
@@ -15,7 +14,9 @@ class TestWoodpeckerHealth:
         try:
             result = subprocess.run(
                 ["docker", "compose", "-f", "compose.yaml", "ps", "--services"],
-                capture_output=True, text=True, timeout=10
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             return result.returncode == 0 and "woodpecker" in result.stdout
         except (subprocess.TimeoutExpired, FileNotFoundError):
@@ -26,6 +27,7 @@ class TestWoodpeckerHealth:
         if not compose_running:
             pytest.skip("Compose stack not running")
         import urllib.request
+
         try:
             resp = urllib.request.urlopen("http://localhost:8000/healthz", timeout=5)
             assert resp.status == 200, f"Expected 200, got {resp.status}"
@@ -37,6 +39,7 @@ class TestWoodpeckerHealth:
         if not compose_running:
             pytest.skip("Compose stack not running")
         import urllib.request
+
         try:
             resp = urllib.request.urlopen("http://localhost:8000", timeout=5)
             assert resp.status == 200, f"Expected 200, got {resp.status}"

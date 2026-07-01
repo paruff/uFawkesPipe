@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":dependencyDashboard",
+    ":enableVulnerabilityAlerts"
+  ],
+  "timezone": "UTC",
+  "schedule": ["after 2am on monday"],
+  "automerge": false,
+  "labels": ["dependencies", "renovate"],
+  "assignees": ["philruff"],
+  "reviewers": ["philruff"],
+  "packageRules": [
+    {
+      "description": "Group pre-commit hook updates",
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit-hooks",
+      "commitMessagePrefix": "chore(deps):",
+      "commitMessageTopic": "update pre-commit hooks"
+    },
+    {
+      "description": "Pin pre-commit tool version in CI",
+      "matchManagers": ["github-actions"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["pre-commit/pre-commit"],
+      "groupName": "pre-commit-tool"
+    }
+  ],
+  "pre-commit": {
+    "enabled": true,
+    "fileMatch": [".pre-commit-config.yaml$"]
+  },
+  "github-actions": {
+    "enabled": true,
+    "fileMatch": [".github/workflows/.*\\.ya?ml$"]
+  }
+}

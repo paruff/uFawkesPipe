@@ -1,7 +1,6 @@
 """Integration tests for Docker Compose configuration validation."""
 
 import pytest
-import yaml
 
 
 class TestComposeIntegration:
@@ -45,4 +44,6 @@ class TestComposeIntegration:
     def test_docker_compose_is_valid(self, docker_compose_config):
         """Legacy docker-compose.yml must be valid YAML (deprecated but retained)."""
         assert docker_compose_config is not None, "docker-compose.yml is empty"
-        assert "services" in docker_compose_config, "docker-compose.yml missing services"
+        assert "services" in docker_compose_config, (
+            "docker-compose.yml missing services"
+        )

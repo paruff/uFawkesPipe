@@ -1,7 +1,6 @@
 """Acceptance tests for uFawkesPipe — full pipeline validation."""
 
 import pytest
-import yaml
 import subprocess
 
 
@@ -16,9 +15,15 @@ class TestFullPipeline:
 
         # All expected step names must be present
         expected = [
-            "init", "lint-yaml", "lint-shell",
-            "unit-tests", "integration-tests", "contract-tests",
-            "secrets-scan", "vuln-scan-fs", "vuln-scan-image",
+            "init",
+            "lint-yaml",
+            "lint-shell",
+            "unit-tests",
+            "integration-tests",
+            "contract-tests",
+            "secrets-scan",
+            "vuln-scan-fs",
+            "vuln-scan-image",
             "build-image",
             "upload-defectdojo",
             "notify-obs",
@@ -31,7 +36,7 @@ class TestFullPipeline:
         steps = woodpecker_config.get("steps", [])
 
         # Validate stage has init → parallel lint
-        init = next(s for s in steps if s["name"] == "init")
+        next(s for s in steps if s["name"] == "init")  # raises StopIteration if missing
         lint_yaml = next(s for s in steps if s["name"] == "lint-yaml")
         assert "init" in lint_yaml.get("depends_on", []), (
             "lint-yaml must depend on init"
@@ -64,8 +69,10 @@ class TestFullPipeline:
         try:
             result = subprocess.run(
                 ["yamllint", "compose.yaml", ".woodpecker.yml", ".env.example"],
-                capture_output=True, text=True, timeout=30,
-                cwd=str(project_root)
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd=str(project_root),
             )
             if result.returncode != 0:
                 pytest.skip(f"yamllint reported issues (non-blocking): {result.stderr}")

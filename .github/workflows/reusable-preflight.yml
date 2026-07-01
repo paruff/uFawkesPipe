@@ -76,7 +76,7 @@ jobs:
 
       - name: Install pre-commit
         if: steps.bypass.outputs.skipped != 'true'
-        run: pip install pre-commit
+        run: pip install 'pre-commit==4.6.0'
 
       - name: Cache pre-commit environments
         if: steps.bypass.outputs.skipped != 'true'
@@ -247,12 +247,6 @@ jobs:
           done < .env.example
 
           echo "✅ .env.example secret-placeholder check passed"
-
-      - name: Run gitleaks
-        if: steps.bypass.outputs.skipped != 'true'
-        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ── Outcome ─────────────────────────────────────────────────────────────
       - name: Set outcome
