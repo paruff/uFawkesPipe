@@ -1,59 +1,56 @@
 {
-  "feature": "WP-004",
-  "title": "Add vuln-scan-fs and vuln-scan-image Trivy steps",
-  "description": "Replace the single security-scan step with vuln-scan-fs (filesystem, runs on every push) and vuln-scan-image (image, runs on main only). Both write JSON artifacts for DefectDojo ingestion. Neither is a hard gate at v0.2.",
-  "depends_on": ["WP-001", "WP-003"],
-  "branch": "feature/wp-004-trivy-vuln-scan",
+  "feature": "WP-005",
+  "title": "Add upload-defectdojo telemetry collector step",
+  "description": "Add a new upload-defectdojo step that collects Gitleaks and Trivy JSON artifacts from artifacts/security/ and POSTs them to DefectDojo's import-scan API. Non-blocking step that warns on failure but does not fail the pipeline.",
+  "depends_on": ["WP-002", "WP-004"],
+  "branch": "feature/wp-005-defectdojo-upload",
   "tasks": [
     {
-      "id": "WP-004-01",
-      "title": "Replace security-scan with vuln-scan-fs step in .woodpecker.yml",
-      "description": "Remove the existing security-scan step. Add a new step named vuln-scan-fs using aquasec/trivy:latest with DORA structured JSON logging. Command: trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . (exit-code 0, no hard gate). No when: branch restriction. Include comment explaining the latest tag exception for scanner images.",
+      "id": "WP-005-01",
+      "title": "Add upload-defectdojo step to .woodpecker.yml",
+      "description": "Add a new step named upload-defectdojo using curlimages/curl:8.6.0 with DOJO_API_TOKEN from_secret. Shell loop over gitleaks, trivy-repo, trivy-image artifacts with file existence check, scan_type mapping, product_name from CI_REPO_NAME, engagement_name CI-Engagement. Non-blocking — warnings on failure. DORA structured logging. when: branch: main.",
       "depends_on": [],
       "acceptance": [
-        "Step named 'vuln-scan-fs' exists in .woodpecker.yml steps list",
-        "Image is aquasec/trivy:latest",
-        "Commands include '--format json --output artifacts/security/trivy-repo.json --no-progress .'",
-        "Step has NO when: branch restriction",
-        "Commands do NOT include '--exit-code 1' (no hard gate)",
-        "Comment explains latest tag exception for scanner images",
-        "Old 'security-scan' step is removed from .woodpecker.yml",
-        "DORA structured JSON logging present in step commands"
-      ]
-    },
-    {
-      "id": "WP-004-02",
-      "title": "Add vuln-scan-image step to .woodpecker.yml",
-      "description": "Add a new step named vuln-scan-image using aquasec/trivy:latest with DORA structured JSON logging. Command: trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}. Has when: branch: main condition. Requires REGISTRY_USERNAME secret from_secret.",
-      "depends_on": ["WP-004-01"],
-      "acceptance": [
-        "Step named 'vuln-scan-image' exists in .woodpecker.yml steps list",
-        "Image is aquasec/trivy:latest",
-        "Commands include '--format json --output artifacts/security/trivy-image.json --no-progress'",
-        "Commands reference CI_REPO_NAME and CI_COMMIT_SHA for image reference",
+        "Step named 'upload-defectdojo' exists at correct position in steps list",
+        "Image is curlimages/curl:8.6.0",
+        "Step has environment.DOJO_API_TOKEN.from_secret: defectdojo_api_token",
         "Step has when: condition with branch: main",
-        "Step has environment.REGISTRY_USERNAME.from_secret: registry_username",
-        "Comment explains latest tag exception for scanner images",
+        "Commands include shell loop over gitleaks, trivy-repo, trivy-image",
+        "Commands include file existence check before each POST",
+        "Commands map gitleaks to Gitleaks Scan and trivy-* to Trivy Scan",
+        "Commands reference CI_REPO_NAME for product_name",
+        "Commands reference CI-Engagement for engagement_name",
+        "Commands do NOT exit non-zero on failure (non-blocking)",
         "DORA structured JSON logging present in step commands"
       ]
     },
     {
-      "id": "WP-004-03",
-      "title": "Add TestVulnScanFsStep and TestVulnScanImageStep test classes",
-      "description": "Add two new test classes to tests/unit/test_woodpecker_yml.py. TestVulnScanFsStep: validates step existence, image, JSON format output, output path, --no-progress flag, scans current dir, no branch restriction, no hard gate exit code, DORA logging. TestVulnScanImageStep: validates step existence, image, JSON format output, output path, --no-progress flag, branch main only, registry username secret, CI variable usage, DORA logging.",
-      "depends_on": ["WP-004-02"],
+      "id": "WP-005-02",
+      "title": "Add DOJO_API_TOKEN to .env.example",
+      "description": "Add DOJO_API_TOKEN placeholder with comment to .env.example.",
+      "depends_on": [],
       "acceptance": [
-        "TestVulnScanFsStep class exists in test_woodpecker_yml.py",
-        "TestVulnScanImageStep class exists in test_woodpecker_yml.py",
-        "Each class has at least 8 test methods covering their respective acceptance criteria",
+        ".env.example contains DOJO_API_TOKEN placeholder",
+        "Placeholder value is clearly a placeholder (e.g. your-defectdojo-api-token)",
+        "Comment explains what the token is for"
+      ]
+    },
+    {
+      "id": "WP-005-03",
+      "title": "Add TestUploadDefectDojoStep test class",
+      "description": "Add TestUploadDefectDojoStep class to tests/unit/test_woodpecker_yml.py with tests for step existence, curl image, DOJO_API_TOKEN secret, branch main, loop over all three artifact types, file existence check, scan_type mapping, product_name, engagement_name, non-blocking behavior, DORA logging.",
+      "depends_on": ["WP-005-01"],
+      "acceptance": [
+        "TestUploadDefectDojoStep class exists in test_woodpecker_yml.py",
+        "At least 10 test methods covering acceptance criteria",
         "pytest tests/unit/test_woodpecker_yml.py passes with zero failures"
       ]
     },
     {
-      "id": "WP-004-04",
+      "id": "WP-005-04",
       "title": "Run full validation suite and verify no regressions",
-      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
-      "depends_on": ["WP-004-03"],
+      "description": "Run pytest tests/, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
+      "depends_on": ["WP-005-03"],
       "acceptance": [
         "pytest tests/ passes with zero failures",
         "yamllint .woodpecker.yml reports zero errors",

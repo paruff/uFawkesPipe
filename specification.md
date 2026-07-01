@@ -1,19 +1,16 @@
-# WP-004 — Add `vuln-scan-fs` and `vuln-scan-image` Trivy steps
+# WP-005 — Add `upload-defectdojo` Telemetry Collector Step
 
 **Type:** feat / security
-**Depends on:** WP-001 (init), WP-003 (secrets-scan)
-**Branch:** `feature/wp-004-trivy-vuln-scan`
+**Depends on:** WP-002 (fawkes-net), WP-004 (Trivy steps)
+**Branch:** `feature/wp-005-defectdojo-upload`
 
 ---
 
 ## 1. Problem
 
-The current `.woodpecker.yml` has a single `security-scan` step that runs `trivy fs --exit-code 1 --severity HIGH,CRITICAL` on `branch: main` only. This does not match the v0.2 pipeline design:
+Security findings from Gitleaks (secrets-scan) and Trivy (vuln-scan-fs, vuln-scan-image) currently write JSON artifacts to `artifacts/security/` but have no downstream consumer. The findings go nowhere — they are not aggregated, tracked, or actionable.
 
-- Filesystem scanning should run on **every push** (not just main) so developers get CVE feedback early
-- Image scanning should run **after build** on `main` only
-- Both scans must write JSON artifacts to `artifacts/security/` for downstream DefectDojo ingestion
-- The current step fails the pipeline on HIGH/CRITICAL findings, but the v0.2 design says findings go to DefectDojo (exit-code 0, no hard gate at v0.2)
+This step collects the three JSON artifact files and POSTs them to DefectDojo's `/api/v2/import-scan/` endpoint so security teams can track, triage, and remediate vulnerabilities in a centralized platform.
 
 ---
 
@@ -23,52 +20,59 @@ The current `.woodpecker.yml` has a single `security-scan` step that runs `trivy
 
 | # | Requirement | Rationale |
 |---|---|---|
-| F1 | Step named `vuln-scan-fs` uses image `aquasec/trivy:latest` | Trivy scanner for filesystem CVE scan |
-| F2 | `vuln-scan-fs` command: `trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress .` | JSON output for DefectDojo; `--no-progress` for clean CI logs |
-| F3 | `vuln-scan-fs` runs on every push (no `when:` branch restriction) | Developers get CVE feedback on all branches |
-| F4 | `vuln-scan-fs` exits with code 0 (findings reported, not fatal) | Findings go to DefectDojo, not a pipeline gate at v0.2 |
-| F5 | Comment above `vuln-scan-fs` explains the `latest` tag exception for scanner images | Documented exception to pinned-image policy |
-| F6 | Step named `vuln-scan-image` uses image `aquasec/trivy:latest` | Trivy scanner for built image CVE scan |
-| F7 | `vuln-scan-image` command: `trivy image --format json --output artifacts/security/trivy-image.json --no-progress <image-ref>` | JSON output for DefectDojo |
-| F8 | `vuln-scan-image` has `when: branch: main` condition | Image scan requires a built image, which only exists on main |
-| F9 | Image ref uses Woodpecker built-in variables for registry, repo, and short SHA | Consistent with build step image tagging |
-| F10 | Old `security-scan` step removed | Replaced by the two new steps |
+| F1 | Step named `upload-defectdojo` uses image `curlimages/curl:8.6.0` | Pinned, minimal image for HTTP calls |
+| F2 | Secret `defectdojo_api_token` injected via `from_secret` | Never hardcode credentials |
+| F3 | Step only runs on `branch: main` | Only aggregate findings on main branch merges |
+| F4 | Shell loop iterates over `gitleaks.json`, `trivy-repo.json`, `trivy-image.json` | Three scanner outputs from previous steps |
+| F5 | Each file checked for existence with `[ -f "$path" ] \|\| continue` before POSTing | Defensive — scan may be skipped in some runs |
+| F6 | `scan_type` correctly mapped: `gitleaks` → `Gitleaks Scan`, `trivy-repo`/`trivy-image` → `Trivy Scan` | DefectDojo requires specific scan type identifiers |
+| F7 | `product_name` uses `${CI_REPO_NAME}` Woodpecker variable | Auto-create/link product by repo name |
+| F8 | `engagement_name` is static `CI-Engagement` | Single engagement per product for CI runs |
+| F9 | Failed uploads print `WARN:` prefix and do not exit non-zero | Non-blocking — pipeline continues on upload failure |
 
 ### Non-Functional
 
 | # | Requirement | Rationale |
 |---|---|---|
-| NF1 | Structured JSON logging (DORA format) in both steps | Consistent with all other pipeline steps |
-| NF2 | `--no-progress` flag on both scans | Reduces CI log noise |
-| NF3 | No secrets required for Trivy steps | Trivy pulls public CVE DB, no auth needed |
+| NF1 | Structured JSON logging (DORA format) for observability | Consistent with all other pipeline steps |
+| NF2 | No secrets in logs — token passed via env var | Security hygiene |
+| NF3 | Works with DefectDojo on `fawkes-net` at `http://defectdojo:8080` | Network prerequisite from WP-002 |
 
 ---
 
 ## 3. Acceptance Criteria
 
-1. Step `vuln-scan-fs` exists in `.woodpecker.yml` with image `aquasec/trivy:latest`
-2. `vuln-scan-fs` command includes `--format json --output artifacts/security/trivy-repo.json --no-progress .`
-3. `vuln-scan-fs` has **no** `when:` branch restriction (runs on every push)
-4. Step `vuln-scan-image` exists in `.woodpecker.yml` with image `aquasec/trivy:latest`
-5. `vuln-scan-image` command includes `--format json --output artifacts/security/trivy-image.json --no-progress`
-6. `vuln-scan-image` has `when:` condition `branch: main`
-7. Comment explaining `latest` tag exception exists above or inline with both Trivy steps
-8. Old `security-scan` step **removed** from `.woodpecker.yml`
-9. `tests/unit/test_woodpecker_yml.py` updated with `TestVulnScanFsStep` and `TestVulnScanImageStep` classes
-10. `pytest tests/` passes with zero failures
+1. Step `upload-defectdojo` exists in `.woodpecker.yml` with image `curlimages/curl:8.6.0`
+2. Step has `environment.DOJO_API_TOKEN.from_secret: defectdojo_api_token`
+3. Step has `when: branch: main`
+4. Commands contain shell loop over `gitleaks trivy-repo trivy-image`
+5. Loop checks `[ -f "$path" ] || continue` before each POST
+6. `scan_type` mapping implemented via `case` statement
+7. `product_name` uses `${CI_REPO_NAME}`
+8. Failed uploads output `WARN:` and do not fail step
+9. `.env.example` documents `DOJO_API_TOKEN` placeholder with comment
+10. `tests/unit/test_woodpecker_yml.py` updated with `TestUploadDefectDojoStep` class
+11. `pytest tests/` passes with zero failures
 
 ---
 
 ## 4. Dependencies
 
-- **WP-001** (init): artifact directories must exist before scan writes output
-- **WP-003** (secrets-scan): must run before filesystem scan (secret leaks are more critical than CVEs)
+- **WP-002**: `fawkes-net` external network for DefectDojo DNS resolution
+- **WP-004**: `vuln-scan-fs` and `vuln-scan-image` steps producing Trivy JSON artifacts
 
 ---
 
 ## 5. Out of Scope
 
-- Hard gate on CRITICAL severity in image scan (v0.3 item — requires DefectDojo policy round-trip)
-- `upload-defectdojo` step (WP-005)
-- `build` step (WP-009) — `vuln-scan-image` references the build output but does not include the build step itself
-- SBOM generation (future)
+- DefectDojo provisioning (assumed pre-existing on `fawkes-net`)
+- Vault/Infisical integration (Woodpecker native secrets used)
+- Product/engagement auto-creation verification (depends on DefectDojo version — human verification required)
+
+---
+
+## 6. Open Questions (Block Implementation if Unresolved)
+
+| # | Question | Owner | Target |
+|---|---|---|---|
+| Q1 | Does DefectDojo `/api/v2/import-scan/` accept `product_name` for auto-creation, or is `product_id` required? | Platform engineer | Before implementation |

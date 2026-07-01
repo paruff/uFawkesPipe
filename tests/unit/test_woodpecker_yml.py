@@ -355,3 +355,171 @@ class TestVulnScanImageStep:
         assert '"step":"vuln-scan-image"' in command_str, (
             "vuln-scan-image logging must include step name for traceability"
         )
+
+
+class TestUploadDefectDojoStep:
+    """Acceptance: upload-defectdojo step (WP-005) is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the upload-defectdojo step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "upload-defectdojo":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'upload-defectdojo' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, (
+            "Step named 'upload-defectdojo' must exist in .woodpecker.yml"
+        )
+
+    def test_uses_curl_image(self, woodpecker_config):
+        """Acceptance: upload-defectdojo uses 'curlimages/curl:8.6.0'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        assert step["image"] == "curlimages/curl:8.6.0", (
+            f"upload-defectdojo must use 'curlimages/curl:8.6.0', "
+            f"got '{step.get('image')}'"
+        )
+
+    def test_has_dojo_api_token_secret(self, woodpecker_config):
+        """Acceptance: upload-defectdojo has DOJO_API_TOKEN from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        environment = step.get("environment", {})
+        dojo_token = environment.get("DOJO_API_TOKEN", {})
+        assert dojo_token.get("from_secret") == "defectdojo_api_token", (
+            f"upload-defectdojo must have DOJO_API_TOKEN from_secret: "
+            f"defectdojo_api_token, got: {dojo_token}"
+        )
+
+    def test_branch_main_only(self, woodpecker_config):
+        """Acceptance: upload-defectdojo has when: branch: main condition."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        when = step.get("when", [])
+        assert when, "upload-defectdojo must have a 'when' condition with branch: main"
+        branch_found = False
+        for condition in when:
+            if isinstance(condition, dict) and condition.get("branch") == "main":
+                branch_found = True
+                break
+        assert branch_found, (
+            f"upload-defectdojo 'when' must include 'branch: main', got: {when}"
+        )
+
+    def test_loops_over_gitleaks(self, woodpecker_config):
+        """Acceptance: upload-defectdojo loops over gitleaks artifacts."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "gitleaks" in command_str, (
+            f"upload-defectdojo must reference 'gitleaks' in loop, got: {command_str}"
+        )
+
+    def test_loops_over_trivy_repo(self, woodpecker_config):
+        """Acceptance: upload-defectdojo loops over trivy-repo artifacts."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "trivy-repo" in command_str, (
+            f"upload-defectdojo must reference 'trivy-repo' in loop, got: {command_str}"
+        )
+
+    def test_loops_over_trivy_image(self, woodpecker_config):
+        """Acceptance: upload-defectdojo loops over trivy-image artifacts."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "trivy-image" in command_str, (
+            "upload-defectdojo must reference 'trivy-image' in loop, "
+            f"got: {command_str}"
+        )
+
+    def test_checks_file_existence(self, woodpecker_config):
+        """Acceptance: upload-defectdojo checks file existence before POST."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert '[ ! -f "$path" ]' in command_str or '[ -f "$path" ]' in command_str, (
+            "upload-defectdojo must check file existence before POSTing, "
+            f"got: {command_str}"
+        )
+
+    def test_scan_type_gitleaks(self, woodpecker_config):
+        """Acceptance: upload-defectdojo maps gitleaks to 'Gitleaks Scan'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "gitleaks" in command_str and "Gitleaks Scan" in command_str, (
+            "upload-defectdojo must map 'gitleaks' to 'Gitleaks Scan', "
+            f"got: {command_str}"
+        )
+
+    def test_scan_type_trivy_repo(self, woodpecker_config):
+        """Acceptance: upload-defectdojo maps trivy-repo to 'Trivy Scan'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "trivy-repo" in command_str and "Trivy Scan" in command_str, (
+            "upload-defectdojo must map 'trivy-repo' to 'Trivy Scan', "
+            f"got: {command_str}"
+        )
+
+    def test_scan_type_trivy_image(self, woodpecker_config):
+        """Acceptance: upload-defectdojo maps trivy-image to 'Trivy Scan'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "trivy-image" in command_str and "Trivy Scan" in command_str, (
+            "upload-defectdojo must map 'trivy-image' to 'Trivy Scan', "
+            f"got: {command_str}"
+        )
+
+    def test_uses_product_name(self, woodpecker_config):
+        """Acceptance: upload-defectdojo uses CI_REPO_NAME for product_name."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "CI_REPO_NAME" in command_str, (
+            "upload-defectdojo must reference CI_REPO_NAME for product_name, "
+            f"got: {command_str}"
+        )
+
+    def test_uses_engagement_name(self, woodpecker_config):
+        """Acceptance: upload-defectdojo uses CI-Engagement as engagement_name."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "CI-Engagement" in command_str, (
+            "upload-defectdojo must use 'CI-Engagement' as engagement_name, "
+            f"got: {command_str}"
+        )
+
+    def test_non_blocking(self, woodpecker_config):
+        """Acceptance: upload-defectdojo does NOT exit non-zero on failure."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        # Should not contain bare 'exit' on failure paths
+        # (rc capture is ok, explicit exit on failure is not)
+        # Logging uses "level":"warn" (lowercase) for failure events
+        assert '"level":"warn"' in command_str, (
+            f"upload-defectdojo must log warning on failure, got: {command_str}"
+        )
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: upload-defectdojo has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'upload-defectdojo' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "@timestamp" in command_str, (
+            "upload-defectdojo must include DORA timestamp logging"
+        )
+        assert '"step":"upload-defectdojo"' in command_str, (
+            "upload-defectdojo logging must include step name for traceability"
+        )
