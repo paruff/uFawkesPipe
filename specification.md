@@ -1,23 +1,24 @@
-# WP-007 — Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test
+# WP-008 — Update README and Add docs/pipeline-contract.md
 
 **Type:** docs / feat
-**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs)
-**Branch:** `feature/wp-007-quickstart-v02`
+**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs), WP-007 (QUICKSTART v0.2)
+**Branch:** `feature/wp-008-readme-pipeline-contract`
 
 ---
 
 ## 1. Problem
 
-The current `QUICKSTART.md` documents the legacy Jenkins-based pipeline:
-- References Jenkins at localhost:8080
-- References legacy `docker-compose.yml` (not the v0.2 `compose.yaml`)
-- Uses old `make init` / `make start` commands
-- References Jenkinsfile for pipeline creation
-- No v0.2 pipeline contract (`.fawkespipe.yml`) guidance
-- No suite mode (`make up-suite`) documentation
-- No smoke test verification steps
+The current `README.md` documents the v0.2 stack partially but contains several stale references and gaps:
+- References `k8s/` directory for Kubernetes manifests (deleted in WP-007)
+- References legacy `docker-compose.yml` instead of `compose.yaml`
+- SonarQube port listed as 9001 (should be 9000)
+- Pipeline stages list includes 8 stages but `.woodpecker.yml` has different steps
+- No reference to the new `.fawkespipe.yml` pipeline contract format (v0.2)
+- Missing documentation of Woodpecker CI steps (secrets-scan, validate-pipeline-contract, vuln-scan-fs/image, upload-defectdojo, notify-obs)
+- Missing suite mode documentation
+- No link to `docs/pipeline-contract.md` (which doesn't exist yet)
 
-The v0.2 platform uses Woodpecker CI at localhost:8000, `compose.yaml` (Woodpecker + SonarQube), CNB/pack for builds, and the `.fawkespipe.yml` pipeline contract.
+A dedicated `docs/pipeline-contract.md` is needed to serve as the authoritative reference for the `.fawkespipe.yml` contract — currently only `.fawkespipe.yml.example` exists with inline comments.
 
 ---
 
@@ -27,14 +28,15 @@ The v0.2 platform uses Woodpecker CI at localhost:8000, `compose.yaml` (Woodpeck
 
 | # | Requirement | Rationale |
 |---|---|---|
-| F1 | Update prerequisites section for v0.2 stack (Docker, Docker Compose v2, `pack` CLI optional) | Accurate setup requirements |
-| F2 | Document both standalone mode (`make up`) and suite mode (`make up-suite`) | Users need both options |
-| F3 | Update environment configuration section with v0.2 `.env.example` variables | Correct credential guidance |
-| F4 | Replace Jenkins references with Woodpecker CI (port 8000) | Reflect actual services |
-| F5 | Document `.fawkespipe.yml` pipeline contract usage | v0.2 standard pipeline definition |
-| F6 | Add smoke test section with verification commands | Validate installation works |
-| F7 | Update common commands section for v0.2 Makefile targets | Accurate CLI reference |
+| F1 | Rewrite README.md to accurately reflect v0.2 Woodpecker CI + CNB stack | Accurate project landing page |
+| F2 | Remove all `k8s/` references (directory deleted) | Prevent broken links |
+| F3 | Update SonarQube port from 9001 → 9000 | Match compose.yaml |
+| F4 | Document actual `.woodpecker.yml` pipeline steps | Developer discoverability |
+| F5 | Document `.fawkespipe.yml` contract structure and link to new docs/pipeline-contract.md | Contract discoverability |
+| F6 | Create `docs/pipeline-contract.md` as authoritative contract reference | Single source of truth for contract |
+| F7 | Document standalone mode (`make up`) and suite mode (`make up-suite`) | Both deployment modes |
 | F8 | Update troubleshooting for v0.2 stack | Help users resolve issues |
+| F9 | Update uFawkes Stack Ecosystem table | Accurate cross-repo links |
 
 ### Non-Functional
 
@@ -42,37 +44,42 @@ The v0.2 platform uses Woodpecker CI at localhost:8000, `compose.yaml` (Woodpeck
 |---|---|---|
 | NF1 | Follow existing markdown style (headers, code blocks, tables) | Consistency with repo docs |
 | NF2 | No hardcoded secrets — use `your_` placeholder convention | Security compliance |
-| NF3 | Link to `compose.yaml` and `.woodpecker.yml` for reference | Developer discoverability |
+| NF3 | All internal links must resolve | Documentation quality |
+| NF4 | Pass `markdownlint` and `pre-commit run --all-files` | CI gate compliance |
 
 ---
 
 ## 3. Acceptance Criteria
 
-1. Prerequisites section lists: Docker 20.10+, Docker Compose v2.0+, 4GB+ RAM, GitHub OAuth app for Woodpecker, `pack` CLI (optional for CNB builds)
-2. Installation documents both `make up` (standalone) and `make up-suite` (connects to uFawkesRes/uFawkesObs)
-3. Environment configuration references all v0.2 `.env.example` variables: WOODPECKER_GITHUB_CLIENT, WOODPECKER_GITHUB_SECRET, WOODPECKER_AGENT_SECRET, WOODPECKER_HOST, SONARQUBE_ADMIN_PASSWORD, REGISTRY_USERNAME, REGISTRY_TOKEN, DOJO_API_TOKEN, POSTGRES_PASSWORD, WOODPECKER_METRICS_TOKEN, UFAWKES_ENVIRONMENT, OTEL_ENDPOINT, OTEL_HEADERS
-4. Service access: Woodpecker at `http://localhost:8000`, SonarQube at `http://localhost:9000`
-5. Pipeline creation uses `.fawkespipe.yml` contract (not Jenkinsfile)
-5. Smoke test section with: `make validate`, `make test`, `curl` health checks for Woodpecker and SonarQube
-6. Common commands updated: `make up`, `make up-suite`, `make down`, `make logs`, `make status`, `make validate`, `make test`
-7. Troubleshooting covers: Woodpecker won't start, port conflicts, GitHub OAuth issues, OTEL collector connectivity
-8. All markdown passes `markdownlint` and `pre-commit run --all-files`
-9. Links to `compose.yaml`, `.woodpecker.yml`, `.fawkespipe.yml.example` are valid
+1. **README.md** — Prerequisites: Docker 20.10+, Docker Compose v2, 4GB+ RAM, GitHub OAuth, DockerHub account
+2. **README.md** — Installation: `make up` (standalone) and `make up-suite` (suite mode with deps)
+3. **README.md** — Service Access table: Woodpecker (8000), Portainer (9443), SonarQube (9000) — **port 9000**
+4. **README.md** — Pipeline Stages section matches actual `.woodpecker.yml` steps (init, secrets-scan, lint-yaml, lint-shell, validate-pipeline-contract, vuln-scan-fs, vuln-scan-image, upload-defectdojo, notify-obs)
+5. **README.md** — Pipeline Contract section references `.fawkespipe.yml` and links to `docs/pipeline-contract.md`
+6. **README.md** — No references to `k8s/` directory or legacy `docker-compose.yml`
+7. **README.md** — Language-specific examples reference `examples/` directory
+8. **README.md** — Troubleshooting covers Woodpecker, SonarQube, OTEL, pack, port conflicts
+9. **README.md** — uFawkes Stack Ecosystem table has correct links
+10. **docs/pipeline-contract.md** — Exists and documents all sections of `.fawkespipe.yml`: app, build, stages, notifications, kubernetes, advanced
+11. **docs/pipeline-contract.md** — Includes field descriptions, valid values, examples for each section
+12. **docs/pipeline-contract.md** — Links to `.fawkespipe.yml.example` and `examples/` language-specific files
+13. All markdown passes `markdownlint` and `pre-commit run --all-files`
 
 ---
 
 ## 4. Dependencies
 
-- **WP-001** (init): Artifact directories must exist for validation
-- **WP-004** (vuln-scan-fs): Smoke test may run pipeline validation
-- **WP-005** (upload-defectdojo): Security scan references in docs
-- **WP-006** (notify-obs): Observability references in docs
+- **WP-001** (init): Artifact directories exist for pipeline validation
+- **WP-004** (vuln-scan-fs): Documented in pipeline steps
+- **WP-005** (upload-defectdojo): Documented in pipeline steps
+- **WP-006** (notify-obs): Documented in pipeline steps
+- **WP-007** (QUICKSTART v0.2): Consistent terminology and commands
 
 ---
 
 ## 5. Out of Scope
 
-- Full `README.md` rewrite (separate effort)
-- `docs/ARCHITECTURE.md` updates (separate effort)
-- `docs/KNOWN_LIMITATIONS.md` updates (separate effort)
-- Migration guide for Jenkins → Woodpecker (separate effort)
+- Full `QUICKSTART.md` rewrite (done in WP-007)
+- `docs/ARCHITECTURE.md` updates
+- `docs/KNOWN_LIMITATIONS.md` updates
+- Migration guide for Jenkins → Woodpecker

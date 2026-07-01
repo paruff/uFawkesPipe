@@ -1,34 +1,37 @@
 # uFawkesPipe
 
-[![CI](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![CI Pipeline](https://github.com/paruff/uFawkesPipe/actions/workflows/ci-pipeline.yml/badge.svg)](https://github.com/paruff/uFawkesPipe/actions/workflows/ci-pipeline.yml) [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
-uFawkesPipe is a Woodpecker CI pipeline engine with Portainer CD, SonarQube SAST, and Cloud Native Buildpacks — the CI/CD plane of the Fawkes IDP.
+uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQube, Trivy, Gitleaks), Cloud Native Buildpacks, and DefectDojo security scan ingestion — the CI/CD plane of the Fawkes IDP.
 
 ## 🚀 Features
 
-- **Polyglot Support** - Build applications in Java, Python, Node.js, Go, Ruby, and more
-- **Standard Pipeline Contract** - Define CI/CD behavior via `.fawkespipe.yml` configuration
+- **Polyglot Support** - Build applications in Java, Python, Node.js, Go, Ruby, and more via Cloud Native Buildpacks
+- **Standard Pipeline Contract** - Define CI/CD behavior via `.fawkespipe.yml` configuration (see [docs/pipeline-contract.md](docs/pipeline-contract.md))
 - **Cloud Native Buildpacks** - Build OCI-compliant container images without Dockerfiles
-- **Security First** - Integrated SAST, dependency scanning, and container image scanning
-- **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration
-- **Webhook APIs** - External planes can trigger pipelines via REST APIs
-- **K8s Ready** - Clear promotion path to Kubernetes production environments
-- **Single-node Dev** - Full stack runs on Docker Compose for local development
+- **Security-First Pipeline** - Integrated Gitleaks secret scanning, Trivy vulnerability scanning (filesystem + container), and SonarQube SAST
+- **DefectDojo Integration** - Automated security scan result ingestion post-build
+- **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration with GitHub OAuth
+- **DORA Observability** - Structured JSON logging, OTEL deployment event emission, Prometheus metrics
+- **Standalone + Suite Mode** - Run independently or connect to uFawkesRes (PostgreSQL/Traefik) and uFawkesObs (OTEL/Loki)
 
 ## 📋 Pipeline Stages
 
-Every pipeline in uFawkesPipe follows these standardized stages, defined in `.woodpecker.yml`:
+Every pipeline in uFawkesPipe follows these standardized stages, defined in [`.woodpecker.yml`](.woodpecker.yml):
 
-1. **Lint** - Code quality and style checks (language-specific)
-2. **Unit Tests** - Automated testing with coverage reporting
-3. **SAST** - Static Application Security Testing (SonarQube + Trivy)
-4. **Dependency Scan** - Vulnerability scanning (OWASP Dependency-Check + Trivy)
-5. **Build** - Container image build via Cloud Native Buildpacks or Docker
-6. **Image Scan** - Container vulnerability scanning (Trivy)
-7. **Push** - Push images to DockerHub (or other registries)
-8. **Deploy** - Optional Kubernetes deployment
+1. **init** — Create artifact directories (security, coverage, tests)
+2. **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules and `.secrets.baseline`
+3. **lint-yaml** — Validate `compose.yaml`, `.woodpecker.yml`, `.env.example` with yamllint
+4. **lint-shell** — ShellCheck validation on `scripts/*.sh` and `validate.sh`
+5. **validate-pipeline-contract** — pytest suite validating `.fawkespipe.yml`, `compose.yaml`, manifests, and pipeline contract compliance
+6. **vuln-scan-fs** — Trivy filesystem vulnerability scan (entire working tree)
+7. **vuln-scan-image** — Trivy container image vulnerability scan (main branch only)
+8. **upload-defectdojo** — Collect Gitleaks + Trivy scan results and POST to DefectDojo API (main branch only, non-blocking)
+9. **notify-obs** — Emit structured deployment event to uFawkesObs OTEL collector (main branch only, non-blocking)
+
+All steps emit structured JSON logs compatible with uFawkesObs/Loki ingestion.
 
 ## 🏗️ Architecture
 
@@ -38,12 +41,12 @@ Every pipeline in uFawkesPipe follows these standardized stages, defined in `.wo
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌────────────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ Woodpecker Server  │  │  SonarQube   │  │  Portainer  │  │
-│  │ + Agent            │  │   (SAST)     │  │   CE (CD)   │  │
-│  │                    │  │              │  │            │  │
-│  │  - Pipeline YAML   │  │  - Quality   │  │  - Stacks  │  │
-│  │  - GitHub OAuth    │  │    Gates     │  │  - Secrets │  │
-│  │  - CLI triggers    │  │  - Coverage  │  │  - Volumes │  │
+│  │ Woodpecker Server  │  │  SonarQube   │  │  Portainer   │  │
+│  │ + Agent            │  │   (SAST)     │  │   CE (CD)    │  │
+│  │                    │  │              │  │              │  │
+│  │  - Pipeline YAML   │  │  - Quality   │  │  - Stacks    │  │
+│  │  - GitHub OAuth    │  │    Gates     │  │  - Secrets   │  │
+│  │  - CLI triggers    │  │  - Coverage  │  │  - Volumes   │  │
 │  └────────────────────┘  └──────────────┘  └──────────────┘  │
 │         │                          │                │      │
 │         └──────────────────────────┴────────────────┘      │
@@ -59,32 +62,34 @@ Every pipeline in uFawkesPipe follows these standardized stages, defined in `.wo
 │                  │   Registry      │                        │
 │                  └─────────────────┘                        │
 │                                                               │
-└───────────────────────────────────────┬─────────────────────┘
-                                        │
-                                        │ Promotion Path
-                                        ▼
-                        ┌───────────────────────────┐
-                        │   Kubernetes Cluster      │
-                        │   (Production)            │
-                        └───────────────────────────┘
+│  Suite mode: ┌────────────┐   ┌───────────────────┐         │
+│              │ uFawkesRes │   │   uFawkesObs      │         │
+│              │ (Postgres, │◄──│ (OTEL, Loki,      │         │
+│              │  Traefik)  │   │  Prometheus)      │         │
+│              └────────────┘   └───────────────────┘         │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+- **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
+- **Suite mode** (`make up-suite`): Adds uFawkesRes PostgreSQL, Valkey, Traefik ingress and uFawkesObs OTEL Collector, Alloy, Loki, Prometheus
 
 ## 🛠️ Quick Start
 
 ### Prerequisites
 
 - Docker Engine 20.10+
-- Docker Compose v2.0+
+- Docker Compose v2.0+ (`docker compose` plugin, not standalone `docker-compose`)
 - 4GB+ RAM available for containers
-- DockerHub account (for image push)
+- GitHub OAuth App (Client ID + Secret) for Woodpecker authentication
+- DockerHub account (for image registry)
 
 ### Setup
 
 1. **Clone the repository**
 
    ```bash
-    git clone https://github.com/paruff/uFawkesPipe.git
-    cd uFawkesPipe
+   git clone https://github.com/paruff/uFawkesPipe.git
+   cd uFawkesPipe
    ```
 
 2. **Configure environment**
@@ -95,117 +100,54 @@ Every pipeline in uFawkesPipe follows these standardized stages, defined in `.wo
    nano .env
    ```
 
-   **Required configuration:**
-
-   - `REGISTRY_USERNAME` - Your registry username
-   - `REGISTRY_TOKEN` - DockerHub access token or password
-   - `WOODPECKER_GITHUB_CLIENT` - GitHub OAuth client ID
-   - `WOODPECKER_GITHUB_SECRET` - GitHub OAuth client secret
-   - `WOODPECKER_AGENT_SECRET` - Shared secret between server and agent
-   - `SONARQUBE_ADMIN_PASSWORD` - Change default SonarQube admin password
-
 3. **Start the platform**
 
    ```bash
+   # Standalone mode (Woodpecker + SonarQube + Portainer)
    make up
+
+   # Or suite mode (connects to uFawkesRes + uFawkesObs)
+   make up-suite
    ```
 
-4. **Wait for services to start** (<30 seconds)
+4. **Access the platform**
 
-   ```bash
-   make logs
-   ```
-
-5. **Access the platform**
-
-   | Service       | Port | URL                    |
-   | ------------- | ---- | ---------------------- |
-   | Woodpecker CI | 8000 | http://localhost:8000  |
-   | Portainer CE  | 9443 | https://localhost:9443 |
-   | SonarQube     | 9001 | http://localhost:9001  |
-
-   Authenticate via GitHub OAuth for Woodpecker.
-   Create the first admin account for Portainer.
-   SonarQube uses the password configured in `SONARQUBE_ADMIN_PASSWORD` in `.env` (default: `admin`).
+   | Service       | Port | URL                    | Auth                     |
+   | ------------- | ---- | ---------------------- | ------------------------ |
+   | Woodpecker CI | 8000 | http://localhost:8000  | GitHub OAuth             |
+   | Portainer CE  | 9443 | https://localhost:9443 | Admin account (first use)|
+   | SonarQube     | 9000 | http://localhost:9000  | admin / (from .env)      |
 
 ### First Pipeline
 
-1. **Create a `.fawkespipe.yml` in your application repository**
+1. Add a `.fawkespipe.yml` to your application repository (see [docs/pipeline-contract.md](docs/pipeline-contract.md))
+2. Push to GitHub
+3. In Woodpecker UI: Repositories → Activate your repository
+4. Push code → Pipeline auto-triggers via GitHub webhook
 
-   Example for a Node.js app:
-
-   ```yaml
-   app:
-     name: my-app
-     type: service
-     language: nodejs
-
-   build:
-     builder: cnb
-     image:
-       namespace: myorg
-       name: my-app
-
-   stages:
-     lint:
-       enabled: true
-       commands:
-         - language: nodejs
-           cmd: npm run lint
-
-     test:
-       enabled: true
-       commands:
-         - language: nodejs
-           cmd: npm test
-
-     sast:
-       enabled: true
-
-     dependency_scan:
-       enabled: true
-
-     push:
-       enabled: true
-   ```
-
-2. **Create a `.woodpecker.yml` in your application repository**
-
-   ```yaml
-   pipeline:
-     build:
-       image: alpine:3.20
-       commands:
-         - echo "Building $(basename $(pwd))..."
-   ```
-
-3. **Add the pipeline to Woodpecker CI**
-
-   - Go to Woodpecker CI → Repositories
-   - Activate your repository
-   - Woodpecker will automatically discover `.woodpecker.yml`
-   - Push code to trigger the pipeline!
-
-   See `.woodpecker.yml` for uFawkesPipe's own pipeline definition.
+Full details: [QUICKSTART.md](QUICKSTART.md)
 
 ## 📖 Pipeline Contract Reference
 
-The `.fawkespipe.yml` file defines how your application should be built and deployed. See [.fawkespipe.yml.example](./.fawkespipe.yml.example) for a complete reference.
+The `.fawkespipe.yml` file is the standard pipeline contract that defines how your application is built, tested, scanned, and deployed. It is placed at the root of your application repository.
 
 ### Key Sections
 
-- **`app`** - Application metadata (name, type, language)
-- **`build`** - Build configuration (CNB or Docker)
-- **`stages`** - Enable/disable and configure pipeline stages
-- **`notifications`** - Slack, email notifications
-- **`kubernetes`** - Kubernetes deployment configuration
+- **`app`** - Application metadata (name, type, language, version)
+- **`build`** - Build configuration: `cnb` (Cloud Native Buildpacks), `docker`, or `custom`
+- **`stages`** - Enable/disable and configure pipeline stages (lint, test, sast, dependency_scan, build, image_scan, push)
+- **`notifications`** - Slack and email notification configuration
+- **`kubernetes`** - Kubernetes deployment configuration (promotion path)
+- **`advanced`** - Timeout, retry, parallel execution, artifact retention
 
 ### Language-Specific Examples
 
-- [Java/Maven](./examples/.fawkespipe-java-maven.yml)
-- [Python/Flask](./examples/.fawkespipe-python-flask.yml)
-- [Node.js/Express](./examples/.fawkespipe-nodejs-express.yml)
-- [Go](./examples/.fawkespipe-go.yml)
+- [Java/Maven](examples/.fawkespipe-java-maven.yml)
+- [Python/Flask](examples/.fawkespipe-python-flask.yml)
+- [Node.js/Express](examples/.fawkespipe-nodejs-express.yml)
+- [Go](examples/.fawkespipe-go.yml)
+
+**Full reference: [docs/pipeline-contract.md](docs/pipeline-contract.md)**
 
 ## 🔌 Webhook API
 
@@ -213,19 +155,19 @@ uFawkesPipe exposes Woodpecker CI webhooks for external plane integration.
 
 ### Trigger Pipeline via Webhook
 
-Woodpecker CI automatically receives push webhooks from GitHub when a repository is activated.
+Woodpecker CI automatically receives push webhooks from GitHub when a repository is activated. The webhook URL is auto-configured by Woodpecker during repository activation.
 
 **GitHub Webhook Integration**:
 
-Configure in GitHub: Settings → Webhooks → Add webhook
+Configured automatically when you activate a repository in Woodpecker. The webhook points to:
 
-- Payload URL: `http://your-woodpecker:8000/api/hooks/<repository-id>`
+- Payload URL: `http://<woodpecker-host>:8000/api/hooks/<repository-id>`
 - Content type: `application/json`
 - Events: Push, Pull Request
 
 ### CLI Commands
 
-**Woodpecker CI** triggers from the command line:
+**Woodpecker CLI** triggers from the command line:
 
 ```bash
 # List repositories and pipelines
@@ -237,99 +179,63 @@ woodpecker-cli pipeline ls --repo <org/repo>
 woodpecker-cli pipeline start <org/repo> <pipeline-number>
 ```
 
-**Portainer CE** management via CLI:
-
-```bash
-# List all stacks
-docker exec portainer portainer stack ls
-
-# Inspect stack logs
-docker logs portainer
-```
+See [Woodpecker CLI documentation](https://woodpecker-ci.org/docs/cli) for full usage.
 
 ## ☸️ Kubernetes Promotion Path
 
-uFawkesPipe is designed for single-node development but provides a clear path to Kubernetes production.
+uFawkesPipe is designed for single-node development with Docker Compose. Kubernetes deployment support is planned but not yet implemented for the Woodpecker stack.
 
-### Development → Production Promotion
-
-1. **Development** (Current): Docker Compose on single node
-2. **Staging**: Kubernetes cluster with CI/CD namespace
-3. **Production**: Kubernetes cluster with automated promotion
-
-### Migration to Kubernetes
-
-**Deploy uFawkesPipe services on Kubernetes using the manifests in `k8s/`:**
-
-See [`k8s/`](./k8s/) for example Kubernetes manifests for Woodpecker, Portainer, and SonarQube.
-
-**Kubernetes Pipeline Integration:**
-
-Enable in `.fawkespipe.yml`:
-
-```yaml
-kubernetes:
-  enabled: true
-  cluster: production
-  namespace: my-app
-  manifests:
-    path: k8s/
-```
-
-### Helm Deployment
-
-uFawkesPipe also supports Helm deployments:
-
-```yaml
-kubernetes:
-  helm:
-    enabled: true
-    chart: ./helm/my-app
-    release: my-app
-    values: values.yaml
-```
+See the [`kubernetes` section](docs/pipeline-contract.md#kubernetes---kubernetes-deployment) in the pipeline contract for the planned configuration schema.
 
 ## 🔒 Security Features
 
+### Secret Detection
+
+- **Gitleaks** — Hard gate: scans all files for secrets, API keys, and credentials on every commit/push
+- **Pre-commit hook** — detect-secrets baseline for known false positives (`.secrets.baseline`)
+- **Baseline auto-update** — `.secrets.baseline` updates on line number changes
+
 ### Static Application Security Testing (SAST)
 
-- **SonarQube** - Code quality and security vulnerabilities
-- **Trivy** - Filesystem and code scanning
+- **SonarQube** — Code quality and security vulnerability analysis
+- **Trivy** — Filesystem and code vulnerability scanning
 
 ### Dependency Scanning
 
-- **OWASP Dependency-Check** - Known vulnerable dependencies (CVE database)
-- **Trivy** - Comprehensive vulnerability database
+- **Trivy** — Comprehensive vulnerability database scanning (filesystem and container image)
+- **OWASP Dependency-Check** — Known vulnerable dependencies (configured in `.fawkespipe.yml`)
 
-### Container Scanning
+### Container Security
 
-- **Trivy** - Container image vulnerability scanning
-- **Hadolint** - Dockerfile best practices
+- **Trivy** — Container image vulnerability scanning (main branch only)
+- **Cloud Native Buildpacks** — Build OCI images without Dockerfiles (reduces attack surface)
+- **Image pinning** — All service images pinned to specific versions (no `:latest`)
 
-### Security Best Practices
+### DefectDojo Integration
 
-- Fail builds on critical vulnerabilities
-- Quality gates for code coverage and security
-- Automated security scanning in every pipeline
-- Container image signing (roadmap)
+- Automated upload of Gitleaks and Trivy scan results to DefectDojo API
+- Non-blocking — scan ingestion failure does not fail the pipeline
 
 ## 🔧 Configuration
 
 ### Pipeline Configuration
 
-The pipeline is defined in `.woodpecker.yml`. Customize it to:
+The CI pipeline is defined in [`.woodpecker.yml`](.woodpecker.yml). Customize it to:
 
 - Add or remove pipeline steps
-- Configure Docker-in-Docker for container builds
-- Set environment variables for different stages
-- Define secrets for registry authentication
+- Configure environment variables for different stages
+- Define secrets for registry authentication and API tokens
+
+### Pipeline Contract Configuration
+
+Application teams configure their pipeline behavior via `.fawkespipe.yml` at the root of their repository. See [docs/pipeline-contract.md](docs/pipeline-contract.md) for the full reference.
 
 ### Service Configuration
 
-Edit `compose.yaml` to:
+Edit [`compose.yaml`](compose.yaml) to:
 
 - Change exposed ports
-- Add more services (Nexus, Harbor, etc.)
+- Add more services
 - Configure resource limits
 - Add additional networks
 
@@ -337,10 +243,10 @@ Edit `compose.yaml` to:
 
 Persistent data is stored in Docker volumes:
 
-- `woodpecker_data` - Woodpecker CI database and config
-- `portainer_data` - Portainer CD data
-- `sonarqube_data` - SonarQube analysis data
-- `pack_cache` - CNB build cache
+- `woodpecker_data` — Woodpecker CI database and config
+- `portainer_data` — Portainer CD data
+- `sonarqube_data` — SonarQube analysis data
+- `pack_cache` — CNB build cache
 
 **Backup volumes:**
 
@@ -360,20 +266,52 @@ make logs
 # Check Woodpecker status
 make status
 
+# Verify GitHub OAuth config in .env
+grep WOODPECKER_GITHUB .env
+
 # Reset Woodpecker data
 make down
 docker volume rm ufp_woodpecker_data
 make up
 ```
 
-### SonarQube quality gate fails
+### Port 8000 (or 9000, 9443) already in use
 
 ```bash
-# Check SonarQube logs
+lsof -i :8000
+lsof -i :9000
+lsof -i :9443
+```
+
+Edit `compose.yaml` to change the host port mapping if needed.
+
+### SonarQube won't start
+
+```bash
+# Check logs
 make logs sonarqube
 
-# Access SonarQube UI to review quality gate rules
-# http://localhost:9001
+# Increase vm.max_map_count (required for Elasticsearch)
+sudo sysctl -w vm.max_map_count=262144
+
+# Make permanent
+echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+```
+
+### GitHub webhook fails
+
+- Verify `WOODPECKER_HOST` in `.env` matches the webhook callback URL
+- Check Woodpecker UI → Repositories → your repo → Settings for webhook status
+- Ensure your Woodpecker instance is reachable from GitHub
+
+### OTEL collector unreachable (suite mode)
+
+```bash
+# Verify OTEL endpoint is set
+grep OTEL_ENDPOINT .env
+
+# Check connectivity from Woodpecker agent container
+docker compose -f compose.yaml exec woodpecker-agent wget -qO- http://otel-collector:4318
 ```
 
 ### Pack build fails
@@ -388,19 +326,21 @@ docker pull paketobuildpacks/builder:base
 # Check pack logs in Woodpecker CI build output
 ```
 
-### Dependency-Check is slow
+### Trivy scan is slow
 
-- First run downloads CVE database (10-30 minutes)
+- First run downloads CVE database (1-5 minutes)
 - Subsequent runs use cached data (faster)
-- Consider disabling for development builds
+- Trivy image scan runs only on main branch pushes
 
 ## 📚 Additional Resources
 
 - [Woodpecker CI Documentation](https://woodpecker-ci.org/docs/intro)
 - [Cloud Native Buildpacks](https://buildpacks.io/)
 - [SonarQube Documentation](https://docs.sonarqube.org/)
-- [OWASP Dependency-Check](https://owasp.org/www-project-dependency-check/)
 - [Trivy Documentation](https://aquasecurity.github.io/trivy/)
+- [Gitleaks Documentation](https://gitleaks.io/)
+- [DefectDojo Documentation](https://docs.defectdojo.com/)
+- [uFawkesObs — Observability Plane](https://github.com/paruff/uFawkesObs)
 
 ## 🤝 Contributing
 
@@ -408,7 +348,7 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 
 ## 📄 License
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
 
 ## 🙋 Support
 
@@ -417,7 +357,7 @@ Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ for platform engineers and developers
+Built for platform engineers and developers
 
 ## uFawkes Stack Ecosystem
 
@@ -425,8 +365,9 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 
 | Stack           | Description                                          | Link                                            |
 | --------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| **uFawkesObs**  | Observability — Prometheus, Grafana, AI dashboards   | [GitHub](https://github.com/paruff/uFawkesObs)  |
+| **uFawkesRes**  | Resource plane — PostgreSQL, Valkey, Traefik, Authelia | [GitHub](https://github.com/paruff/uFawkesRes)  |
 | **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
+| **uFawkesObs**  | Observability — Prometheus, Grafana, Loki, OTEL      | [GitHub](https://github.com/paruff/uFawkesObs)  |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
 | **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/uFawkesSec)  |
 | **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |

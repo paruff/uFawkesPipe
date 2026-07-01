@@ -1,157 +1,91 @@
-# WP-007 — Design: Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test
+# WP-008 — Design: Update README and Add docs/pipeline-contract.md
 
 ## 1. Impacted Components
 
 | Component | File | Change |
 |---|---|---|
-| Quick Start Documentation | `QUICKSTART.md` | Full rewrite for v0.2 stack |
+| Project README | `README.md` | Full rewrite for v0.2 accuracy |
+| Pipeline Contract Doc | `docs/pipeline-contract.md` | New file — authoritative contract reference |
 | Makefile targets | `Makefile` | Reference only (no changes) |
-| Pipeline contract example | `examples/` | Reference only |
+| Pipeline contract example | `.fawkespipe.yml.example` | Reference for examples |
+| Language examples | `examples/` | Reference for language-specific configs |
 
 ---
 
 ## 2. Document Structure Redesign
 
-### 2.1 New Section Organization
+### 2.1 README.md New Section Organization
 
 ```
-# Quick Start Guide (v0.2)
+# uFawkesPipe
 
-## Prerequisites (updated)
-## Installation (updated: make up / make up-suite)
-## Configuration (updated: v0.2 .env.example)
-## Service Access (updated: Woodpecker + SonarQube)
-## Create Your First Pipeline (updated: .fawkespipe.yml)
-## Smoke Test (new)
-## Common Commands (updated)
-## Troubleshooting (updated)
-## Next Steps (updated)
+## 🚀 Features (updated)
+## 📋 Pipeline Stages (updated — match .woodpecker.yml)
+## 🏗️ Architecture (updated — remove k8s/, add suite mode)
+## 🛠️ Quick Start (updated — standalone + suite)
+## 📖 Pipeline Contract Reference (updated — link to docs/pipeline-contract.md)
+## 🔌 Webhook API (updated)
+## ☸️ Kubernetes Promotion Path (updated — remove k8s/ refs, note future)
+## 🔒 Security Features (updated — match pipeline steps)
+## 🔧 Configuration (updated)
+## 🐛 Troubleshooting (updated — v0.2 stack)
+## 📚 Additional Resources (unchanged)
+## 🤝 Contributing (unchanged)
+## 📄 License (unchanged)
+## 🙋 Support (unchanged)
+## uFawkes Stack Ecosystem (updated — verify links)
 ```
 
-### 2.2 Key Content Changes
+### 2.2 docs/pipeline-contract.md Structure
 
-| Old Section | New Content |
-|---|---|
-| Prerequisites | Add Woodpecker GitHub OAuth, CNB/pack, Docker Compose v2 |
-| Installation | `make up` (standalone) / `make up-suite` (suite mode) |
-| Configuration | All v0.2 env vars with descriptions |
-| Service Access | Woodpecker (8000), SonarQube (9000) — no Jenkins |
-| Pipeline Creation | `.fawkespipe.yml` contract + Woodpecker UI |
-| Smoke Test | `make validate`, health checks, pipeline dry-run |
-| Common Commands | v0.2 Makefile targets |
+```
+# Pipeline Contract Reference — .fawkespipe.yml
+
+## Overview
+## app — Application Metadata
+## build — Build Configuration
+  - builder: cnb | docker | custom
+  - cnb — CNB-specific options
+  - docker — Docker-specific options
+  - image — Image registry/name/tag strategy
+## stages — Pipeline Stages Configuration
+  - lint
+  - test
+  - sast
+  - dependency_scan
+  - build
+  - image_scan
+  - push
+## notifications — Notifications
+## kubernetes — Kubernetes Deployment (promotion path)
+## advanced — Advanced Configuration
+## Complete Example
+## Language-Specific Examples (links to examples/)
+```
 
 ---
 
 ## 3. Detailed Content Specification
 
-### 3.1 Prerequisites
+### 3.1 README.md Key Changes
 
-```markdown
-## Prerequisites
-
-- **Docker 20.10+** — Container runtime
-- **Docker Compose v2.0+** — `docker compose` (plugin, not standalone `docker-compose`)
-- **4GB+ RAM** — For Woodpecker + SonarQube
-- **GitHub OAuth App** — For Woodpecker authentication (Client ID + Secret)
-- **DockerHub Account** — For image registry (username + access token)
-- **DefectDojo Instance** (optional) — For security scan ingestion (API token)
-- **`pack` CLI (optional)** — Cloud Native Buildpacks for local builds
-- **uFawkesRes + uFawkesObs (optional)** — For suite mode (`make up-suite`)
-```
-
-### 3.2 Installation Modes
-
-```markdown
-## Installation
-
-### Standalone Mode (make up)
-Runs Woodpecker + SonarQube locally with SQLite/H2 storage.
-
-```bash
-git clone https://github.com/paruff/uFawkesPipe.git
-cd uFawkesPipe
-cp .env.example .env
-# Edit .env with your credentials
-make up
-```
-
-### Suite Mode (make up-suite)
-
-Connects to uFawkesRes (PostgreSQL, Valkey, Traefik) and uFawkesObs (OTEL Collector).
-
-```bash
-# Terminal 1: Start dependencies
-cd ../uFawkesRes && make up
-cd ../uFawkesObs && make up
-
-# Terminal 2: Start uFawkesPipe in suite mode
-cd ../uFawkesPipe
-make up-suite
-```
-```
-
-### 3.3 Configuration (.env.example reference)
-
-Document all variables with purpose and where to get values.
-
-### 3.4 Service Access
-
-| Service | URL | Credentials |
-|---|---|---|
-| Woodpecker CI | `http://localhost:8000` | GitHub OAuth |
-| SonarQube | `http://localhost:9000` | admin / admin (change on first login) |
-
-### 3.5 Pipeline Creation
-
-```markdown
-## Create Your First Pipeline
-
-1. Add `.fawkespipe.yml` to your repository (see `.fawkespipe.yml.example`)
-2. Push to GitHub
-3. In Woodpecker UI: Add repository → Enable
-4. Push code → Pipeline auto-triggers via GitHub webhook
-```
-
-### 3.6 Smoke Test
-
-```markdown
-## Smoke Test
-
-Verify the installation is healthy:
-
-```bash
-# 1. Validate configuration and contracts
-make validate
-
-# 2. Run unit tests
-make test
-
-# 3. Check Woodpecker health
-curl -sf http://localhost:8000/healthz && echo "Woodpecker OK"
-
-# 4. Check SonarQube health
-curl -sf http://localhost:9000/api/system/status | grep -q '"status":"UP"' && echo "SonarQube OK"
-
-# 5. Verify pipeline contract
-make validate-pipeline-contract
-```
-
-All commands should exit 0 with no errors.
-```
-
-### 3.7 Common Commands
-
-Updated to v0.2 Makefile targets.
-
-### 3.8 Troubleshooting
-
-| Issue | Resolution |
+| Old Content | New Content |
 |---|---|
-| Woodpecker won't start | Check `make logs-woodpecker`, verify GitHub OAuth config |
-| Port 8000 in use | `lsof -i :8000` |
-| GitHub webhook fails | Verify `WOODPECKER_HOST` matches webhook URL |
-| SonarQube won't start | Increase `vm.max_map_count`, check `make logs-sonar` |
-| OTEL collector unreachable | Verify `OTEL_ENDPOINT`, check `make logs-otel` (suite mode) |
+| Pipeline Stages: 8 generic stages (Lint, Unit Tests, SAST, Dependency Scan, Build, Image Scan, Push, Deploy) | Pipeline Steps matching `.woodpecker.yml`: init, secrets-scan, lint-yaml, lint-shell, validate-pipeline-contract, vuln-scan-fs, vuln-scan-image, upload-defectdojo, notify-obs |
+| Service Access: SonarQube on 9001 | SonarQube on 9000 (matches compose.yaml) |
+| Installation: `make up` only | `make up` (standalone) + `make up-suite` (suite mode) |
+| Kubernetes Promotion: references `k8s/` manifests | Note: k8s/ removed; promotion path TBD for Woodpecker |
+| Pipeline Contract: brief section | Full section linking to `docs/pipeline-contract.md` |
+| Architecture diagram: shows Jenkins | Architecture: Woodpecker + SonarQube + Portainer + CNB |
+| Troubleshooting: Jenkins-focused | Woodpecker, SonarQube, OTEL, pack, ports |
+
+### 3.2 docs/pipeline-contract.md Content
+
+Each section from `.fawkespipe.yml.example` gets:
+- Field table (name, type, required, default, description)
+- Valid values / constraints
+- Example snippet
+- Cross-references to language-specific examples in `examples/`
 
 ---
 
@@ -159,10 +93,13 @@ Updated to v0.2 Makefile targets.
 
 | Source | Lines | Action |
 |---|---|---|
-| `QUICKSTART.md` | 1-272 | Full rewrite |
-| `.env.example` | 1-54 | Reference for config section |
-| `compose.yaml` | — | Reference for services |
-| `.fawkespipe.yml.example` | — | Reference for pipeline creation |
+| `README.md` | 1-435 | Full rewrite |
+| `.fawkespipe.yml.example` | 1-170 | Primary source for contract doc |
+| `examples/*` | — | Reference for language examples |
+| `.woodpecker.yml` | 1-177 | Source for pipeline steps |
+| `compose.yaml` | — | Source for service ports |
+| `Makefile` | — | Source for command reference |
+| `QUICKSTART.md` | — | Consistency reference |
 
 ---
 
@@ -170,6 +107,8 @@ Updated to v0.2 Makefile targets.
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Missing env var in docs | Medium | Cross-reference with `.env.example` |
-| Broken links to examples | Low | Verify paths exist in repo |
-| Outdated Makefile targets | Medium | Run `make help` to verify |
+| Port mismatch (SonarQube 9000 vs 9001) | Low | Verify against compose.yaml |
+| Broken links to deleted k8s/ | Medium | Search and replace all k8s/ references |
+| Pipeline steps out of sync with .woodpecker.yml | Medium | Copy directly from .woodpecker.yml |
+| Missing env var in docs | Low | Cross-reference with .env.example |
+| Contract doc drift from .fawkespipe.yml.example | Medium | Single-source-from-example pattern |
