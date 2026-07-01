@@ -21,10 +21,10 @@
 | # | Limitation | Impact | Mitigation |
 | - | ---------- | ------ | ---------- |
 | L-005 | The pipeline contract (`.fawkespipe.yml.example`) is aspirational — `.woodpecker.yml` doesn't actually read it at runtime | The clean separation between platform and app config isn't fully realized | Platform CI uses `.woodpecker.yml` directly; `.fawkespipe.yml` is contract-documented but not executed by the runner |
-| L-006 | `notify-obs` step is a stub — it echoes a message instead of POSTing to uFawkesObs | No DORA deployment events are actually emitted | The payload schema is documented in `specification.md`; implement when uFawkesObs endpoint is available |
-| L-007 | No automated integration or E2E tests exist — only unit tests | Pipeline contract changes are only caught at the schema level, not at runtime | `make test-integration` and `make test-smoke` are defined but not implemented |
-| L-008 | `security-scan` runs only on `push → main`, not on PRs | Vulnerabilities are detected late (after merge, not before) | Safe for solo-contributor velocity; revisit when team grows |
-| L-009 | No Gitleaks secrets scan in the Woodpecker pipeline | Secrets committed in PRs won't be caught in CI | Pre-commit Gitleaks hook is the only gate; v0.2 spec called for a CI secrets-scan step |
+| L-006 | `notify-obs` uses `|| true` for non-blocking emissions — actual POST to uFawkesObs may fail silently | DORA deployment events may be silently dropped if OTEL endpoint is unavailable | Fixed in v2.0: now emits structured JSON POST to `${OTEL_ENDPOINT}/v1/traces` with graceful fallback via `dora_warn` |
+| L-007 | ~~No automated integration or E2E tests exist — only unit tests~~ | **RESOLVED:** Integration tests (`tests/integration/`), smoke tests (`tests/smoke/`), and acceptance tests (`tests/acceptance/`) now exist | Run with `make test-unit`, `make test-integration`, `make test-smoke` |
+| L-008 | ~~`security-scan` runs only on `push → main`, not on PRs~~ | **RESOLVED:** Replaced by `vuln-scan-fs` (runs on all branches) and `vuln-scan-image` (main only). File system scan always runs on every push and PR. | `vuln-scan-image` remains main-only to avoid scanning unbuilt images on PR |
+| L-009 | ~~No Gitleaks secrets scan in the Woodpecker pipeline~~ | **RESOLVED:** `secrets-scan` step added as hard gate (`--exit-code 1`) in the security stage | Runs on every push and pull request |
 
 ### Stack & Infrastructure
 

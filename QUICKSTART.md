@@ -132,7 +132,7 @@ The pipeline triggers automatically via the GitHub webhook.
 ### 4. Monitor the pipeline
 
 - Open <http://localhost:8000> → select your repository → view the pipeline run
-- Pipeline stages: `init` → `secrets-scan` → `lint-yaml` → `lint-shell` → `validate-pipeline-contract` → `vuln-scan-fs` → `vuln-scan-image` → `upload-defectdojo` → `notify-obs`
+- Pipeline stages: **validate** (`init` → `lint-yaml` + `lint-shell`) → **test** (`unit-tests` + `integration-tests` + `contract-tests`) → **security** (`secrets-scan` → `vuln-scan-fs` → `vuln-scan-image`) → **build** (`build-image`) → **publish** (`upload-defectdojo`) → **deploy** (`notify-obs`)
 
 ## Smoke Test
 

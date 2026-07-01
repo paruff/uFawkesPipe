@@ -1,8 +1,10 @@
 """Unit tests for docker-compose.yml configuration validation."""
 
+import pytest
 import yaml
 
 
+@pytest.mark.unit
 class TestDockerComposeValidation:
     """Validate docker-compose.yml structure and configuration."""
 
@@ -85,6 +87,7 @@ class TestDockerComposeValidation:
                 ), f"Volume '{volume_name}' should be a named volume, not a host path"
 
 
+@pytest.mark.unit
 class TestComposeYamlValidation:
     """Validate compose.yaml structure and configuration."""
 
