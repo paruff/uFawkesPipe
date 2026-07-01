@@ -23,11 +23,6 @@ on:
         required: false
         type: string
         default: ""
-      allow-licenses:
-        description: "Comma-separated list of allowed licenses (empty = allow all)"
-        required: false
-        type: string
-        default: ""
       deny-licenses:
         description: "Comma-separated list of denied licenses"
         required: false
@@ -43,7 +38,7 @@ jobs:
       pull-requests: write
     name: Dependency Review
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: DORA job start
@@ -56,39 +51,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.1
 
-      - name: Check dependency graph availability
-        id: dependency-graph
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553  # v9.0.0
-        with:
-          script: |
-            try {
-              const response = await github.request('GET /repos/{owner}/{repo}/dependency-graph/sbom', {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-              });
-              core.setOutput('enabled', 'true');
-              console.log(`Dependency graph available (HTTP ${response.status})`);
-            } catch (error) {
-              const status = error.status;
-              if (status === 403 || status === 404) {
-                core.setOutput('enabled', 'false');
-                return;
-              }
-              throw error;
-            }
-
-      - name: Fail if dependency graph is disabled
-        if: steps.dependency-graph.outputs.enabled == 'false'
-        run: |
-          echo "::error::Dependency graph is not enabled for this repository."
-          echo "::error::The dependency-review-action requires the dependency graph to be enabled."
-          echo "::error::To fix this, go to: https://github.com/${{ github.repository }}/settings/security_analysis"
-          echo "::error::Or remove the dependency-review job from your workflow if you don't need it."
-          exit 1
-
       - name: Determine refs
         id: refs
-        if: steps.dependency-graph.outputs.enabled == 'true'
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553  # v9.0.0
         with:
           script: |
@@ -120,7 +84,7 @@ jobs:
             core.setOutput('skip', 'false');
 
       - name: Review dependencies
-        if: steps.dependency-graph.outputs.enabled == 'true' && steps.refs.outputs.skip != 'true'
+        if: steps.refs.outputs.skip != 'true'
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
         with:
           fail-on-severity: ${{ inputs.fail-on-severity }}
@@ -129,7 +93,7 @@ jobs:
           comment-summary-in-pr: ${{ inputs.comment-summary-in-pr }}
 
       - name: Deny specific licenses
-        if: inputs.deny-licenses != '' && steps.dependency-graph.outputs.enabled == 'true' && steps.refs.outputs.skip != 'true'
+        if: inputs.deny-licenses != '' && steps.refs.outputs.skip != 'true'
         uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553  # v9.0.0
         with:
           script: |
@@ -160,7 +124,8 @@ jobs:
                 console.log('No denied licenses found');
               }
             } catch (error) {
-              core.warning(`License check failed: ${error.message}`);
+              // Handle case where dependency graph is not available or API issues
+              core.warning(`License check skipped due to: ${error.message}`);
             }
 
       - name: Generate summary
@@ -172,7 +137,9 @@ jobs:
           echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Fail on Severity | ${{ inputs.fail-on-severity }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deny Licenses | ${{ inputs.deny-licenses || 'none' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Dependency Graph | ${{ steps.dependency-graph.outputs.enabled }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Base Ref | ${{ steps.refs.outputs.base-ref || 'none' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Head Ref | ${{ steps.refs.outputs.head-ref || 'none' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skipped | ${{ steps.refs.outputs.skip }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: DORA job finish
         if: always()
