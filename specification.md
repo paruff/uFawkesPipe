@@ -1,16 +1,23 @@
-# WP-006 — Add `notify-obs` Deployment Event Step
+# WP-007 — Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test
 
-**Type:** feat / observability
-**Depends on:** WP-001 (init), WP-005 (upload-defectdojo)
-**Branch:** `feature/wp-006-notify-obs`
+**Type:** docs / feat
+**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs)
+**Branch:** `feature/wp-007-quickstart-v02`
 
 ---
 
 ## 1. Problem
 
-The v0.2 pipeline design requires a `notify-obs` step that emits a structured deployment event to uFawkesObs (via the OTEL collector). This event enables DORA deployment frequency and change lead time metrics by recording when a pipeline successfully completes on `main`.
+The current `QUICKSTART.md` documents the legacy Jenkins-based pipeline:
+- References Jenkins at localhost:8080
+- References legacy `docker-compose.yml` (not the v0.2 `compose.yaml`)
+- Uses old `make init` / `make start` commands
+- References Jenkinsfile for pipeline creation
+- No v0.2 pipeline contract (`.fawkespipe.yml`) guidance
+- No suite mode (`make up-suite`) documentation
+- No smoke test verification steps
 
-Currently, no such step exists. The pipeline ends after `upload-defectdojo` with no deployment event emission.
+The v0.2 platform uses Woodpecker CI at localhost:8000, `compose.yaml` (Woodpecker + SonarQube), CNB/pack for builds, and the `.fawkespipe.yml` pipeline contract.
 
 ---
 
@@ -20,58 +27,52 @@ Currently, no such step exists. The pipeline ends after `upload-defectdojo` with
 
 | # | Requirement | Rationale |
 |---|---|---|
-| F1 | Step named `notify-obs` uses image `curlimages/curl:latest` | Minimal curl image for HTTP POST |
-| F2 | `notify-obs` POSTs JSON to `${OTEL_ENDPOINT}/v1/traces` (or deployment event endpoint) | Emits deployment event to observability backend |
-| F3 | Event payload includes: `service.name`, `deployment.environment`, `deployment.version`, `deployment.status`, `git.commit.sha`, `git.branch`, `pipeline.duration_ms` | Standard DORA/OTEL deployment event attributes |
-| F4 | `notify-obs` has `when: branch: main` condition | Only production deployments (main branch) generate deployment events |
-| F5 | Step is non-blocking (exit code 0 always) | Observability failure must not fail the deployment |
-| F6 | Uses secrets: `OTEL_ENDPOINT` from_secret, optional `OTEL_HEADERS` from_secret | Endpoint and auth configured via secrets |
-| F7 | DORA structured logging at start and end of step | Consistent with all pipeline steps |
+| F1 | Update prerequisites section for v0.2 stack (Docker, Docker Compose v2, `pack` CLI optional) | Accurate setup requirements |
+| F2 | Document both standalone mode (`make up`) and suite mode (`make up-suite`) | Users need both options |
+| F3 | Update environment configuration section with v0.2 `.env.example` variables | Correct credential guidance |
+| F4 | Replace Jenkins references with Woodpecker CI (port 8000) | Reflect actual services |
+| F5 | Document `.fawkespipe.yml` pipeline contract usage | v0.2 standard pipeline definition |
+| F6 | Add smoke test section with verification commands | Validate installation works |
+| F7 | Update common commands section for v0.2 Makefile targets | Accurate CLI reference |
+| F8 | Update troubleshooting for v0.2 stack | Help users resolve issues |
 
 ### Non-Functional
 
 | # | Requirement | Rationale |
 |---|---|---|
-| NF1 | Structured JSON logging (DORA format) | Consistent with all other pipeline steps |
-| NF2 | Timeout ≤ 10 seconds | Observability call must be fast and non-blocking |
-| NF3 | No hard dependency on uFawkesObs being reachable | Step must not fail pipeline if observability is down |
+| NF1 | Follow existing markdown style (headers, code blocks, tables) | Consistency with repo docs |
+| NF2 | No hardcoded secrets — use `your_` placeholder convention | Security compliance |
+| NF3 | Link to `compose.yaml` and `.woodpecker.yml` for reference | Developer discoverability |
 
 ---
 
 ## 3. Acceptance Criteria
 
-1. Step `notify-obs` exists in `.woodpecker.yml` with image `curlimages/curl:latest`
-2. `notify-obs` has `when:` condition with `branch: main`
-3. Step uses `environment.OTEL_ENDPOINT.from_secret: otel_endpoint`
-4. Step uses `environment.OTEL_HEADERS.from_secret: otel_headers` (optional, guarded)
-5. Commands POST JSON deployment event to `${OTEL_ENDPOINT}/v1/traces` (or correct endpoint)
-6. Event payload includes required DORA attributes (service.name, deployment.environment, deployment.version, deployment.status, git.commit.sha, git.branch, pipeline.duration_ms)
-7. Step is non-blocking: uses `|| true` or equivalent to always exit 0
-8. Comment explaining non-blocking nature exists
-9. DORA structured JSON logging present at step start and end
-10. `tests/unit/test_woodpecker_yml.py` updated with `TestNotifyObsStep` class (minimum 10 test methods)
-11. `pytest tests/` passes with zero failures
+1. Prerequisites section lists: Docker 20.10+, Docker Compose v2.0+, 4GB+ RAM, GitHub OAuth app for Woodpecker, `pack` CLI (optional for CNB builds)
+2. Installation documents both `make up` (standalone) and `make up-suite` (connects to uFawkesRes/uFawkesObs)
+3. Environment configuration references all v0.2 `.env.example` variables: WOODPECKER_GITHUB_CLIENT, WOODPECKER_GITHUB_SECRET, WOODPECKER_AGENT_SECRET, WOODPECKER_HOST, SONARQUBE_ADMIN_PASSWORD, REGISTRY_USERNAME, REGISTRY_TOKEN, DOJO_API_TOKEN, POSTGRES_PASSWORD, WOODPECKER_METRICS_TOKEN, UFAWKES_ENVIRONMENT, OTEL_ENDPOINT, OTEL_HEADERS
+4. Service access: Woodpecker at `http://localhost:8000`, SonarQube at `http://localhost:9000`
+5. Pipeline creation uses `.fawkespipe.yml` contract (not Jenkinsfile)
+5. Smoke test section with: `make validate`, `make test`, `curl` health checks for Woodpecker and SonarQube
+6. Common commands updated: `make up`, `make up-suite`, `make down`, `make logs`, `make status`, `make validate`, `make test`
+7. Troubleshooting covers: Woodpecker won't start, port conflicts, GitHub OAuth issues, OTEL collector connectivity
+8. All markdown passes `markdownlint` and `pre-commit run --all-files`
+9. Links to `compose.yaml`, `.woodpecker.yml`, `.fawkespipe.yml.example` are valid
 
 ---
 
 ## 4. Dependencies
 
-- **WP-001** (init): artifact directories must exist
-- **WP-005** (upload-defectdojo): notify-obs runs after security scan ingestion completes
+- **WP-001** (init): Artifact directories must exist for validation
+- **WP-004** (vuln-scan-fs): Smoke test may run pipeline validation
+- **WP-005** (upload-defectdojo): Security scan references in docs
+- **WP-006** (notify-obs): Observability references in docs
 
 ---
 
 ## 5. Out of Scope
 
-- uFawkesObs infrastructure deployment (separate repo: uFawkesObs)
-- Deployment event schema versioning (uses current OTEL standard)
-- Retry logic for failed observability calls (v0.3 item)
-
----
-
-## 6. Environment Variables
-
-| Variable | Source | Required | Notes |
-|---|---|---|---|
-| `OTEL_ENDPOINT` | from_secret: otel_endpoint | Yes | e.g., `http://otel-collector:4318` |
-| `OTEL_HEADERS` | from_secret: otel_headers | No | Optional auth headers for OTEL collector |
+- Full `README.md` rewrite (separate effort)
+- `docs/ARCHITECTURE.md` updates (separate effort)
+- `docs/KNOWN_LIMITATIONS.md` updates (separate effort)
+- Migration guide for Jenkins → Woodpecker (separate effort)
