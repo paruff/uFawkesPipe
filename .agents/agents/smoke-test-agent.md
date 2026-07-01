@@ -30,16 +30,16 @@ Creates and maintains automated validation scripts that verify the platform work
 
 ### Required Tests
 
-#### `scripts/quickstart-smoke-test.sh`
+#### `scripts/quickstart-smoke-test.sh` (to create)
 
 ```bash
 #!/bin/bash
 set -euo pipefail
 
 # 1. Verify prerequisites (Docker, Compose)
-# 2. Start platform (make start or compose up)
-# 3. Wait for Jenkins (curl localhost:8080/jenkins, timeout 60s)
-# 4. Wait for SonarQube (curl localhost:9000/api/system/status, timeout 90s)
+# 2. Start platform (make up or compose up)
+# 3. Wait for Woodpecker (curl localhost:8000, timeout 60s)
+# 4. Wait for SonarQube (curl localhost:9001/api/system/status, timeout 90s)
 # 5. Verify example pipeline template exists
 # 6. Verify .fawkespipe.yml.example parses as valid YAML
 # 7. Report elapsed time

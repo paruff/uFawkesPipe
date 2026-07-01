@@ -64,10 +64,10 @@ updates:
       interval: "weekly"
 ```
 
-### Issue Templates
+### Issue Templates (Future)
 
-- `bug_report.md`: stack version, OS, `make up` output, expected vs actual
-- `feature_request.md`: problem statement, proposed solution, DORA capability
+- `.github/ISSUE_TEMPLATE/bug_report.md`: stack version, OS, `make up` output, expected vs actual
+- `.github/ISSUE_TEMPLATE/feature_request.md`: problem statement, proposed solution, DORA capability
 
 ### Branch Protection Rules
 
@@ -79,7 +79,7 @@ updates:
 
 - Create/edit `.github/workflows/*.yml`
 - Create/edit `.github/dependabot.yml`
-- Create/edit `.github/ISSUE_TEMPLATE/*.md`
+- Create `.github/ISSUE_TEMPLATE/*.md` (when adding templates)
 - Create `.github/FUNDING.yml`
 - Update `.github/CODEOWNERS`
 

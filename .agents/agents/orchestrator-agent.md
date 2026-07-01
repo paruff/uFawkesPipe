@@ -12,12 +12,12 @@ Routes tasks to the correct agent and skill based on file patterns and task desc
 
 | Agent                    | Trigger Pattern                                             | Loads Skill        |
 | ------------------------ | ----------------------------------------------------------- | ------------------ |
-| `pipeline-library-agent` | `shared/vars/*.groovy`, `Jenkinsfile`                       | `pipeline-library` |
+| `pipeline-library-agent` | `.woodpecker.yml`, `.github/workflows/*.yml`, `compose.yaml` | `pipeline-library` |
 | `buildpack-agent`        | `pack/**/*`, `examples/**/*.yml`                            | `language-pack`    |
-| `security-agent`         | `jenkins/Dockerfile`, `docker-compose.yml`, `**/*security*` | —                  |
-| `observability-agent`    | `**/*otel*`, `**/*dora*`, `**/*metrics*`                    | —                  |
+| `security-agent`         | `docker-compose.yml`, `**/*security*`                       | —                  |
+| `observability-agent`    | `.woodpecker.yml`, `docker-compose.yml`, `scripts/**/*.sh`  | —                  |
 | `docs-agent`             | `docs/**/*.md`, `*.md`                                      | —                  |
-| `smoke-test-agent`       | `scripts/*smoke*`, `scripts/*test*`                         | —                  |
+| `smoke-test-agent`       | `scripts/*smoke*`, `scripts/*test*`, `validate.sh`, `Makefile` | —               |
 | `workflow-agent`         | `.github/**/*`, `.github/workflows/*.yml`                   | —                  |
 | `review-agent`           | `@review` trigger, `**/*`                                   | —                  |
 
@@ -27,13 +27,13 @@ Routes tasks to the correct agent and skill based on file patterns and task desc
 
 ```bash
 # When files change, route to the right agent:
-if git diff --name-only | grep -qE 'shared/vars/.*\.groovy|Jenkinsfile'; then
+if git diff --name-only | grep -qE '\.woodpecker\.yml|\.github/workflows/.*\.yml|compose\.yaml'; then
     # → pipeline-library-agent + pipeline-library skill
 fi
 if git diff --name-only | grep -qE 'pack/|examples/'; then
     # → buildpack-agent + language-pack skill
 fi
-if git diff --name-only | grep -qE 'docker-compose\.yml|jenkins/Dockerfile'; then
+if git diff --name-only | grep -qE 'docker-compose\.yml'; then
     # → security-agent
 fi
 ```
@@ -42,7 +42,7 @@ fi
 
 | Keyword in Task                              | Agent                  | Skill            |
 | -------------------------------------------- | ---------------------- | ---------------- |
-| `pipeline`, `stage`, `Jenkinsfile`, `groovy` | pipeline-library-agent | pipeline-library |
+| `pipeline`, `stage`, `woodpecker`, `CI`      | pipeline-library-agent | pipeline-library |
 | `build`, `pack`, `buildpack`, `language`     | buildpack-agent        | language-pack    |
 | `security`, `scan`, `SAST`, `vulnerability`  | security-agent         | —                |
 | `DORA`, `metrics`, `observability`, `trace`  | observability-agent    | —                |
@@ -56,7 +56,7 @@ fi
 When multiple skills apply, load in this order:
 
 1. `pipeline-contract` — if contract files are involved
-2. `pipeline-library` — if shared library steps are involved
+2. `pipeline-library` — if pipeline steps are involved
 3. `language-pack` — if language-specific config is involved
 4. `dora-log-format` — always (single source of truth for logging)
 
@@ -64,17 +64,14 @@ When multiple skills apply, load in this order:
 
 Before invoking a sub-agent, the orchestrator:
 
-1. Reads `.agents/memory/context.md` for active task state
-2. Loads the relevant skill(s) into context
-3. Passes task description + file list to the target agent
-4. Updates `context.md` with task result
+1. Loads the relevant skill(s) into context
+2. Passes task description + file list to the target agent
 
 ## DORA Logging
 
 This agent logs orchestrator-level events:
 
-```
-dora:stage-start:Orchestrate:${BUILD_NUMBER}:${isoNow()}
-dora:sha:${GIT_COMMIT}
-dora:stage-finish:Orchestrate:${BUILD_NUMBER}:${isoNow()}:success
+```json
+{"@timestamp":"${isoNow()}","level":"info","logger":"orchestrator","event":"stage-start","stage":"Orchestrate","pipeline":"${BUILD_NUMBER}","commit":"${GIT_COMMIT}"}
+{"@timestamp":"${isoNow()}","level":"info","logger":"orchestrator","event":"stage-finish","stage":"Orchestrate","pipeline":"${BUILD_NUMBER}","commit":"${GIT_COMMIT}","result":"success"}
 ```
