@@ -20,3 +20,14 @@ backups/
 # OS
 Thumbs.db
 __pycache__/
+
+# Agent/feature-flow generated reports
+build-report.md
+test-report.md
+review-report.md
+verification-report.md
+cross-validation-report.md
+
+# Test artifacts
+.coverage
+.headroom/
