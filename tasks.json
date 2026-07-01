@@ -1,56 +1,63 @@
 {
-  "feature": "WP-005",
-  "title": "Add upload-defectdojo telemetry collector step",
-  "description": "Add a new upload-defectdojo step that collects Gitleaks and Trivy JSON artifacts from artifacts/security/ and POSTs them to DefectDojo's import-scan API. Non-blocking step that warns on failure but does not fail the pipeline.",
-  "depends_on": ["WP-002", "WP-004"],
-  "branch": "feature/wp-005-defectdojo-upload",
+  "feature": "WP-006",
+  "title": "Add notify-obs deployment event step",
+  "description": "Add a notify-obs step to the Woodpecker pipeline that emits a structured deployment event to uFawkesObs via OTEL Collector HTTP endpoint. Runs on main branch only, non-blocking, with DORA structured logging.",
+  "depends_on": ["WP-001", "WP-005"],
+  "branch": "feature/wp-006-notify-obs",
   "tasks": [
     {
-      "id": "WP-005-01",
-      "title": "Add upload-defectdojo step to .woodpecker.yml",
-      "description": "Add a new step named upload-defectdojo using curlimages/curl:8.6.0 with DOJO_API_TOKEN from_secret. Shell loop over gitleaks, trivy-repo, trivy-image artifacts with file existence check, scan_type mapping, product_name from CI_REPO_NAME, engagement_name CI-Engagement. Non-blocking — warnings on failure. DORA structured logging. when: branch: main.",
+      "id": "WP-006-01",
+      "title": "Add notify-obs step to .woodpecker.yml",
+      "description": "Add a new step named notify-obs using curlimages/curl:latest. Position after upload-defectdojo. Has when: branch: main condition. Uses OTEL_ENDPOINT and OTEL_HEADERS from_secret. Commands POST OTEL deployment event JSON to ${OTEL_ENDPOINT}/v1/traces with required attributes (service.name, deployment.environment, deployment.version, deployment.status, git.commit.sha, git.branch, pipeline.duration_ms). Non-blocking (|| true). DORA structured JSON logging at start and end.",
       "depends_on": [],
       "acceptance": [
-        "Step named 'upload-defectdojo' exists at correct position in steps list",
-        "Image is curlimages/curl:8.6.0",
-        "Step has environment.DOJO_API_TOKEN.from_secret: defectdojo_api_token",
+        "Step named 'notify-obs' exists in .woodpecker.yml steps list",
+        "Image is curlimages/curl:latest",
         "Step has when: condition with branch: main",
-        "Commands include shell loop over gitleaks, trivy-repo, trivy-image",
-        "Commands include file existence check before each POST",
-        "Commands map gitleaks to Gitleaks Scan and trivy-* to Trivy Scan",
-        "Commands reference CI_REPO_NAME for product_name",
-        "Commands reference CI-Engagement for engagement_name",
-        "Commands do NOT exit non-zero on failure (non-blocking)",
-        "DORA structured JSON logging present in step commands"
+        "Step has environment.OTEL_ENDPOINT.from_secret: otel_endpoint",
+        "Step has environment.OTEL_HEADERS.from_secret: otel_headers",
+        "Commands POST to ${OTEL_ENDPOINT}/v1/traces with JSON payload",
+        "Payload includes service.name: ufawkespipe",
+        "Payload includes deployment.environment: production",
+        "Payload includes deployment.version: ${CI_COMMIT_SHA:0:7}",
+        "Payload includes deployment.status: success",
+        "Payload includes git.commit.sha: ${CI_COMMIT_SHA}",
+        "Payload includes git.branch: ${CI_COMMIT_BRANCH}",
+        "Payload includes pipeline.duration_ms: ${PIPELINE_DURATION_MS:-0}",
+        "Commands use curl || true (non-blocking)",
+        "DORA structured JSON logging at step start",
+        "DORA structured JSON logging at step end",
+        "Comment explains non-blocking nature"
       ]
     },
     {
-      "id": "WP-005-02",
-      "title": "Add DOJO_API_TOKEN to .env.example",
-      "description": "Add DOJO_API_TOKEN placeholder with comment to .env.example.",
-      "depends_on": [],
+      "id": "WP-006-02",
+      "title": "Add OTEL_ENDPOINT and OTEL_HEADERS to .env.example",
+      "description": "Add placeholder entries for OTEL_ENDPOINT and OTEL_HEADERS to .env.example following the your_ prefix convention for sensitive values.",
+      "depends_on": ["WP-006-01"],
       "acceptance": [
-        ".env.example contains DOJO_API_TOKEN placeholder",
-        "Placeholder value is clearly a placeholder (e.g. your-defectdojo-api-token)",
-        "Comment explains what the token is for"
+        "OTEL_ENDPOINT=your_otel_endpoint entry exists in .env.example",
+        "OTEL_HEADERS=your_otel_headers entry exists in .env.example",
+        "Both entries have descriptive comments",
+        "CI preflight check 'Verify .env.example has no concrete secrets' passes"
       ]
     },
     {
-      "id": "WP-005-03",
-      "title": "Add TestUploadDefectDojoStep test class",
-      "description": "Add TestUploadDefectDojoStep class to tests/unit/test_woodpecker_yml.py with tests for step existence, curl image, DOJO_API_TOKEN secret, branch main, loop over all three artifact types, file existence check, scan_type mapping, product_name, engagement_name, non-blocking behavior, DORA logging.",
-      "depends_on": ["WP-005-01"],
+      "id": "WP-006-03",
+      "title": "Add TestNotifyObsStep test class",
+      "description": "Add TestNotifyObsStep class to tests/unit/test_woodpecker_yml.py with minimum 10 test methods covering all acceptance criteria from WP-006-01 and WP-006-02.",
+      "depends_on": ["WP-006-01"],
       "acceptance": [
-        "TestUploadDefectDojoStep class exists in test_woodpecker_yml.py",
-        "At least 10 test methods covering acceptance criteria",
-        "pytest tests/unit/test_woodpecker_yml.py passes with zero failures"
+        "TestNotifyObsStep class exists in test_woodpecker_yml.py",
+        "At least 10 test methods covering: step existence, image, branch condition, OTEL_ENDPOINT secret, OTEL_HEADERS secret, DORA start log, DORA end log, POST command, non-blocking curl, payload attributes",
+        "pytest tests/unit/test_woodpecker_yml.py::TestNotifyObsStep passes with zero failures"
       ]
     },
     {
-      "id": "WP-005-04",
+      "id": "WP-006-04",
       "title": "Run full validation suite and verify no regressions",
-      "description": "Run pytest tests/, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
-      "depends_on": ["WP-005-03"],
+      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
+      "depends_on": ["WP-006-02", "WP-006-03"],
       "acceptance": [
         "pytest tests/ passes with zero failures",
         "yamllint .woodpecker.yml reports zero errors",

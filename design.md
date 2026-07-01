@@ -1,134 +1,245 @@
-# WP-005 — Design: Add `upload-defectdojo` Telemetry Collector Step
+# WP-006 — Design: `notify-obs` Deployment Event Step
 
-**Depends on:** specification.md (WP-005), WP-002 (fawkes-net), WP-004 (Trivy steps)
+## 1. Architecture Overview
 
----
-
-## 1. Impacted Components
-
-| Component | File | Change |
-|---|---|---|
-| Pipeline definition | `.woodpecker.yml` | Add `upload-defectdojo` step after `vuln-scan-image` |
-| Pipeline tests | `tests/unit/test_woodpecker_yml.py` | Add `TestUploadDefectDojoStep` class |
-| Example env | `.env.example` | Add `DOJO_API_TOKEN` placeholder |
-
-No other files modified.
-
----
-
-## 2. Step Design
-
-### 2.1 Position in Pipeline
-
-The `upload-defectdojo` step runs **after** `vuln-scan-image` and **before** `notify-obs`. This ensures all three scanner artifacts (gitleaks.json, trivy-repo.json, trivy-image.json) are available before the upload attempt.
+The `notify-obs` step is the final stage in the v0.2 pipeline, responsible for emitting a **deployment event** to the observability backend (uFawkesObs via OTEL Collector). This event enables DORA metrics calculation (deployment frequency, change lead time).
 
 ```
-init → secrets-scan → lint-yaml → lint-shell → validate-pipeline-contract
-  → vuln-scan-fs → vuln-scan-image → upload-defectdojo → notify-obs
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        WOODPECKER PIPELINE (v0.2)                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ init → secrets-scan → lint-yaml → lint-shell → validate-contract →          │
+│ vuln-scan-fs → vuln-scan-image → upload-defectdojo → notify-obs             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                                                       │
+                                                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          uFawkesObs (OTEL Collector)                        │
+│  Receives deployment event → enriches with trace context → stores in Loki   │
+│  DORA measurement queries Loki for deployment frequency / lead time         │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Step Definition
+## 2. Component Design
+
+### 2.1 Pipeline Step: `notify-obs`
+
+| Property | Value |
+|---|---|
+| **Name** | `notify-obs` |
+| **Image** | `curlimages/curl:latest` (pinned to latest — documented exception for scanner/curl images) |
+| **When** | `branch: main` |
+| **Secrets** | `OTEL_ENDPOINT.from_secret: otel_endpoint`<br>`OTEL_HEADERS.from_secret: otel_headers` (optional) |
+| **Commands** | See §2.2 |
+| **Exit Behavior** | Always exit 0 (non-blocking) |
+
+### 2.2 Command Sequence
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# DORA start log
+echo '{"level":"info","event":"notify-obs:start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
+
+# Build deployment event payload
+DEPLOYMENT_EVENT=$(cat <<EOF
+{
+  "resourceSpans": [{
+    "resource": {
+      "attributes": [
+        {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
+        {"key": "deployment.environment", "value": {"stringValue": "production"}},
+        {"key": "deployment.version", "value": {"stringValue": "${CI_COMMIT_SHA:0:7}"}},
+        {"key": "deployment.status", "value": {"stringValue": "success"}}
+      ]
+    },
+    "scopeSpans": [{
+      "spans": [{
+        "name": "deployment",
+        "kind": "SPAN_KIND_INTERNAL",
+        "startTimeUnixNano": "$(date -u +%s)000000000",
+        "endTimeUnixNano": "$(date -u +%s)000000000",
+        "attributes": [
+          {"key": "git.commit.sha", "value": {"stringValue": "${CI_COMMIT_SHA}"}},
+          {"key": "git.branch", "value": {"stringValue": "${CI_COMMIT_BRANCH}"}},
+          {"key": "pipeline.duration_ms", "value": {"intValue": "${PIPELINE_DURATION_MS:-0}"}}
+        ]
+      }]
+    }]
+  }]
+}
+EOF
+)
+
+# POST to OTEL collector (non-blocking)
+if [ -n "${OTEL_ENDPOINT:-}" ]; then
+  curl -s -X POST "${OTEL_ENDPOINT}/v1/traces" \
+    -H "Content-Type: application/json" \
+    ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
+    -d "${DEPLOYMENT_EVENT}" \
+    -w "\nHTTP %{http_code}\n" \
+    -o /dev/null || true
+else
+  echo '{"level":"warn","event":"notify-obs:skipped","reason":"OTEL_ENDPOINT not set","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
+fi
+
+# DORA finish log
+echo '{"level":"info","event":"notify-obs:end","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
+```
+
+### 2.3 Woodpecker YAML Representation
 
 ```yaml
-  - name: upload-defectdojo
-    image: curlimages/curl:8.6.0
-    environment:
-      DOJO_API_TOKEN:
-        from_secret: defectdojo_api_token
-    commands:
-      - |
-        echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting DefectDojo upload","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"upload-defectdojo"}'
-      - |
-        for f in gitleaks trivy-repo trivy-image; do
-          path="artifacts/security/${f}.json"
-          if [ ! -f "$path" ]; then
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"Artifact not found, skipping","file":"'"$path"'","step":"upload-defectdojo"}'
-            continue
-          fi
-          case "$f" in
-            gitleaks)   scan_type="Gitleaks Scan" ;;
-            trivy-repo|trivy-image) scan_type="Trivy Scan" ;;
-          esac
-          HTTP_CODE=$(curl -sf -X POST "http://defectdojo:8080/api/v2/import-scan/" \
-            -H "Authorization: Token $DOJO_API_TOKEN" \
-            -F "active=true" -F "verified=false" \
-            -F "scan_type=${scan_type}" \
-            -F "engagement_name=CI-Engagement" \
-            -F "product_name=${CI_REPO_NAME}" \
-            -F "file=@${path}" \
-            -w '%{http_code}' -o /dev/null 2>&1) && rc=$? || rc=$?
-          if [ $rc -eq 0 ] && [ "$HTTP_CODE" = "201" ]; then
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"DefectDojo upload successful","file":"'"${f}"'","http_code":"'"${HTTP_CODE}"'","step":"upload-defectdojo"}'
-          else
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"DefectDojo upload failed","file":"'"${f}"'","http_code":"'"${HTTP_CODE:-000}"'","step":"upload-defectdojo"}'
-          fi
-        done
-    when:
-      - event: push
-        branch: main
+notify-obs:
+  image: curlimages/curl:latest
+  when:
+    branch: main
+  environment:
+    OTEL_ENDPOINT:
+      from_secret: otel_endpoint
+    OTEL_HEADERS:
+      from_secret: otel_headers
+  commands:
+    - |
+      set -euo pipefail
+      echo '{"level":"info","event":"notify-obs:start","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
+      DEPLOYMENT_EVENT=$(cat <<'EOF'
+      {
+        "resourceSpans": [{
+          "resource": {
+            "attributes": [
+              {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
+              {"key": "deployment.environment", "value": {"stringValue": "production"}},
+              {"key": "deployment.version", "value": {"stringValue": "${CI_COMMIT_SHA:0:7}"}},
+              {"key": "deployment.status", "value": {"stringValue": "success"}}
+            ]
+          },
+          "scopeSpans": [{
+            "spans": [{
+              "name": "deployment",
+              "kind": "SPAN_KIND_INTERNAL",
+              "startTimeUnixNano": "$(date -u +%s)000000000",
+              "endTimeUnixNano": "$(date -u +%s)000000000",
+              "attributes": [
+                {"key": "git.commit.sha", "value": {"stringValue": "${CI_COMMIT_SHA}"}},
+                {"key": "git.branch", "value": {"stringValue": "${CI_COMMIT_BRANCH}"}},
+                {"key": "pipeline.duration_ms", "value": {"intValue": "${PIPELINE_DURATION_MS:-0}"}}
+              ]
+            }]
+          }]
+        }]
+      }
+EOF'
+      )
+      if [ -n "${OTEL_ENDPOINT:-}" ]; then
+        curl -s -X POST "${OTEL_ENDPOINT}/v1/traces" \
+          -H "Content-Type: application/json" \
+          ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
+          -d "${DEPLOYMENT_EVENT}" \
+          -w "\nHTTP %{http_code}\n" \
+          -o /dev/null || true
+      else
+        echo '{"level":"warn","event":"notify-obs:skipped","reason":"OTEL_ENDPOINT not set","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
+      fi
+      echo '{"level":"info","event":"notify-obs:end","timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pipeline":"woodpecker","stage":"notify-obs"}'
 ```
 
-### 2.3 Key Design Decisions
+## 3. Data Flow
 
-**Non-blocking upload:** Each upload failure prints a warning but does not exit non-zero. This ensures the pipeline completes even if DefectDojo is unreachable.
+```
+Woodpecker CI (main branch)
+         │
+         ▼
+notify-obs step
+         │
+         ├─ Reads CI_COMMIT_SHA, CI_COMMIT_BRANCH from Woodpecker env
+         ├─ Reads PIPELINE_DURATION_MS from previous step (or computes)
+         ├─ Reads OTEL_ENDPOINT from secret
+         ├─ Reads OTEL_HEADERS from secret (optional)
+         │
+         ▼
+POST /v1/traces to OTEL Collector (HTTP)
+         │
+         ▼
+uFawkesObs → Loki → DORA Measurement
+```
 
-**HTTP code capture:** Using `-w '%{http_code}' -o /dev/null` to capture the HTTP status code for observability logging. DefectDojo returns 201 on successful import.
+## 4. Integration Points
 
-**DORA logging:** Each operation (file found, upload success, upload failure) emits a structured JSON log entry for uFawkesObs ingestion.
+| Interface | Provider | Consumer | Protocol |
+|---|---|---|---|
+| OTEL HTTP endpoint | uFawkesObs (OTEL Collector) | notify-obs | HTTP/JSON (OTLP HTTP) |
+| Woodpecker secrets | Woodpecker server | notify-obs | `from_secret:` |
+| CI env vars | Woodpecker runner | notify-obs | `CI_COMMIT_SHA`, `CI_COMMIT_BRANCH`, etc. |
 
-**Defensive file check:** Each artifact file is checked for existence before POSTing. If the `build` step (WP-009) is not yet implemented, `trivy-image.json` won't exist — the loop skips it gracefully.
+## 5. Security
 
----
+- No credentials in YAML — all via `from_secret:`
+- `OTEL_HEADERS` optional (supports bearer tokens, API keys)
+- Step runs only on `main` branch (production deployments only)
+- Non-blocking: observability failure never fails deployment
 
-## 3. Test Design
+## 6. Error Handling
 
-### 3.1 `TestUploadDefectDojoStep` class
-
-| Test | Assertion |
+| Scenario | Behavior |
 |---|---|
-| `test_step_exists` | Step named `upload-defectdojo` exists in steps list |
-| `test_uses_curl_image` | Image is `curlimages/curl:8.6.0` |
-| `test_has_dojo_api_token_secret` | Step has `environment.DOJO_API_TOKEN.from_secret: defectdojo_api_token` |
-| `test_branch_main_only` | Step has `when:` with `branch: main` condition |
-| `test_loops_over_gitleaks` | Commands reference `gitleaks` in loop |
-| `test_loops_over_trivy_repo` | Commands reference `trivy-repo` in loop |
-| `test_loops_over_trivy_image` | Commands reference `trivy-image` in loop |
-| `test_checks_file_existence` | Commands include `[ -f "$path" ]` or `[ ! -f "$path" ]` |
-| `test_scan_type_gitleaks` | Commands map `gitleaks` to `Gitleaks Scan` |
-| `test_scan_type_trivy_repo` | Commands map `trivy-repo` to `Trivy Scan` |
-| `test_scan_type_trivy_image` | Commands map `trivy-image` to `Trivy Scan` |
-| `test_uses_product_name` | Commands reference `CI_REPO_NAME` |
-| `test_uses_engagement_name` | Commands reference `CI-Engagement` |
-| `test_non_blocking_warn` | Commands do NOT use `exit` on failure; uses `WARN:` or logging pattern |
-| `test_has_dora_logging` | Commands include DORA JSON structured logging with `@timestamp` |
+| OTEL_ENDPOINT secret not set | Log warning, skip POST, exit 0 |
+| Network timeout / unreachable | curl OR true — log warning, exit 0 |
+| HTTP 4xx/5xx response | Log response code, exit 0 |
+| Malformed JSON payload | Independent of shell expansion; exit 0 |
 
----
+## 7. Testing Strategy
 
-## 4. `.env.example` Change
+### Unit Tests (test_woodpecker_yml.py)
 
-Add after existing secret placeholders:
+- `TestNotifyObsStep::test_step_exists`
+- `TestNotifyObsStep::test_uses_curl_image`
+- `TestNotifyObsStep::test_branch_main_only`
+- `TestNotifyObsStep::test_has_otel_endpoint_secret`
+- `TestNotifyObsStep::test_has_otel_headers_secret_optional`
+- `TestNotifyObsStep::test_commands_include_dora_start_log`
+- `TestNotifyObsStep::test_commands_include_dora_end_log`
+- `TestNotifyObsStep::test_commands_post_to_otel_endpoint`
+- `TestNotifyObsStep::test_non_blocking_curl_or_true`
+- `TestNotifyObsStep::test_payload_includes_required_attributes`
+- `TestNotifyObsStep::test_comment_non_blocking_nature`
 
+### Integration Test (future)
+
+- Spin up OTEL Collector locally, run notify-obs, verify trace received
+
+## 8. Environment Configuration
+
+### `.env.example` additions
+
+```bash
+# Observability — OTEL Collector endpoint for deployment events
+# Suite mode: http://otel-collector:4318
+OTEL_ENDPOINT=
+
+# Optional auth headers for OTEL endpoint (e.g., "Authorization: Bearer <token>")
+OTEL_HEADERS=
 ```
-# DefectDojo API token for security scan ingestion
-DOJO_API_TOKEN=your-defectdojo-api-token
-```
 
----
+### Woodpecker Secrets Required
 
-## 5. Risks
-
-| Risk | Likelihood | Mitigation |
+| Secret Name | Value Example | Notes |
 |---|---|---|
-| DefectDojo not running on `fawkes-net` | Medium | Non-blocking (warns only); step does not fail pipeline |
-| `product_name` field not accepted by DefectDojo API version | Medium | Human verification required before implementation (noted in spec as Q1) |
-| Large scan artifacts causing slow uploads | Low | Trivy/Gitleaks JSON artifacts are typically < 1 MB |
+| `otel_endpoint` | `http://otel-collector:4318` | OTEL Collector HTTP endpoint |
+| `otel_headers` | `Authorization: Bearer <token>` | Optional, for authenticated collectors |
 
----
+## 9. DORA Metrics Impact
 
-## 6. File Change Summary
+| Metric | How notify-obs Enables |
+|---|---|
+| **Deployment Frequency** | Each successful `main` pipeline emits one deployment event |
+| **Change Lead Time** | `git.commit.sha` + pipeline start time → deployment timestamp |
+| **Change Failure Rate** | `deployment.status: success` vs failed pipeline events |
+| **MTTR** | Correlated with rollback events (future work) |
 
-| File | Action | Notes |
-|---|---|---|
-| `.woodpecker.yml` | Modify | Add `upload-defectdojo` step after `vuln-scan-image` |
-| `.env.example` | Modify | Add `DOJO_API_TOKEN` placeholder |
-| `tests/unit/test_woodpecker_yml.py` | Modify | Add `TestUploadDefectDojoStep` class |
+## 10. References
+
+- [OTLP HTTP Protocol](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md)
+- [DORA Deployment Events](https://dora.dev/capabilities/continuous-delivery/)
+- [uFawkesObs Architecture](../../../uFawkesObs/docs/ARCHITECTURE.md)
