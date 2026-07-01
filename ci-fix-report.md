@@ -11,10 +11,12 @@
 ## Changed
 
 ### Deleted
+
 - `tests/unit/test_k8s_validation.py` — entire file; tested K8s manifests that no longer exist
 - `docs/kubernetes-promotion.md` — Jenkins-on-K8s deployment guide, fully stale after Jenkins deprecation
 
 ### Modified
+
 - `tests/unit/conftest.py` — removed `jenkinsfile`, `jenkinsfile_content`, `jcasc_dir`, `k8s_dir` fixtures (no tests reference them)
 - `.github/workflows/ci-quality.yml` — removed Kubeconform step and kubectl validation loop (lines 57-67); updated `.env.example` secret scan to be generic (removed JENKINS_ADMIN_PASSWORD hardcoded check); removed CVE check that parsed `docs/history/jenkins/Dockerfile`
 - `validate.sh` — removed `k8s_files` array and the loop that validates multi-document YAML against it
@@ -23,6 +25,7 @@
 - `ci-diagnosis.md` — updated to reflect the current failure (was from a prior CI issue)
 
 ### Summary
+
 ```
  8 files changed, 24 insertions(+), 317 deletions(-)
 ```
