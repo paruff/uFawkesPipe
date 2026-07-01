@@ -1,119 +1,121 @@
 {
-  "feature": "WP-007",
-  "title": "Update QUICKSTART.md with v0.2 Prerequisites and Smoke Test",
-  "description": "Rewrite QUICKSTART.md to document v0.2 Woodpecker CI + CNB stack: prerequisites, standalone/suite installation, .fawkespipe.yml pipeline contract, smoke test verification, and updated troubleshooting.",
-  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006"],
-  "branch": "feature/wp-007-quickstart-v02",
+  "feature": "WP-008",
+  "title": "Update README and Add docs/pipeline-contract.md",
+  "description": "Rewrite README.md to accurately reflect the v0.2 Woodpecker CI + CNB stack, removing stale k8s/ and Jenkins references, and create docs/pipeline-contract.md as the authoritative reference for the .fawkespipe.yml pipeline contract.",
+  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006", "WP-007"],
+  "branch": "feature/wp-008-readme-pipeline-contract",
   "tasks": [
     {
-      "id": "WP-007-01",
-      "title": "Update Prerequisites section for v0.2 stack",
-      "description": "Replace Jenkins/Docker Compose legacy prerequisites with v0.2: Docker 20.10+, Docker Compose v2, GitHub OAuth for Woodpecker, DockerHub account, DefectDojo (optional), pack CLI (optional), uFawkesRes/uFawkesObs for suite mode.",
+      "id": "WP-008-01",
+      "title": "Update README features, intro, and badges",
+      "description": "Update README.md header badges, tagline, and Features list to match v0.2. Remove any stale Jenkins/k8s references. Features should highlight: polyglot support via CNB, .fawkespipe.yml contract, Woodpecker CI, security pipeline (Gitleaks+Trivy), standalone+suite modes.",
       "depends_on": [],
       "acceptance": [
-        "Prerequisites lists Docker, Docker Compose v2, 4GB+ RAM",
-        "Prerequisites includes GitHub OAuth App for Woodpecker",
-        "Prerequisites includes DockerHub account for registry",
-        "Prerequisites mentions pack CLI as optional",
-        "Prerequisites mentions DefectDojo as optional",
-        "Prerequisites mentions uFawkesRes/uFawkesObs for suite mode"
+        "Badges point to current CI workflows",
+        "Features list highlights Woodpecker, CNB, .fawkespipe.yml",
+        "No Jenkins or k8s references in Features section"
       ]
     },
     {
-      "id": "WP-007-02",
-      "title": "Update Installation section with make up / make up-suite",
-      "description": "Replace legacy make init/make start with make up (standalone) and make up-suite (suite mode with dependencies). Document both modes clearly with separate command blocks.",
-      "depends_on": ["WP-007-01"],
+      "id": "WP-008-02",
+      "title": "Rewrite Pipeline Stages section to match .woodpecker.yml",
+      "description": "Replace the 8 generic pipeline stages with actual .woodpecker.yml steps: init, secrets-scan, lint-yaml, lint-shell, validate-pipeline-contract, vuln-scan-fs, vuln-scan-image, upload-defectdojo, notify-obs. Describe what each step does.",
+      "depends_on": ["WP-008-01"],
       "acceptance": [
-        "Standalone mode uses `make up`",
-        "Suite mode uses `make up-suite` with uFawkesRes/uFawkesObs prerequisites",
-        "Both modes include `cp .env.example .env` and edit step",
-        "No references to legacy `make init` or Jenkins"
+        "Pipeline stages match actual .woodpecker.yml steps",
+        "Each step has a brief description of its purpose",
+        "No generic 'Lint/Test/SAST/Build/Push/Deploy' stages"
       ]
     },
     {
-      "id": "WP-007-03",
-      "title": "Update Configuration section with v0.2 .env.example variables",
-      "description": "Document all v0.2 environment variables from .env.example with descriptions and where to obtain values: WOODPECKER_GITHUB_CLIENT, WOODPECKER_GITHUB_SECRET, WOODPECKER_AGENT_SECRET, WOODPECKER_HOST, SONARQUBE_ADMIN_PASSWORD, REGISTRY_USERNAME, REGISTRY_TOKEN, DOJO_API_TOKEN, POSTGRES_PASSWORD, WOODPECKER_METRICS_TOKEN, UFAWKES_ENVIRONMENT, OTEL_ENDPOINT, OTEL_HEADERS.",
-      "depends_on": ["WP-007-02"],
+      "id": "WP-008-03",
+      "title": "Update Architecture section for v0.2",
+      "description": "Update architecture description and ASCII diagram. Remove k8s/ references from diagram. Add suite mode connectivity (uFawkesRes PostgreSQL, uFawkesObs OTEL). Ensure SonarQube port is 9000 (not 9001).",
+      "depends_on": ["WP-008-02"],
       "acceptance": [
-        "All 14 variables from .env.example are documented",
-        "Each variable has description and source (GitHub, DockerHub, DefectDojo, etc.)",
-        "Placeholder values use `your_` prefix convention",
-        "No hardcoded secrets"
+        "Architecture diagram uses correct components (Woodpecker, SonarQube, Portainer, CNB)",
+        "No k8s/ directory references in architecture",
+        "SonarQube port shown as 9000",
+        "Suite mode connectivity mentioned"
       ]
     },
     {
-      "id": "WP-007-04",
-      "title": "Update Service Access with Woodpecker + SonarQube ports",
-      "description": "Replace Jenkins (8080) with Woodpecker CI (8000) and SonarQube (9000). Document authentication: GitHub OAuth for Woodpecker, admin/admin for SonarQube.",
-      "depends_on": ["WP-007-03"],
+      "id": "WP-008-04",
+      "title": "Update Quick Start section for v0.2",
+      "description": "Update the Quick Start section in README.md to document both standalone mode (make up) and suite mode (make up-suite). Keep it brief — full details are in QUICKSTART.md. Update Service Access table with correct ports.",
+      "depends_on": ["WP-008-03"],
       "acceptance": [
-        "Woodpecker listed at http://localhost:8000 with GitHub OAuth",
-        "SonarQube listed at http://localhost:9000 with admin/admin",
-        "No Jenkins references"
+        "Installation shows `make up` (standalone) and `make up-suite` (suite mode)",
+        "Service Access table: Woodpecker 8000, Portainer 9443, SonarQube 9000",
+        "Links to QUICKSTART.md for full details",
+        "No Jenkins or k8s references"
       ]
     },
     {
-      "id": "WP-007-05",
-      "title": "Update Pipeline Creation with .fawkespipe.yml contract",
-      "description": "Replace Jenkinsfile instructions with .fawkespipe.yml pipeline contract: add to repo, push, enable in Woodpecker UI, GitHub webhook auto-triggers.",
-      "depends_on": ["WP-007-04"],
+      "id": "WP-008-05",
+      "title": "Update Pipeline Contract Reference section",
+      "description": "Rewrite the Pipeline Contract Reference section to link to docs/pipeline-contract.md as the authoritative source. Keep a brief summary of key sections (app, build, stages) and list the language-specific examples with links to examples/.",
+      "depends_on": ["WP-008-04"],
       "acceptance": [
-        "References .fawkespipe.yml.example for contract template",
-        "Describes Woodpecker UI repository enablement",
-        "Mentions GitHub webhook auto-configuration",
-        "No Jenkinsfile references"
+        "Section links to docs/pipeline-contract.md",
+        "Key sections summarized (app, build, stages)",
+        "Language examples listed with paths to examples/"
       ]
     },
     {
-      "id": "WP-007-06",
-      "title": "Add Smoke Test section with verification commands",
-      "description": "Add new Smoke Test section with: `make validate`, `make test`, Woodpecker health check (curl /healthz), SonarQube health check (curl /api/system/status), pipeline contract validation.",
-      "depends_on": ["WP-007-05"],
+      "id": "WP-008-06",
+      "title": "Create docs/pipeline-contract.md — app, build, stages sections",
+      "description": "Create docs/pipeline-contract.md as the authoritative reference for the .fawkespipe.yml pipeline contract. Include detailed field tables for: app (name, type, language, version), build (builder, cnb, docker, image), and stages (lint, test, sast, dependency_scan, build, image_scan, push). Each field should have: name, type, required, default, description, valid values.",
+      "depends_on": ["WP-008-05"],
       "acceptance": [
-        "Smoke Test section exists with clear header",
-        "Includes `make validate` command",
-        "Includes `make test` command",
-        "Includes Woodpecker health check curl command",
-        "Includes SonarQube health check curl command",
-        "All commands have expected success indicators"
+        "app section documents name, type, language, version fields",
+        "build section documents builder types (cnb, docker, custom)",
+        "cnb subsection documents builder, buildpacks, env fields",
+        "docker subsection documents dockerfile, context, target, buildArgs",
+        "image subsection documents registry, namespace, name, tags",
+        "stages.lint documents commands, dockerfile sub-fields",
+        "stages.test documents commands, coverage (threshold, report)",
+        "stages.sast documents sonarqube, trivy sub-fields",
+        "stages.dependency_scan documents tools, fail_on, suppressions",
+        "stages.image_scan documents tools, severity, fail_on",
+        "All sections include example YAML snippets"
       ]
     },
     {
-      "id": "WP-007-07",
-      "title": "Update Common Commands for v0.2 Makefile targets",
-      "description": "Update command table: make up, make up-suite, make down, make logs, make status, make validate, make test, make validate-pipeline-contract. Remove legacy targets.",
-      "depends_on": ["WP-007-06"],
+      "id": "WP-008-07",
+      "title": "Create docs/pipeline-contract.md — notifications, kubernetes, advanced sections",
+      "description": "Continue docs/pipeline-contract.md with remaining sections: notifications (slack, email), kubernetes (manifests, helm, namespace, cluster), and advanced (timeout, retry, parallel, artifacts, workspace). Include complete YAML example at end.",
+      "depends_on": ["WP-008-06"],
       "acceptance": [
-        "All v0.2 Makefile targets documented",
-        "Legacy targets (make start, make stop, make init) removed",
-        "Commands grouped logically (lifecycle, logs, validation)"
+        "notifications section documents slack and email",
+        "kubernetes section documents manifests and helm",
+        "advanced section documents timeout, retry, parallel, artifacts, workspace",
+        "Complete example section with full .fawkespipe.yml",
+        "Links to .fawkespipe.yml.example and examples/*"
       ]
     },
     {
-      "id": "WP-007-08",
-      "title": "Update Troubleshooting for v0.2 stack",
-      "description": "Update troubleshooting: Woodpecker won't start, port 8000 conflicts, GitHub OAuth/webhook issues, SonarQube vm.max_map_count, OTEL collector connectivity (suite mode). Remove Jenkins troubleshooting.",
-      "depends_on": ["WP-007-07"],
+      "id": "WP-008-08",
+      "title": "Update remaining README sections (Webhook, Security, Config, Troubleshooting, Ecosystem)",
+      "description": "Update Webhook API section (Woodpecker webhooks, CLI commands), Security Features (match actual pipeline steps: Gitleaks, Trivy, SonarQube), Configuration (compose.yaml, volumes), Troubleshooting (v0.2 stack), uFawkes Stack Ecosystem table.",
+      "depends_on": ["WP-008-05"],
       "acceptance": [
-        "Woodpecker startup issues covered",
-        "Port 8000 conflict resolution",
-        "GitHub OAuth/webhook troubleshooting",
-        "SonarQube vm.max_map_count fix",
-        "OTEL collector connectivity (suite mode)",
-        "No Jenkins troubleshooting"
+        "Webhook section documents Woodpecker GitHub webhooks and CLI",
+        "Security Features section matches actual pipeline (Gitleaks, Trivy, SonarQube)",
+        "Configuration section references compose.yaml and volumes",
+        "Troubleshooting covers Woodpecker, SonarQube, OTEL, pack, ports",
+        "uFawkes Ecosystem table has correct repo URLs"
       ]
     },
     {
-      "id": "WP-007-09",
-      "title": "Run validation: markdownlint, pre-commit, links",
-      "description": "Run `markdownlint QUICKSTART.md`, `pre-commit run --all-files`, verify all internal links resolve.",
-      "depends_on": ["WP-007-08"],
+      "id": "WP-008-09",
+      "title": "Run validation: tests, pre-commit, link checks",
+      "description": "Run pytest, pre-commit, and verify all internal links resolve. Fix any issues found.",
+      "depends_on": ["WP-008-07", "WP-008-08"],
       "acceptance": [
-        "markdownlint passes with 0 errors",
+        "pytest tests/unit/ passes",
         "pre-commit run --all-files passes",
-        "Links to .fawkespipe.yml.example, compose.yaml, .woodpecker.yml are valid"
+        "All internal links in README.md and docs/pipeline-contract.md resolve"
       ]
     }
   ]
