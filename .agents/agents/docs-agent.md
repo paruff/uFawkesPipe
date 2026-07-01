@@ -27,18 +27,15 @@ Creates and maintains documentation for uFawkesPipe: architecture, pipeline cont
 docs/
 ├── ARCHITECTURE.md          # System overview, component interaction
 ├── KNOWN_LIMITATIONS.md     # Known issues and workarounds
-├── PIPELINE_CONTRACT.md     # Pipeline stage reference (8–12 min read)
-├── RUNBOOKS.md              # Operational procedures
-├── METRICS.md               # DORA metrics collection
-├── API_SURFACE.md           # Shared library API reference
-├── security/
-│   ├── scanning.md          # Security tool configuration
-│   └── secret-rotation.md   # Credential rotation procedures
-└── packs/
-    ├── python.md            # Python pack reference
-    ├── nodejs.md            # Node.js pack reference
-    ├── java.md              # Java pack reference
-    └── go.md                # Go pack reference
+├── CHANGE_IMPACT_MAP.md     # Cross-component dependencies
+├── GOLDEN_PATH.md           # Canonical workflow
+├── MODEL_POLICY.md          # AI model usage policy
+├── specification.md         # Product specification
+├── design.md                # Technical design
+├── plan.md                  # Execution plan
+├── kubernetes-promotion.md  # K8s deployment guide
+├── webhook-api.md           # Webhook API reference
+└── history/                 # Historical docs
 ```
 
 ### Tone and Style
@@ -64,11 +61,11 @@ docs/
 | --------------------------- | -------- | ------------------ |
 | `README.md`                 | P0       | New visitors       |
 | `QUICKSTART.md`             | P0       | First-time users   |
-| `docs/PIPELINE_CONTRACT.md` | P1       | App teams          |
 | `docs/ARCHITECTURE.md`      | P1       | Platform engineers |
 | `docs/KNOWN_LIMITATIONS.md` | P1       | All users          |
-| `docs/RUNBOOKS.md`          | P2       | Operators          |
-| `docs/packs/python.md`      | P2       | Python developers  |
+| `docs/CHANGE_IMPACT_MAP.md` | P1       | All users          |
+| `docs/GOLDEN_PATH.md`       | P2       | Developers         |
+| `docs/webhook-api.md`       | P2       | Integrators        |
 
 ## What You MAY Do
 

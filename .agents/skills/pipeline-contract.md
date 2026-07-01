@@ -1,7 +1,7 @@
 ---
 name: pipeline-contract
 description: .fawkespipe.yml (migrating from .deliveryd.yml) schema, validation, breaking change detection, and migration patterns for uFawkesPipe
-applies: .fawkespipe.yml.example, examples/*.yml, Jenkinsfile, shared/vars/loadConfig.groovy
+applies: .fawkespipe.yml.example, examples/.fawkespipe-*.yml, .woodpecker.yml, .github/workflows/**/*.yml
 ---
 
 # Pipeline Contract — Schema and Migration
@@ -10,7 +10,7 @@ applies: .fawkespipe.yml.example, examples/*.yml, Jenkinsfile, shared/vars/loadC
 
 ## Contract File
 
-The pipeline contract filename is `.fawkespipe.yml` (migrated from `.deliveryd.yml`).
+The pipeline contract filename is .fawkespipe.yml (migrated from .deliveryd.yml).
 
 ## Schema Reference
 
@@ -53,33 +53,41 @@ advanced: # Optional
 | Change default value   | Non-breaking | Announce in changelog                      |
 | Add new required field | **Breaking** | Major version bump                         |
 
-## Deprecation Shim (in Jenkinsfile)
+## Deprecation Shim (in Woodpecker / GitHub Actions)
 
-```groovy
-// Support both old and new contract filenames during migration
-def contractFile = '.fawkespipe.yml'
-if (!fileExists(contractFile) && fileExists('.deliveryd.yml')) {
-  echo "⚠️  DEPRECATED: '.deliveryd.yml' is renamed '.fawkespipe.yml'. " +
-       "Support for .deliveryd.yml will be removed after 2026-06-14."
-  contractFile = '.deliveryd.yml'
-}
-CONFIG = readYaml file: contractFile
+```yaml
+# Support both old and new contract filenames during migration
+- name: load-config
+  image: python:3.12-slim
+  commands:
+    - |
+      if [ -f .fawkespipe.yml ]; then
+        CONTRACT_FILE=.fawkespipe.yml
+      elif [ -f .deliveryd.yml ]; then
+        echo "⚠️  DEPRECATED: '.deliveryd.yml' is renamed '.fawkespipe.yml'. Support will be removed after 2026-06-14."
+        CONTRACT_FILE=.deliveryd.yml
+      else
+        echo "No contract file found"
+        exit 1
+      fi
+      python3 -c "import yaml, sys; print(yaml.safe_load(open('$CONTRACT_FILE')))"
 ```
 
 ## Validation
 
 - All field names must be lowercase with underscores
-- `app.name` must match regex `^[a-z0-9-]{3,48}$`
-- `build.builder` must be one of: `cnb`, `docker`
-- Tags with `${...}` variables resolve at pipeline runtime
+- app.name must match regex ^[a-z0-9-]{3,48}$
+- build.builder must be one of: cnb, docker
+- Tags with ${...} variables resolve at pipeline runtime
 - Unknown fields should warn but not fail (forward compatibility)
 
 ## Migration Checklist When Contract Changes
 
-- [ ] Update `.fawkespipe.yml.example`
-- [ ] Update all `examples/*.yml`
-- [ ] Update `shared/vars/loadConfig.groovy`
-- [ ] Add migration example to `examples/migrations/`
-- [ ] Update `docs/PIPELINE_CONTRACT.md`
-- [ ] Announce deprecation in `CHANGELOG.md`
-- [ ] Verify: `grep -r "old-field-name" .` shows zero results in production files
+- [ ] Update .fawkespipe.yml.example
+- [ ] Update all examples/.fawkespipe-*.yml
+- [ ] Update .woodpecker.yml config loading
+- [ ] Update .github/workflows/ validation steps
+- [ ] Add migration example to examples/migrations/
+- [ ] Update docs/CHANGE_IMPACT_MAP.md
+- [ ] Announce deprecation in CHANGELOG.md
+- [ ] Verify: grep -r "old-field-name" . shows zero results in production files

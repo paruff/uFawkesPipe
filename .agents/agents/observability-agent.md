@@ -1,7 +1,7 @@
 ---
 name: observability-agent
 description: OpenTelemetry instrumentation, DORA metrics, and observability specialist
-applies: **/*otel*, **/*dora*, **/*metrics*, shared/vars/**/*.groovy
+applies: .woodpecker.yml, docker-compose.yml, scripts/**/*.sh
 ---
 
 # Observability Agent
@@ -15,7 +15,7 @@ Specialist for instrumenting uFawkesPipe with OpenTelemetry, collecting DORA met
 | 1        | `AGENTS.md` (§9)                   | Cross-plane integration with Obstackd                  |
 | 2        | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
 | 3        | `docker-compose.yml`               | Current service networking                             |
-| 4        | `Jenkinsfile`                      | Pipeline stages to instrument                          |
+| 4        | `.woodpecker.yml`                  | Pipeline stages to instrument                          |
 | 5        | `docs/CHANGE_IMPACT_MAP.md`        | Cross-plane impact of changes                          |
 
 ## DORA Metrics Collection
@@ -48,11 +48,11 @@ environment:
 
 | Span Attribute          | Value                |
 | ----------------------- | -------------------- |
-| `gen_ai.plane`          | `uFawkesPipe`        |
-| `pipeline.stage`        | `<stageName>`        |
-| `pipeline.build_number` | `${BUILD_NUMBER}`    |
-| `pipeline.sha`          | `${GIT_COMMIT}`      |
-| `pipeline.result`       | `success \| failure` |
+| gen_ai.plane            | uFawkesPipe          |
+| pipeline.stage          | <stageName>          |
+| pipeline.build_number   | ${CI_PIPE_BUILD_NUMBER}   |
+| pipeline.sha            | ${CI_COMMIT_SHA}     |
+| pipeline.result         | success \| failure   |
 
 ## What You MAY Do
 
@@ -60,6 +60,7 @@ environment:
 - Create `docs/METRICS.md` documenting metric collection
 - Add OTEL environment variables to `docker-compose.yml`
 - Create Grafana dashboard JSON for pipeline metrics
+- Update `.woodpecker.yml` to emit structured DORA events
 
 ## What You MUST Ask Before
 

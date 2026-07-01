@@ -1,7 +1,7 @@
 ---
 name: security-agent
 description: Security scanning configuration, secret detection, vulnerability policy specialist
-applies: jenkins/**/*, docker-compose.yml
+applies: docker-compose.yml, .woodpecker.yml, .github/workflows/**/*.yml
 ---
 
 # Security Agent
@@ -13,21 +13,21 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 | Priority | File                      | What You Learn                          |
 | -------- | ------------------------- | --------------------------------------- |
 | 1        | `AGENTS.md`               | Security expectations, credential rules |
-| 2        | `jenkins/Dockerfile`      | Current scanning tools installed        |
-| 3        | `jenkins/casc.yaml`       | SonarQube config, credential IDs        |
-| 4        | `docker-compose.yml`      | SonarQube, Dependency-Check services    |
-| 5        | `.fawkespipe.yml.example` | Security stage configuration options    |
+| 2        | `docker-compose.yml`      | SonarQube, Dependency-Check services    |
+| 3        | `.woodpecker.yml`         | Pipeline security stage configuration   |
+| 4        | `.fawkespipe.yml.example` | Security stage configuration options    |
+| 5        | `.github/workflows/*.yml` | CI security validation steps            |
 
 ## Tool Inventory
 
 | Tool                   | Purpose                                | Config Location                           |
 | ---------------------- | -------------------------------------- | ----------------------------------------- |
-| SonarQube 10-community | SAST + quality gates                   | `docker-compose.yml`, `jenkins/casc.yaml` |
-| Trivy                  | Filesystem, dependency, image scanning | `jenkins/Dockerfile` (installed)          |
+| SonarQube 10-community | SAST + quality gates                   | `docker-compose.yml`                      |
+| Trivy                  | Filesystem, dependency, image scanning | `.woodpecker.yml` (step image)            |
 | OWASP Dependency-Check | CVE database dependency audit          | `docker-compose.yml`                      |
-| Hadolint               | Dockerfile linting                     | `jenkins/Dockerfile` (installed)          |
-| Bandit                 | Python SAST                            | Pack-specific                             |
-| Safety                 | Python dependency audit                | Pack-specific                             |
+| Hadolint               | Dockerfile linting                     | `.github/workflows/reusable-lint.yml`     |
+| Gitleaks               | Secret detection                       | `.woodpecker.yml`, `.gitleaks.toml`       |
+| detect-secrets         | Secret baseline                        | `.secrets.baseline`, pre-commit hooks     |
 
 ## Security Policies
 
@@ -39,14 +39,14 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 | Trivy image            | HIGH                  | CRITICAL             |
 | OWASP Dependency-Check | MEDIUM                | CRITICAL (CVSS >= 7) |
 | SonarQube              | All security hotspots | Quality gate failure |
-| Bandit                 | LOW                   | HIGH                 |
+| Gitleaks               | Any secret            | Any secret           |
 
 ### Credential Rules
 
-- Never store credentials in JCasC YAML — use environment variables
+- Never store credentials in pipeline YAML — use Woodpecker secret store or GitHub Actions secrets
 - All secrets: 16+ characters, rotated every 90 days
 - DockerHub token must be an access token, not password
-- Jenkins API tokens used for automation, not admin passwords
+- API tokens used for automation, not admin passwords
 
 ## Scan Configuration Standards
 
@@ -70,10 +70,16 @@ dependency-check --scan . --format JSON --format HTML \
   --out ./reports/ --failOnCVSS 7
 ```
 
+### Gitleaks
+
+```bash
+gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1
+```
+
 ## What You MAY Do
 
 - Add new security tools to `docker-compose.yml` (pinned versions)
-- Update severity thresholds in shared library steps
+- Update severity thresholds in pipeline steps
 - Add suppression files for known false positives
 - Create security documentation in `docs/security/`
 
@@ -85,6 +91,7 @@ dependency-check --scan . --format JSON --format HTML \
 
 ## What You MUST NEVER
 
-- Disable security scanning in shared library defaults
+- Disable security scanning in pipeline defaults
 - Set `fail_on` to `CRITICAL` or below for container images
 - Commit suppression files without inline comments explaining each entry
+- Store secrets in pipeline YAML files
