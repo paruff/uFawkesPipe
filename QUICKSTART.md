@@ -183,10 +183,9 @@ All commands should exit 0 with no errors.
 
 | Command | Description |
 |---|---|
-| `make validate` | Validate Docker + K8s + agents |
+| `make validate` | Validate Docker + agents |
 | `make validate-docker` | Validate `compose.yaml` |
 | `make validate-suite` | Validate suite mode compose files |
-| `make validate-k8s` | Validate Kubernetes manifests |
 | `make validate-agents` | Validate agent and skill definitions |
 | `make check-env` | Check required environment variables |
 
@@ -262,7 +261,6 @@ docker compose -f compose.yaml exec woodpecker-agent wget -qO- http://otel-colle
 
 - Read the [Architecture Documentation](docs/ARCHITECTURE.md)
 - Set up [Webhooks and APIs](docs/webhook-api.md)
-- Plan [Kubernetes Promotion](docs/kubernetes-promotion.md)
 - Review [Example Configs](examples/)
 - Check [Known Limitations](docs/KNOWN_LIMITATIONS.md)
 
