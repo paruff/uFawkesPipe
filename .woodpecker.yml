@@ -122,52 +122,56 @@ steps:
       - event: push
         branch: main
 
+  # Emit structured deployment event to uFawkesObs OTEL collector.
+  # Non-blocking — observability failure must not fail the deployment.
+  # Uses OTEL_ENDPOINT and OTEL_HEADERS from secrets (suite mode: otel-collector:4318).
+  # OTLP HTTP traces endpoint: ${OTEL_ENDPOINT}/v1/traces
   - name: notify-obs
-    image: curlimages/curl:7.88.1
-    commands:
-      # Emit structured deployment event to stdout (scraped by Alloy in suite mode)
-      - |
-        EVENT_TS=$(date -u +%s%N)
-        cat <<EOF
-        {"@timestamp":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","level":"info","logger":"pipeline","event.type":"deploy","pipeline.number":"${CI_PIPELINE_NUMBER:-0}","git.commit":"${CI_COMMIT_SHA:-unknown}","git.repo":"${CI_REPO:-unknown}","git.branch":"${CI_COMMIT_BRANCH:-unknown}","pipeline":"deployment-event","step":"notify-obs"}
-        EOF
-      # Attempt to send event to uFawkesObs OTEL collector (suite mode only)
-      # Falls back gracefully with warning if otel-collector is unreachable
-      - |
-        curl -sf -X POST "http://otel-collector:4318/v1/logs" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "resourceLogs": [{
-              "resource": {
-                "attributes": [
-                  {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
-                  {"key": "service.version", "value": {"stringValue": "0.3.0"}},
-                  {"key": "deployment.environment", "value": {"stringValue": "'"${UFAWKES_ENVIRONMENT:-development}"'"}}
-                ]
-              },
-              "scopeLogs": [{
-                "scope": {"name": "ufawkespipe.pipeline"},
-                "logRecords": [{
-                  "timeUnixNano": "'"$(date -u +%s%N)"'",
-                  "observedTimeUnixNano": "'"$(date -u +%s%N)"'",
-                  "severityNumber": 9,
-                  "severityText": "Info",
-                  "body": {"stringValue": "Pipeline completed"},
-                  "attributes": [
-                    {"key": "event.type", "value": {"stringValue": "deploy"}},
-                    {"key": "pipeline.number", "value": {"stringValue": "'"${CI_PIPELINE_NUMBER:-0}"'"}},
-                    {"key": "git.commit", "value": {"stringValue": "'"${CI_COMMIT_SHA:-unknown}"'"}},
-                    {"key": "git.repo", "value": {"stringValue": "'"${CI_REPO:-unknown}"'"}},
-                    {"key": "git.branch", "value": {"stringValue": "'"${CI_COMMIT_BRANCH:-unknown}"'"}},
-                    {"key": "pipeline.duration_ms", "value": {"stringValue": "'"${CI_PIPELINE_DURATION:-0}"'"}},
-                    {"key": "pipeline.status", "value": {"stringValue": "success"}}
-                  ]
-                }]
-              }]
-            }]
-          }' \
-          && echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"pipeline","message":"Deployment event sent to uFawkesObs OTEL collector","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs","otel_endpoint":"otel-collector:4318"}' \
-          || echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"pipeline","message":"uFawkesObs OTEL collector not reachable — event logged to stdout only","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'
+    image: curlimages/curl:latest
     when:
       - event: push
         branch: main
+    environment:
+      OTEL_ENDPOINT:
+        from_secret: otel_endpoint
+      OTEL_HEADERS:
+        from_secret: otel_headers
+    commands:
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"observability","message":"Starting notify-obs deployment event emission","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'
+      - |
+        # POST deployment event to OTEL collector (non-blocking)
+        if [ -n "${OTEL_ENDPOINT:-}" ]; then
+          curl -sf -X POST "${OTEL_ENDPOINT}/v1/traces" \
+            -H "Content-Type: application/json" \
+            ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
+            -d '{
+              "resourceSpans": [{
+                "resource": {
+                  "attributes": [
+                    {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
+                    {"key": "deployment.environment", "value": {"stringValue": "production"}},
+                    {"key": "deployment.version", "value": {"stringValue": "'"${CI_COMMIT_SHA:0:7}"'"}},
+                    {"key": "deployment.status", "value": {"stringValue": "success"}}
+                  ]
+                },
+                "scopeSpans": [{
+                  "spans": [{
+                    "name": "deployment",
+                    "kind": "SPAN_KIND_INTERNAL",
+                    "startTimeUnixNano": "'"$(date -u +%s)000000000"'",
+                    "endTimeUnixNano": "'"$(date -u +%s)000000000"'",
+                    "attributes": [
+                      {"key": "git.commit.sha", "value": {"stringValue": "'"${CI_COMMIT_SHA}"'"}},
+                      {"key": "git.branch", "value": {"stringValue": "'"${CI_COMMIT_BRANCH}"'"}},
+                      {"key": "pipeline.duration_ms", "value": {"intValue": "'"${PIPELINE_DURATION_MS:-0}"'"}}
+                    ]
+                  }]
+                }]
+              }]
+            }' \
+            -w "\nHTTP %{http_code}\n" \
+            -o /dev/null || true
+        else
+          echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"observability","message":"OTEL_ENDPOINT not set — skipping OTEL collector POST","step":"notify-obs"}'
+        fi
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"observability","message":"notify-obs deployment event emission completed","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'

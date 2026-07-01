@@ -523,3 +523,151 @@ class TestUploadDefectDojoStep:
         assert '"step":"upload-defectdojo"' in command_str, (
             "upload-defectdojo logging must include step name for traceability"
         )
+
+
+class TestNotifyObsStep:
+    """Acceptance: notify-obs step (WP-006) is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the notify-obs step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "notify-obs":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'notify-obs' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step named 'notify-obs' must exist in .woodpecker.yml"
+
+    def test_uses_curl_image(self, woodpecker_config):
+        """Acceptance: notify-obs uses 'curlimages/curl:latest'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        assert step["image"] == "curlimages/curl:latest", (
+            f"notify-obs must use 'curlimages/curl:latest', got '{step.get('image')}'"
+        )
+
+    def test_branch_main_only(self, woodpecker_config):
+        """Acceptance: notify-obs has when: branch: main condition."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        when = step.get("when", [])
+        assert when, "notify-obs must have a 'when' condition with branch: main"
+        branch_found = False
+        for condition in when:
+            if isinstance(condition, dict) and condition.get("branch") == "main":
+                branch_found = True
+                break
+        assert branch_found, (
+            f"notify-obs 'when' must include 'branch: main', got: {when}"
+        )
+
+    def test_has_otel_endpoint_secret(self, woodpecker_config):
+        """Acceptance: notify-obs has OTEL_ENDPOINT from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        environment = step.get("environment", {})
+        endpoint = environment.get("OTEL_ENDPOINT", {})
+        assert endpoint.get("from_secret") == "otel_endpoint", (
+            f"notify-obs must have OTEL_ENDPOINT from_secret: otel_endpoint, "
+            f"got: {endpoint}"
+        )
+
+    def test_has_otel_headers_secret(self, woodpecker_config):
+        """Acceptance: notify-obs has OTEL_HEADERS from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        environment = step.get("environment", {})
+        headers = environment.get("OTEL_HEADERS", {})
+        assert headers.get("from_secret") == "otel_headers", (
+            f"notify-obs must have OTEL_HEADERS from_secret: otel_headers, "
+            f"got: {headers}"
+        )
+
+    def test_has_dora_start_log(self, woodpecker_config):
+        """Acceptance: notify-obs has DORA start log at beginning."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "Starting notify-obs" in command_str, (
+            "notify-obs must have a start log message"
+        )
+
+    def test_has_dora_end_log(self, woodpecker_config):
+        """Acceptance: notify-obs has DORA completion log at end."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert (
+            "completed" in command_str.lower() or "emission completed" in command_str
+        ), "notify-obs must have a completion log message"
+
+    def test_commands_post_to_otel_endpoint(self, woodpecker_config):
+        """Acceptance: notify-obs commands POST to ${OTEL_ENDPOINT}/v1/traces."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "/v1/traces" in command_str, (
+            f"notify-obs must POST to /v1/traces, got: {command_str}"
+        )
+
+    def test_non_blocking(self, woodpecker_config):
+        """Acceptance: notify-obs is non-blocking (uses || true)."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "|| true" in command_str, (
+            f"notify-obs must use '|| true' to be non-blocking, got: {command_str}"
+        )
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: notify-obs has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "@timestamp" in command_str, (
+            "notify-obs must include DORA timestamp logging"
+        )
+        assert '"step":"notify-obs"' in command_str, (
+            "notify-obs logging must include step name for traceability"
+        )
+
+    def test_payload_includes_service_name(self, woodpecker_config):
+        """Acceptance: notify-obs payload includes service.name attribute."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "service.name" in command_str, (
+            "notify-obs payload must include 'service.name' attribute"
+        )
+
+    def test_payload_includes_git_commit_sha(self, woodpecker_config):
+        """Acceptance: notify-obs payload includes git.commit.sha attribute."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "git.commit.sha" in command_str, (
+            "notify-obs payload must include 'git.commit.sha' attribute"
+        )
+
+    def test_payload_includes_pipeline_duration_ms(self, woodpecker_config):
+        """Acceptance: notify-obs payload includes pipeline.duration_ms."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "pipeline.duration_ms" in command_str, (
+            "notify-obs payload must include 'pipeline.duration_ms' attribute"
+        )
+
+    def test_handles_missing_otel_endpoint_gracefully(self, woodpecker_config):
+        """Acceptance: notify-obs handles missing OTEL_ENDPOINT gracefully."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert (
+            "OTEL_ENDPOINT not set" in command_str
+            or '[ -n "${OTEL_ENDPOINT:-}" ]' in command_str
+        ), "notify-obs must handle missing OTEL_ENDPOINT gracefully"
