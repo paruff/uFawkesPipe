@@ -1,54 +1,61 @@
 {
-  "feature": "WP-003",
-  "title": "Add secrets-scan (Gitleaks) as hard gate step",
-  "description": "Add a Gitleaks secrets-scan step as the second step in .woodpecker.yml, immediately after init. Must fail the pipeline with exit code 1 on any secret detection.",
-  "depends_on": ["WP-001"],
-  "branch": "feat/WP-003-secrets-scan",
+  "feature": "WP-004",
+  "title": "Add vuln-scan-fs and vuln-scan-image Trivy steps",
+  "description": "Replace the single security-scan step with vuln-scan-fs (filesystem, runs on every push) and vuln-scan-image (image, runs on main only). Both write JSON artifacts for DefectDojo ingestion. Neither is a hard gate at v0.2.",
+  "depends_on": ["WP-001", "WP-003"],
+  "branch": "feature/wp-004-trivy-vuln-scan",
   "tasks": [
     {
-      "id": "WP-003-01",
-      "title": "Add secrets-scan step to .woodpecker.yml",
-      "description": "Insert a new step named 'secrets-scan' at index 1 (after 'init') using image zricethezav/gitleaks:v8.18.2. Command: gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1. Add a comment referencing .gitleaks.toml and .secrets.baseline above the step.",
+      "id": "WP-004-01",
+      "title": "Replace security-scan with vuln-scan-fs step in .woodpecker.yml",
+      "description": "Remove the existing security-scan step. Add a new step named vuln-scan-fs using aquasec/trivy:latest with DORA structured JSON logging. Command: trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . (exit-code 0, no hard gate). No when: branch restriction. Include comment explaining the latest tag exception for scanner images.",
       "depends_on": [],
       "acceptance": [
-        "Step named 'secrets-scan' exists at index 1 (zero-based) in steps list",
-        "Image is zricethezav/gitleaks:v8.18.2",
-        "Command includes --exit-code=1",
-        "Command includes --report-path=artifacts/security/gitleaks.json",
-        "Comment references .gitleaks.toml and .secrets.baseline"
+        "Step named 'vuln-scan-fs' exists in .woodpecker.yml steps list",
+        "Image is aquasec/trivy:latest",
+        "Commands include '--format json --output artifacts/security/trivy-repo.json --no-progress .'",
+        "Step has NO when: branch restriction",
+        "Commands do NOT include '--exit-code 1' (no hard gate)",
+        "Comment explains latest tag exception for scanner images",
+        "Old 'security-scan' step is removed from .woodpecker.yml",
+        "DORA structured JSON logging present in step commands"
       ]
     },
     {
-      "id": "WP-003-02",
-      "title": "Create test_woodpecker_yml.py to validate pipeline structure",
-      "description": "Create tests/unit/test_woodpecker_yml.py with tests that parse .woodpecker.yml via pyyaml and assert: valid YAML, step index 1 is 'secrets-scan', step names in order (init, secrets-scan, lint-yaml, ...), image pinning, and required commands.",
-      "depends_on": ["WP-003-01"],
+      "id": "WP-004-02",
+      "title": "Add vuln-scan-image step to .woodpecker.yml",
+      "description": "Add a new step named vuln-scan-image using aquasec/trivy:latest with DORA structured JSON logging. Command: trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}. Has when: branch: main condition. Requires REGISTRY_USERNAME secret from_secret.",
+      "depends_on": ["WP-004-01"],
       "acceptance": [
-        "tests/unit/test_woodpecker_yml.py exists",
-        "Test asserts 'secrets-scan' is at index 1 (zero-based) in steps list",
-        "Test asserts init is at index 0",
-        "Test asserts secrets-scan uses correct image",
-        "Test asserts secrets-scan has --exit-code=1 flag",
-        "pytest tests/unit/test_woodpecker_yml.py passes"
+        "Step named 'vuln-scan-image' exists in .woodpecker.yml steps list",
+        "Image is aquasec/trivy:latest",
+        "Commands include '--format json --output artifacts/security/trivy-image.json --no-progress'",
+        "Commands reference CI_REPO_NAME and CI_COMMIT_SHA for image reference",
+        "Step has when: condition with branch: main",
+        "Step has environment.REGISTRY_USERNAME.from_secret: registry_username",
+        "Comment explains latest tag exception for scanner images",
+        "DORA structured JSON logging present in step commands"
       ]
     },
     {
-      "id": "WP-003-03",
-      "title": "Update docs/plan.md to mark WP-003 acceptance as test-covered",
-      "description": "Update docs/plan.md to check off the acceptance criteria boxes for WP-003 and note that automated tests exist.",
-      "depends_on": ["WP-003-02"],
+      "id": "WP-004-03",
+      "title": "Add TestVulnScanFsStep and TestVulnScanImageStep test classes",
+      "description": "Add two new test classes to tests/unit/test_woodpecker_yml.py. TestVulnScanFsStep: validates step existence, image, JSON format output, output path, --no-progress flag, scans current dir, no branch restriction, no hard gate exit code, DORA logging. TestVulnScanImageStep: validates step existence, image, JSON format output, output path, --no-progress flag, branch main only, registry username secret, CI variable usage, DORA logging.",
+      "depends_on": ["WP-004-02"],
       "acceptance": [
-        "docs/plan.md WP-003 acceptance checkboxes updated"
+        "TestVulnScanFsStep class exists in test_woodpecker_yml.py",
+        "TestVulnScanImageStep class exists in test_woodpecker_yml.py",
+        "Each class has at least 8 test methods covering their respective acceptance criteria",
+        "pytest tests/unit/test_woodpecker_yml.py passes with zero failures"
       ]
     },
     {
-      "id": "WP-003-04",
-      "title": "Run full validation suite",
-      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions.",
-      "depends_on": ["WP-003-02"],
+      "id": "WP-004-04",
+      "title": "Run full validation suite and verify no regressions",
+      "description": "Run pytest tests/, make validate, yamllint .woodpecker.yml, and pre-commit run --all-files to ensure no regressions from the changes.",
+      "depends_on": ["WP-004-03"],
       "acceptance": [
         "pytest tests/ passes with zero failures",
-        "make validate passes",
         "yamllint .woodpecker.yml reports zero errors",
         "pre-commit run --all-files passes"
       ]
