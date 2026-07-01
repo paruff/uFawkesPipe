@@ -84,6 +84,44 @@ steps:
       - event: push
         branch: main
 
+  # Collect scanner artifacts (gitleaks, trivy-fs, trivy-image) and POST to
+  # DefectDojo import-scan API. Non-blocking — failures warn but don't fail.
+  - name: upload-defectdojo
+    image: curlimages/curl:8.6.0
+    environment:
+      DOJO_API_TOKEN:
+        from_secret: defectdojo_api_token
+    commands:
+      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting DefectDojo upload","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"upload-defectdojo"}'
+      - |
+        for f in gitleaks trivy-repo trivy-image; do
+          path="artifacts/security/${f}.json"
+          if [ ! -f "$path" ]; then
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"Artifact not found, skipping","file":"'"${path}"'","step":"upload-defectdojo"}'
+            continue
+          fi
+          case "$f" in
+            gitleaks)   scan_type="Gitleaks Scan" ;;
+            trivy-repo|trivy-image) scan_type="Trivy Scan" ;;
+          esac
+          HTTP_CODE=$(curl -sf -X POST "http://defectdojo:8080/api/v2/import-scan/" \
+            -H "Authorization: Token $DOJO_API_TOKEN" \
+            -F "active=true" -F "verified=false" \
+            -F "scan_type=${scan_type}" \
+            -F "engagement_name=CI-Engagement" \
+            -F "product_name=${CI_REPO_NAME}" \
+            -F "file=@${path}" \
+            -w '%{http_code}' -o /dev/null 2>&1) && rc=$? || rc=$?
+          if [ $rc -eq 0 ] && [ "$HTTP_CODE" = "201" ]; then
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"DefectDojo upload successful","file":"'"${f}"'","http_code":"'"${HTTP_CODE}"'","step":"upload-defectdojo"}'
+          else
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"DefectDojo upload failed","file":"'"${f}"'","http_code":"'"${HTTP_CODE:-000}"'","step":"upload-defectdojo"}'
+          fi
+        done
+    when:
+      - event: push
+        branch: main
+
   - name: notify-obs
     image: curlimages/curl:7.88.1
     commands:

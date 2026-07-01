@@ -1,6 +1,6 @@
-# WP-004 — Design: Add `vuln-scan-fs` and `vuln-scan-image` Trivy steps
+# WP-005 — Design: Add `upload-defectdojo` Telemetry Collector Step
 
-**Depends on:** specification.md (WP-004)
+**Depends on:** specification.md (WP-005), WP-002 (fawkes-net), WP-004 (Trivy steps)
 
 ---
 
@@ -8,122 +8,127 @@
 
 | Component | File | Change |
 |---|---|---|
-| Pipeline definition | `.woodpecker.yml` | Remove `security-scan` step; add `vuln-scan-fs` and `vuln-scan-image` steps |
-| Pipeline tests | `tests/unit/test_woodpecker_yml.py` | Add `TestVulnScanFsStep` and `TestVulnScanImageStep` test classes |
+| Pipeline definition | `.woodpecker.yml` | Add `upload-defectdojo` step after `vuln-scan-image` |
+| Pipeline tests | `tests/unit/test_woodpecker_yml.py` | Add `TestUploadDefectDojoStep` class |
+| Example env | `.env.example` | Add `DOJO_API_TOKEN` placeholder |
 
-No other files are modified. No compose.yaml changes, no contract changes, no new scripts.
+No other files modified.
 
 ---
 
-## 2. `.woodpecker.yml` Step Design
+## 2. Step Design
 
-### 2.1 `vuln-scan-fs` (replaces `security-scan`)
+### 2.1 Position in Pipeline
 
-**Position:** After `validate-pipeline-contract` step (current step index 5). This is the natural position — the filesystem scan runs on the source code, which is available after checkout and lint/test validation.
+The `upload-defectdojo` step runs **after** `vuln-scan-image` and **before** `notify-obs`. This ensures all three scanner artifacts (gitleaks.json, trivy-repo.json, trivy-image.json) are available before the upload attempt.
 
-**Why not a hard gate?** The v0.2 design (design.md §2.2) explicitly states: "`--exit-code 0` — findings go to DefectDojo, not pipeline gate. Hard gate on image scan for CRITICAL severity is a v0.3 item." Therefore, `vuln-scan-fs` must NOT use `--exit-code 1`.
-
-**Step definition:**
-
-```yaml
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
-  - name: vuln-scan-fs
-    image: aquasec/trivy:latest
-    commands:
-      - echo '{"@timestamp":"...","level":"info","logger":"security","message":"Running Trivy filesystem scan",...,"step":"vuln-scan-fs"}'
-      - trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
-      - echo '{"@timestamp":"...","level":"...","logger":"security","message":"Trivy filesystem scan completed","exit_code":'${rc}',...,"step":"vuln-scan-fs"}'
-      - exit $rc
+```
+init → secrets-scan → lint-yaml → lint-shell → validate-pipeline-contract
+  → vuln-scan-fs → vuln-scan-image → upload-defectdojo → notify-obs
 ```
 
-**Key differences from current `security-scan`:**
-- Removed `--exit-code 1 --severity HIGH,CRITICAL` → no gate, exit-code 0 on findings
-- Added `--format json --output artifacts/security/trivy-repo.json` → JSON artifact for DefectDojo
-- Removed `when: branch: main` → runs on every push
-- Added DORA structured logging
-
-### 2.2 `vuln-scan-image` (new, runs after build)
-
-**Position:** After `notify-obs` (or after a future `build` step). Since the `build` step does not yet exist in the current `.woodpecker.yml`, this step will be placed after `notify-obs` with a conditional `when: branch: main`. The image reference uses Woodpecker variables that the `build` step (WP-009) will set.
-
-For now, the image reference will use the same pattern as the design.md §5 target: `${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}`. This requires the `REGISTRY_USERNAME` secret (from_secret). Since the build step does not exist yet, the `vuln-scan-image` step will fail if it actually tries to scan a non-existent image. This is acceptable because:
-1. The `when: branch: main` condition limits it to main branch
-2. The build step (WP-009) will be added later and will produce the image
-
-**Wait — better approach:** Since the build step doesn't exist yet, and `vuln-scan-image` requires a built image, I should add the step definition now but understand it will only become functional when the build step is added (WP-009). The step will sit in the pipeline definition, correctly configured, and will be a no-op (or fail gracefully) until the build step provides the image. The `when:` condition already limits it to `main` only.
-
-**Step definition:**
+### 2.2 Step Definition
 
 ```yaml
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
-  - name: vuln-scan-image
-    image: aquasec/trivy:latest
+  - name: upload-defectdojo
+    image: curlimages/curl:8.6.0
     environment:
-      REGISTRY_USERNAME:
-        from_secret: registry_username
+      DOJO_API_TOKEN:
+        from_secret: defectdojo_api_token
     commands:
-      - echo '{"@timestamp":"...","level":"info","logger":"security","message":"Running Trivy image scan",...,"step":"vuln-scan-image"}'
-      - trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
-      - echo '{"@timestamp":"...","level":"...","logger":"security","message":"Trivy image scan completed","exit_code":'${rc}',...,"step":"vuln-scan-image"}'
-      - exit $rc
+      - |
+        echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting DefectDojo upload","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"upload-defectdojo"}'
+      - |
+        for f in gitleaks trivy-repo trivy-image; do
+          path="artifacts/security/${f}.json"
+          if [ ! -f "$path" ]; then
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"Artifact not found, skipping","file":"'"$path"'","step":"upload-defectdojo"}'
+            continue
+          fi
+          case "$f" in
+            gitleaks)   scan_type="Gitleaks Scan" ;;
+            trivy-repo|trivy-image) scan_type="Trivy Scan" ;;
+          esac
+          HTTP_CODE=$(curl -sf -X POST "http://defectdojo:8080/api/v2/import-scan/" \
+            -H "Authorization: Token $DOJO_API_TOKEN" \
+            -F "active=true" -F "verified=false" \
+            -F "scan_type=${scan_type}" \
+            -F "engagement_name=CI-Engagement" \
+            -F "product_name=${CI_REPO_NAME}" \
+            -F "file=@${path}" \
+            -w '%{http_code}' -o /dev/null 2>&1) && rc=$? || rc=$?
+          if [ $rc -eq 0 ] && [ "$HTTP_CODE" = "201" ]; then
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"DefectDojo upload successful","file":"'"${f}"'","http_code":"'"${HTTP_CODE}"'","step":"upload-defectdojo"}'
+          else
+            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"DefectDojo upload failed","file":"'"${f}"'","http_code":"'"${HTTP_CODE:-000}"'","step":"upload-defectdojo"}'
+          fi
+        done
     when:
       - event: push
         branch: main
 ```
 
+### 2.3 Key Design Decisions
+
+**Non-blocking upload:** Each upload failure prints a warning but does not exit non-zero. This ensures the pipeline completes even if DefectDojo is unreachable.
+
+**HTTP code capture:** Using `-w '%{http_code}' -o /dev/null` to capture the HTTP status code for observability logging. DefectDojo returns 201 on successful import.
+
+**DORA logging:** Each operation (file found, upload success, upload failure) emits a structured JSON log entry for uFawkesObs ingestion.
+
+**Defensive file check:** Each artifact file is checked for existence before POSTing. If the `build` step (WP-009) is not yet implemented, `trivy-image.json` won't exist — the loop skips it gracefully.
+
 ---
 
 ## 3. Test Design
 
-### 3.1 `TestVulnScanFsStep`
+### 3.1 `TestUploadDefectDojoStep` class
 
 | Test | Assertion |
 |---|---|
-| `test_step_exists` | Step named `vuln-scan-fs` exists in steps list |
-| `test_uses_trivy_latest` | Image is `aquasec/trivy:latest` |
-| `test_has_json_format_output` | Commands include `--format json` |
-| `test_output_path` | Commands include `--output artifacts/security/trivy-repo.json` |
-| `test_has_no_progress` | Commands include `--no-progress` |
-| `test_scans_current_dir` | Commands include `.` as scan target |
-| `test_no_branch_restriction` | Step has NO `when:` condition (runs on all pushes) |
-| `test_no_hard_gate_exit_code` | Commands do NOT include `--exit-code 1` |
-| `test_has_dora_logging` | Commands include DORA JSON structured logging |
-
-### 3.2 `TestVulnScanImageStep`
-
-| Test | Assertion |
-|---|---|
-| `test_step_exists` | Step named `vuln-scan-image` exists in steps list |
-| `test_uses_trivy_latest` | Image is `aquasec/trivy:latest` |
-| `test_has_json_format_output` | Commands include `--format json` |
-| `test_output_path` | Commands include `--output artifacts/security/trivy-image.json` |
-| `test_has_no_progress` | Commands include `--no-progress` |
+| `test_step_exists` | Step named `upload-defectdojo` exists in steps list |
+| `test_uses_curl_image` | Image is `curlimages/curl:8.6.0` |
+| `test_has_dojo_api_token_secret` | Step has `environment.DOJO_API_TOKEN.from_secret: defectdojo_api_token` |
 | `test_branch_main_only` | Step has `when:` with `branch: main` condition |
-| `test_uses_registry_username_secret` | Step has `environment.REGISTRY_USERNAME.from_secret: registry_username` |
-| `test_image_ref_uses_ci_variables` | Commands reference `CI_REPO_NAME` and `CI_COMMIT_SHA` |
-| `test_has_dora_logging` | Commands include DORA JSON structured logging |
-
-### 3.3 Update existing tests
-
-Remove/update any tests that reference the old `security-scan` step by name.
+| `test_loops_over_gitleaks` | Commands reference `gitleaks` in loop |
+| `test_loops_over_trivy_repo` | Commands reference `trivy-repo` in loop |
+| `test_loops_over_trivy_image` | Commands reference `trivy-image` in loop |
+| `test_checks_file_existence` | Commands include `[ -f "$path" ]` or `[ ! -f "$path" ]` |
+| `test_scan_type_gitleaks` | Commands map `gitleaks` to `Gitleaks Scan` |
+| `test_scan_type_trivy_repo` | Commands map `trivy-repo` to `Trivy Scan` |
+| `test_scan_type_trivy_image` | Commands map `trivy-image` to `Trivy Scan` |
+| `test_uses_product_name` | Commands reference `CI_REPO_NAME` |
+| `test_uses_engagement_name` | Commands reference `CI-Engagement` |
+| `test_non_blocking_warn` | Commands do NOT use `exit` on failure; uses `WARN:` or logging pattern |
+| `test_has_dora_logging` | Commands include DORA JSON structured logging with `@timestamp` |
 
 ---
 
-## 4. Risks
+## 4. `.env.example` Change
+
+Add after existing secret placeholders:
+
+```
+# DefectDojo API token for security scan ingestion
+DOJO_API_TOKEN=your-defectdojo-api-token
+```
+
+---
+
+## 5. Risks
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| `vuln-scan-image` runs but no image exists (build step missing) | High (now) | Step has `when: branch: main`; not triggered on PRs. Will be addressed when build step is added in WP-009. |
-| Trivy `latest` tag introduces breaking changes | Low | Trivy CLI has been stable; `--format json --output --no-progress` flags are well-established |
-| `bash substring ${CI_COMMIT_SHA:0:7}` not universally supported | Medium | Woodpecker step containers use `dash` or `bash` — verify; if not supported, use `cut -c1-7` instead |
+| DefectDojo not running on `fawkes-net` | Medium | Non-blocking (warns only); step does not fail pipeline |
+| `product_name` field not accepted by DefectDojo API version | Medium | Human verification required before implementation (noted in spec as Q1) |
+| Large scan artifacts causing slow uploads | Low | Trivy/Gitleaks JSON artifacts are typically < 1 MB |
 
 ---
 
-## 5. File Change Summary
+## 6. File Change Summary
 
 | File | Action | Notes |
 |---|---|---|
-| `.woodpecker.yml` | Modify | Remove `security-scan`, add `vuln-scan-fs` and `vuln-scan-image` |
-| `tests/unit/test_woodpecker_yml.py` | Modify | Add `TestVulnScanFsStep` and `TestVulnScanImageStep` classes |
+| `.woodpecker.yml` | Modify | Add `upload-defectdojo` step after `vuln-scan-image` |
+| `.env.example` | Modify | Add `DOJO_API_TOKEN` placeholder |
+| `tests/unit/test_woodpecker_yml.py` | Modify | Add `TestUploadDefectDojoStep` class |
