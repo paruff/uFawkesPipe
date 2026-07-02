@@ -26,7 +26,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: pip install 'pre-commit==4.6.0'
 
       - name: Cache pre-commit environments
         uses: actions/cache@v6
@@ -100,7 +100,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: pip install 'pre-commit==4.6.0'
 
       - name: Cache pre-commit environments
         uses: actions/cache@v6
