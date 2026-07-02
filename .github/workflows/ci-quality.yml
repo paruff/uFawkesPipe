@@ -110,8 +110,11 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Run pre-commit security hooks
-        run: pre-commit run gitleaks detect-secrets --all-files
+      - name: Run pre-commit gitleaks hook
+        run: pre-commit run gitleaks --all-files
+
+      - name: Run pre-commit detect-secrets hook
+        run: pre-commit run detect-secrets --all-files
 
       - name: Trivy filesystem scan
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
