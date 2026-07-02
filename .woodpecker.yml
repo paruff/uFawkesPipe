@@ -2,7 +2,7 @@
 # Runs on every push and pull request
 #
 # Pipeline stages (ordered by depends_on):
-#   1. validate   — init, lint-yaml, lint-shell (parallel)
+#   1. validate   — init, lint-yaml, lint-shell, validate-agents (parallel)
 #   2. test       — unit-tests, integration-tests, contract-tests (parallel)
 #   3. security   — secrets-scan → vuln-scan-fs → vuln-scan-image (sequential)
 #   4. build      — build-image (main only)
@@ -74,6 +74,18 @@ steps:
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "shellcheck completed" ",\"exit_code\":$rc"
       - exit $rc
 
+  # Agent & skill validation
+  - name: validate-agents
+    image: alpine:3.20
+    depends_on: [init]
+    commands:
+      - apk add --no-cache bash
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "validate-agents"
+      - bash scripts/validate-agents.sh && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "validate" "Agent validation completed" ",\"exit_code\":$rc"
+      - exit $rc
+
 # ============================================================================
 # Stage 2: test — Unit, integration, and contract tests (parallel)
 # ============================================================================
@@ -81,7 +93,7 @@ steps:
   # Unit tests — fast, isolated, no external deps
   - name: unit-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell]
+    depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - source /drone/src/scripts/dora-log.sh
@@ -93,7 +105,7 @@ steps:
   # Integration tests — cross-component, may require Docker
   - name: integration-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell]
+    depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - source /drone/src/scripts/dora-log.sh
@@ -105,7 +117,7 @@ steps:
   # Contract tests — pipeline contract validation
   - name: contract-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell]
+    depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - source /drone/src/scripts/dora-log.sh
