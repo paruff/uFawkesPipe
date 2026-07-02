@@ -7,6 +7,7 @@ for the v0.2 pipeline specification.
 import pytest
 
 
+@pytest.mark.unit
 class TestWoodpeckerYamlValid:
     """Basic structural validation of .woodpecker.yml."""
 
@@ -25,6 +26,7 @@ class TestWoodpeckerYamlValid:
         assert "when" in woodpecker_config
 
 
+@pytest.mark.unit
 class TestStepOrdering:
     """Acceptance: Pipeline steps are in the correct order per v0.2 spec."""
 
@@ -35,32 +37,52 @@ class TestStepOrdering:
             f"Step at index 0 must be 'init', got '{steps[0]['name']}'"
         )
 
-    def test_second_step_is_secrets_scan(self, woodpecker_config):
-        """Acceptance: Second step (index 1) is 'secrets-scan'."""
-        steps = woodpecker_config["steps"]
-        assert steps[1]["name"] == "secrets-scan", (
-            f"Step at index 1 must be 'secrets-scan', got '{steps[1]['name']}'"
-        )
-
-    def test_secrets_scan_before_lint_yaml(self, woodpecker_config):
-        """Acceptance: 'secrets-scan' appears before 'lint-yaml' in step list."""
+    def test_validate_stage_before_security_stage(self, woodpecker_config):
+        """Acceptance: lint steps come before security steps."""
         steps = woodpecker_config["steps"]
         names = [s["name"] for s in steps]
-        pos_secrets = names.index("secrets-scan")
         pos_lint_yaml = names.index("lint-yaml")
-        assert pos_secrets < pos_lint_yaml, (
-            f"'secrets-scan' at index {pos_secrets} must come before "
-            f"'lint-yaml' at index {pos_lint_yaml}"
+        pos_secrets = names.index("secrets-scan")
+        assert pos_lint_yaml < pos_secrets, (
+            f"'lint-yaml' at index {pos_lint_yaml} must come before "
+            f"'secrets-scan' at index {pos_secrets}"
+        )
+
+    def test_security_stage_after_test_stage(self, woodpecker_config):
+        """Acceptance: test steps come before security steps."""
+        steps = woodpecker_config["steps"]
+        names = [s["name"] for s in steps]
+        pos_tests = names.index("unit-tests")
+        pos_secrets = names.index("secrets-scan")
+        assert pos_tests < pos_secrets, (
+            f"'unit-tests' at index {pos_tests} must come before "
+            f"'secrets-scan' at index {pos_secrets}"
         )
 
 
+@pytest.mark.unit
 class TestSecretsScanStep:
     """Acceptance: secrets-scan step is correctly configured."""
 
+    def _get_step(self, woodpecker_config):
+        """Helper: find the secrets-scan step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "secrets-scan":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'secrets-scan' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, (
+            "Step named 'secrets-scan' must exist in .woodpecker.yml"
+        )
+
     def test_uses_correct_image(self, woodpecker_config):
         """Acceptance: secrets-scan uses 'zricethezav/gitleaks:v8.18.2'."""
-        steps = woodpecker_config["steps"]
-        step = steps[1]
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'secrets-scan' not found"
         assert step["image"] == "zricethezav/gitleaks:v8.18.2", (
             f"secrets-scan must use 'zricethezav/gitleaks:v8.18.2', "
             f"got '{step.get('image')}'"
@@ -68,8 +90,9 @@ class TestSecretsScanStep:
 
     def test_has_exit_code_one_flag(self, woodpecker_config):
         """Acceptance: secrets-scan command includes '--exit-code=1'."""
-        steps = woodpecker_config["steps"]
-        commands = steps[1].get("commands", [])
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'secrets-scan' not found"
+        commands = step.get("commands", [])
         command_str = " ".join(commands)
         assert "--exit-code=1" in command_str, (
             f"secrets-scan must include '--exit-code=1', got: {command_str}"
@@ -77,8 +100,9 @@ class TestSecretsScanStep:
 
     def test_has_json_report_output(self, woodpecker_config):
         """Acceptance: secrets-scan writes JSON report to artifacts/security/."""
-        steps = woodpecker_config["steps"]
-        commands = steps[1].get("commands", [])
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'secrets-scan' not found"
+        commands = step.get("commands", [])
         command_str = " ".join(commands)
         assert "--report-format=json" in command_str, (
             f"secrets-scan must use '--report-format=json', got: {command_str}"
@@ -90,26 +114,32 @@ class TestSecretsScanStep:
 
     def test_has_dora_logging(self, woodpecker_config):
         """Acceptance: secrets-scan has DORA structured JSON logging."""
-        steps = woodpecker_config["steps"]
-        commands = steps[1].get("commands", [])
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'secrets-scan' not found"
+        commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "@timestamp" in command_str, (
-            "secrets-scan must include DORA timestamp logging"
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "secrets-scan must source dora-log.sh for DORA logging"
         )
-        assert '"step":"secrets-scan"' in command_str, (
-            "secrets-scan logging must include step name for traceability"
+        assert 'dora_start "secrets-scan"' in command_str, (
+            "secrets-scan must call dora_start with step name"
+        )
+        assert "dora_emit" in command_str, (
+            "secrets-scan must use dora_emit for structured JSON logging"
         )
 
     def test_image_is_pinned(self, woodpecker_config):
         """Acceptance: secrets-scan image tag is pinned (not 'latest')."""
-        steps = woodpecker_config["steps"]
-        image = steps[1].get("image", "")
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'secrets-scan' not found"
+        image = step.get("image", "")
         assert "latest" not in image, (
             f"secrets-scan image must be pinned, got '{image}'"
         )
         assert ":" in image, f"secrets-scan image must have a tag, got '{image}'"
 
 
+@pytest.mark.unit
 class TestInitStep:
     """Acceptance: init step (WP-001) is correctly configured."""
 
@@ -130,6 +160,7 @@ class TestInitStep:
             assert d in command_str, f"init must create '{d}', got: {command_str}"
 
 
+@pytest.mark.unit
 class TestVulnScanFsStep:
     """Acceptance: vuln-scan-fs step (WP-004) is correctly configured."""
 
@@ -228,11 +259,11 @@ class TestVulnScanFsStep:
         assert step is not None, "Step 'vuln-scan-fs' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "@timestamp" in command_str, (
-            "vuln-scan-fs must include DORA timestamp logging"
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "vuln-scan-fs must source dora-log.sh for DORA logging"
         )
-        assert '"step":"vuln-scan-fs"' in command_str, (
-            "vuln-scan-fs logging must include step name for traceability"
+        assert 'dora_start "vuln-scan-fs"' in command_str, (
+            "vuln-scan-fs must call dora_start with step name"
         )
 
     def test_security_scan_removed(self, woodpecker_config):
@@ -245,6 +276,7 @@ class TestVulnScanFsStep:
         )
 
 
+@pytest.mark.unit
 class TestVulnScanImageStep:
     """Acceptance: vuln-scan-image step (WP-004) is correctly configured."""
 
@@ -349,14 +381,15 @@ class TestVulnScanImageStep:
         assert step is not None, "Step 'vuln-scan-image' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "@timestamp" in command_str, (
-            "vuln-scan-image must include DORA timestamp logging"
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "vuln-scan-image must source dora-log.sh for DORA logging"
         )
-        assert '"step":"vuln-scan-image"' in command_str, (
-            "vuln-scan-image logging must include step name for traceability"
+        assert 'dora_start "vuln-scan-image"' in command_str, (
+            "vuln-scan-image must call dora_start with step name"
         )
 
 
+@pytest.mark.unit
 class TestUploadDefectDojoStep:
     """Acceptance: upload-defectdojo step (WP-005) is correctly configured."""
 
@@ -506,9 +539,9 @@ class TestUploadDefectDojoStep:
         command_str = " ".join(commands)
         # Should not contain bare 'exit' on failure paths
         # (rc capture is ok, explicit exit on failure is not)
-        # Logging uses "level":"warn" (lowercase) for failure events
-        assert '"level":"warn"' in command_str, (
-            f"upload-defectdojo must log warning on failure, got: {command_str}"
+        # Uses dora_warn for failure events (non-blocking)
+        assert "dora_warn" in command_str, (
+            f"upload-defectdojo must use dora_warn on failure, got: {command_str}"
         )
 
     def test_has_dora_logging(self, woodpecker_config):
@@ -517,14 +550,18 @@ class TestUploadDefectDojoStep:
         assert step is not None, "Step 'upload-defectdojo' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "@timestamp" in command_str, (
-            "upload-defectdojo must include DORA timestamp logging"
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "upload-defectdojo must source dora-log.sh for DORA logging"
         )
-        assert '"step":"upload-defectdojo"' in command_str, (
-            "upload-defectdojo logging must include step name for traceability"
+        assert 'dora_start "upload-defectdojo"' in command_str, (
+            "upload-defectdojo must call dora_start with step name"
+        )
+        assert 'dora_end "upload-defectdojo"' in command_str, (
+            "upload-defectdojo must call dora_end with step name"
         )
 
 
+@pytest.mark.unit
 class TestNotifyObsStep:
     """Acceptance: notify-obs step (WP-006) is correctly configured."""
 
@@ -542,11 +579,11 @@ class TestNotifyObsStep:
         assert step is not None, "Step named 'notify-obs' must exist in .woodpecker.yml"
 
     def test_uses_curl_image(self, woodpecker_config):
-        """Acceptance: notify-obs uses 'curlimages/curl:latest'."""
+        """Acceptance: notify-obs uses 'curlimages/curl:8.6.0'."""
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'notify-obs' not found"
-        assert step["image"] == "curlimages/curl:latest", (
-            f"notify-obs must use 'curlimages/curl:latest', got '{step.get('image')}'"
+        assert step["image"] == "curlimages/curl:8.6.0", (
+            f"notify-obs must use 'curlimages/curl:8.6.0', got '{step.get('image')}'"
         )
 
     def test_branch_main_only(self, woodpecker_config):
@@ -591,8 +628,8 @@ class TestNotifyObsStep:
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'notify-obs' not found"
         command_str = " ".join(step.get("commands", []))
-        assert "Starting notify-obs" in command_str, (
-            "notify-obs must have a start log message"
+        assert 'dora_start "notify-obs"' in command_str, (
+            "notify-obs must call dora_start with step name"
         )
 
     def test_has_dora_end_log(self, woodpecker_config):
@@ -600,9 +637,9 @@ class TestNotifyObsStep:
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'notify-obs' not found"
         command_str = " ".join(step.get("commands", []))
-        assert (
-            "completed" in command_str.lower() or "emission completed" in command_str
-        ), "notify-obs must have a completion log message"
+        assert 'dora_end "notify-obs"' in command_str, (
+            "notify-obs must call dora_end with step name"
+        )
 
     def test_commands_post_to_otel_endpoint(self, woodpecker_config):
         """Acceptance: notify-obs commands POST to ${OTEL_ENDPOINT}/v1/traces."""
@@ -628,11 +665,14 @@ class TestNotifyObsStep:
         assert step is not None, "Step 'notify-obs' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "@timestamp" in command_str, (
-            "notify-obs must include DORA timestamp logging"
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "notify-obs must source dora-log.sh for DORA logging"
         )
-        assert '"step":"notify-obs"' in command_str, (
-            "notify-obs logging must include step name for traceability"
+        assert 'dora_start "notify-obs"' in command_str, (
+            "notify-obs must call dora_start with step name"
+        )
+        assert 'dora_end "notify-obs"' in command_str, (
+            "notify-obs must call dora_end with step name"
         )
 
     def test_payload_includes_service_name(self, woodpecker_config):

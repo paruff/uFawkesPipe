@@ -1,0 +1,234 @@
+# uFawkesPipe Reusable Step Definitions
+#
+# This file defines YAML anchors for common pipeline step patterns.
+# Reference them in .woodpecker.yml using YAML merge syntax:
+#
+#   my-step:
+#     <<: *anchor-name
+#
+# Or compose multiple anchors:
+#
+#   my-step:
+#     <<: [*dora-logging, *python-base]
+#     commands:
+#       - ... additional commands ...
+#
+# DORA logging requires scripts/dora-log.sh mounted at /drone/src/scripts/dora-log.sh.
+
+# ---------------------------------------------------------------------------
+# Base patterns
+# ---------------------------------------------------------------------------
+
+x-dora-logging: &dora-logging
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "${CI_STEP_NAME}"
+
+x-dora-output: &dora-output
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_end "${CI_STEP_NAME}"
+
+x-dora-log-wrapper: &dora-log-wrapper
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "${CI_STEP_NAME}"
+    - trap 'dora_end "${CI_STEP_NAME}"' EXIT
+
+x-alpine-base: &alpine-base
+  image: alpine:3.20
+
+x-python-base: &python-base
+  image: python:3.12-slim
+
+x-curl-base: &curl-base
+  image: curlimages/curl:8.6.0
+
+# ---------------------------------------------------------------------------
+# Lint / validate steps
+# ---------------------------------------------------------------------------
+
+x-yamllint: &yamllint
+  <<: *python-base
+  commands:
+    - pip install yamllint pyyaml --quiet
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "lint-yaml"
+    - yamllint compose.yaml .woodpecker.yml .env.example && rc=$? || rc=$?
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "yamllint completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+x-shellcheck: &shellcheck
+  image: koalaman/shellcheck-alpine:stable
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "lint-shell"
+    - shellcheck scripts/*.sh validate.sh && rc=$? || rc=$?
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "shellcheck completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+# ---------------------------------------------------------------------------
+# Security scan steps
+# ---------------------------------------------------------------------------
+
+x-gitleaks-scan: &gitleaks-scan
+  image: zricethezav/gitleaks:v8.18.2
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "secrets-scan"
+    - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1 && rc=$? || rc=$?
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Gitleaks scan completed" ",\"exit_code\":$rc,\"secrets_found\":$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi)"
+    - exit $rc
+
+x-trivy-fs: &trivy-fs
+  # aquasec/trivy:latest is intentionally unpinned — scanner images need
+  # current CVE databases. This is a documented exception to pinned-image policy.
+  image: aquasec/trivy:latest
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "vuln-scan-fs"
+    - trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy filesystem scan completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+x-trivy-image: &trivy-image
+  # aquasec/trivy:latest is intentionally unpinned — scanner images need
+  # current CVE databases. This is a documented exception to pinned-image policy.
+  image: aquasec/trivy:latest
+  environment:
+    REGISTRY_USERNAME:
+      from_secret: registry_username  # pragma: allowlist secret
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "vuln-scan-image"
+    - trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy image scan completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+# ---------------------------------------------------------------------------
+# Test steps
+# ---------------------------------------------------------------------------
+
+x-pytest-unit: &pytest-unit
+  <<: *python-base
+  commands:
+    - pip install -r tests/requirements.txt --quiet
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "unit-tests"
+    - pytest tests/unit/ -v --tb=short -m unit --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Unit tests completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+x-pytest-integration: &pytest-integration
+  <<: *python-base
+  commands:
+    - pip install -r tests/requirements.txt --quiet
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "integration-tests"
+    - pytest tests/integration/ -v --tb=short -m integration --junitxml=artifacts/tests/junit-integration.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Integration tests completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+x-pytest-contract: &pytest-contract
+  <<: *python-base
+  commands:
+    - pip install -r tests/requirements.txt --quiet
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "contract-tests"
+    - pytest tests/unit/ tests/integration/ -v --tb=short -k "contract or compose or yaml" --junitxml=artifacts/tests/junit-contract.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+    - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Contract tests completed" ",\"exit_code\":$rc"
+    - exit $rc
+
+# ---------------------------------------------------------------------------
+# Artifact / upload steps
+# ---------------------------------------------------------------------------
+
+x-init-artifacts: &init-artifacts
+  <<: *alpine-base
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "init"
+    - mkdir -p artifacts/security artifacts/coverage artifacts/tests
+    - dora_info "init" "Artifact directories created"
+
+x-defectdojo-upload: &defectdojo-upload
+  <<: *curl-base
+  environment:
+    DOJO_API_TOKEN:
+      from_secret: defectdojo_api_token  # pragma: allowlist secret
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "upload-defectdojo"
+    - |
+      for f in gitleaks trivy-repo trivy-image; do
+        path="artifacts/security/${f}.json"
+        if [ ! -f "$path" ]; then
+          dora_warn "security" "Artifact not found, skipping" ",\"file\":\"${path}\""
+          continue
+        fi
+        case "$f" in
+          gitleaks)   scan_type="Gitleaks Scan" ;;
+          trivy-repo|trivy-image) scan_type="Trivy Scan" ;;
+        esac
+        HTTP_CODE=$(curl -sf -X POST "http://defectdojo:8080/api/v2/import-scan/" \
+          -H "Authorization: Token $DOJO_API_TOKEN" \
+          -F "active=true" -F "verified=false" \
+          -F "scan_type=${scan_type}" \
+          -F "engagement_name=CI-Engagement" \
+          -F "product_name=${CI_REPO_NAME}" \
+          -F "file=@${path}" \
+          -w '%{http_code}' -o /dev/null 2>&1) && rc=$? || rc=$?
+        if [ $rc -eq 0 ] && [ "$HTTP_CODE" = "201" ]; then
+          dora_info "security" "DefectDojo upload successful" ",\"file\":\"${f}\",\"http_code\":\"${HTTP_CODE}\""
+        else
+          dora_warn "security" "DefectDojo upload failed" ",\"file\":\"${f}\",\"http_code\":\"${HTTP_CODE:-000}\""
+        fi
+      done
+    - dora_end "upload-defectdojo"
+
+x-notify-obs: &notify-obs
+  <<: *curl-base
+  environment:
+    OTEL_ENDPOINT:
+      from_secret: otel_endpoint  # pragma: allowlist secret
+    OTEL_HEADERS:
+      from_secret: otel_headers  # pragma: allowlist secret
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "notify-obs"
+    - |
+      if [ -n "${OTEL_ENDPOINT:-}" ]; then
+        curl -sf -X POST "${OTEL_ENDPOINT}/v1/traces" \
+          -H "Content-Type: application/json" \
+          ${OTEL_HEADERS:+-H "${OTEL_HEADERS}"} \
+          -d '{
+            "resourceSpans": [{
+              "resource": {
+                "attributes": [
+                  {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
+                  {"key": "deployment.environment", "value": {"stringValue": "production"}},
+                  {"key": "deployment.version", "value": {"stringValue": "'"${CI_COMMIT_SHA:0:7}"'"}},
+                  {"key": "deployment.status", "value": {"stringValue": "success"}}
+                ]
+              },
+              "scopeSpans": [{
+                "spans": [{
+                  "name": "deployment",
+                  "kind": "SPAN_KIND_INTERNAL",
+                  "startTimeUnixNano": "'"$(date -u +%s)000000000"'",
+                  "endTimeUnixNano": "'"$(date -u +%s)000000000"'",
+                  "attributes": [
+                    {"key": "git.commit.sha", "value": {"stringValue": "'"${CI_COMMIT_SHA}"'"}},
+                    {"key": "git.branch", "value": {"stringValue": "'"${CI_COMMIT_BRANCH}"'"}},
+                    {"key": "pipeline.duration_ms", "value": {"intValue": "'"${PIPELINE_DURATION_MS:-0}"'"}}
+                  ]
+                }]
+              }]
+            }]
+          }' \
+          -w "\nHTTP %{http_code}\n" \
+          -o /dev/null || true
+      else
+        dora_warn "observability" "OTEL_ENDPOINT not set — skipping OTEL collector POST"
+      fi
+    - dora_end "notify-obs"

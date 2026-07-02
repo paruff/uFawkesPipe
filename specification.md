@@ -1,24 +1,29 @@
-# WP-008 — Update README and Add docs/pipeline-contract.md
+# WP-009 — Full .woodpecker.yml Replacement and Test Suite Consolidation
 
-**Type:** docs / feat
-**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs), WP-007 (QUICKSTART v0.2)
-**Branch:** `feature/wp-008-readme-pipeline-contract`
+**Type:** feat / refactor
+**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs), WP-007 (QUICKSTART v0.2), WP-008 (README + pipeline-contract)
+**Branch:** `feature/wp-009-woodpecker-replacement`
 
 ---
 
 ## 1. Problem
 
-The current `README.md` documents the v0.2 stack partially but contains several stale references and gaps:
-- References `k8s/` directory for Kubernetes manifests (deleted in WP-007)
-- References legacy `docker-compose.yml` instead of `compose.yaml`
-- SonarQube port listed as 9001 (should be 9000)
-- Pipeline stages list includes 8 stages but `.woodpecker.yml` has different steps
-- No reference to the new `.fawkespipe.yml` pipeline contract format (v0.2)
-- Missing documentation of Woodpecker CI steps (secrets-scan, validate-pipeline-contract, vuln-scan-fs/image, upload-defectdojo, notify-obs)
-- Missing suite mode documentation
-- No link to `docs/pipeline-contract.md` (which doesn't exist yet)
+The current `.woodpecker.yml` is a monolithic 177-line pipeline with all steps inline. This creates several issues:
 
-A dedicated `docs/pipeline-contract.md` is needed to serve as the authoritative reference for the `.fawkespipe.yml` contract — currently only `.fawkespipe.yml.example` exists with inline comments.
+- **Maintainability:** All steps defined inline — no reuse, no parameterization
+- **No stage separation:** Security, test, build, deploy stages are mixed
+- **No parallelism:** All steps run sequentially even when independent
+- **Hardcoded secrets handling:** Secrets referenced inline per step instead of centralized
+- **No matrix support:** Cannot run tests across multiple language versions or configurations
+- **Test suite fragmentation:** Tests scattered across `tests/unit/` with no clear integration/smoke/acceptance separation
+- **DORA logging inconsistent:** Each step hand-rolls JSON logging instead of shared utility
+
+The v0.2 platform needs a pipeline that:
+- Uses Woodpecker's native pipeline features (matrix, dependencies, reusable steps)
+- Separates stages clearly: validate → test → security → build → deploy
+- Supports parallel execution where possible
+- Centralizes configuration and secrets
+- Enables test suite consolidation with clear separation of concerns
 
 ---
 
@@ -28,58 +33,71 @@ A dedicated `docs/pipeline-contract.md` is needed to serve as the authoritative 
 
 | # | Requirement | Rationale |
 |---|---|---|
-| F1 | Rewrite README.md to accurately reflect v0.2 Woodpecker CI + CNB stack | Accurate project landing page |
-| F2 | Remove all `k8s/` references (directory deleted) | Prevent broken links |
-| F3 | Update SonarQube port from 9001 → 9000 | Match compose.yaml |
-| F4 | Document actual `.woodpecker.yml` pipeline steps | Developer discoverability |
-| F5 | Document `.fawkespipe.yml` contract structure and link to new docs/pipeline-contract.md | Contract discoverability |
-| F6 | Create `docs/pipeline-contract.md` as authoritative contract reference | Single source of truth for contract |
-| F7 | Document standalone mode (`make up`) and suite mode (`make up-suite`) | Both deployment modes |
-| F8 | Update troubleshooting for v0.2 stack | Help users resolve issues |
-| F9 | Update uFawkes Stack Ecosystem table | Accurate cross-repo links |
+| F1 | Restructure `.woodpecker.yml` using Woodpecker v1.0+ pipeline features (stages, matrix, reusable steps) | Maintainability, parallelism |
+| F2 | Define explicit pipeline stages: validate, test, security, build, publish, deploy | Clear separation of concerns |
+| F3 | Extract common step logic into reusable YAML anchors or separate step files | DRY, consistency |
+| F4 | Centralize secrets and environment variable management | Security, operational clarity |
+| F5 | Enable matrix builds for multi-language test coverage | Polyglot support |
+| F6 | Consolidate test suite into `tests/unit/`, `tests/integration/`, `tests/smoke/`, `tests/acceptance/` with clear ownership | Test strategy clarity |
+| F7 | Create shared DORA logging utility for consistent structured logging | Observability standardization |
+| F8 | Update `validate-pipeline-contract` step to use consolidated test structure | Single test entry point for pipeline validation |
 
 ### Non-Functional
 
 | # | Requirement | Rationale |
 |---|---|---|
-| NF1 | Follow existing markdown style (headers, code blocks, tables) | Consistency with repo docs |
-| NF2 | No hardcoded secrets — use `your_` placeholder convention | Security compliance |
-| NF3 | All internal links must resolve | Documentation quality |
-| NF4 | Pass `markdownlint` and `pre-commit run --all-files` | CI gate compliance |
+| NF1 | Total pipeline duration should not increase (target: ≤ current) | Performance |
+| NF2 | All existing security gates (Gitleaks, Trivy, SonarQube) preserved | Security compliance |
+| NF3 | All existing tests pass without modification (only structural moves) | Regression prevention |
+| NF4 | Woodpecker CLI `lint` passes on new pipeline YAML | Pipeline validity |
 
 ---
 
 ## 3. Acceptance Criteria
 
-1. **README.md** — Prerequisites: Docker 20.10+, Docker Compose v2, 4GB+ RAM, GitHub OAuth, DockerHub account
-2. **README.md** — Installation: `make up` (standalone) and `make up-suite` (suite mode with deps)
-3. **README.md** — Service Access table: Woodpecker (8000), Portainer (9443), SonarQube (9000) — **port 9000**
-4. **README.md** — Pipeline Stages section matches actual `.woodpecker.yml` steps (init, secrets-scan, lint-yaml, lint-shell, validate-pipeline-contract, vuln-scan-fs, vuln-scan-image, upload-defectdojo, notify-obs)
-5. **README.md** — Pipeline Contract section references `.fawkespipe.yml` and links to `docs/pipeline-contract.md`
-6. **README.md** — No references to `k8s/` directory or legacy `docker-compose.yml`
-7. **README.md** — Language-specific examples reference `examples/` directory
-8. **README.md** — Troubleshooting covers Woodpecker, SonarQube, OTEL, pack, port conflicts
-9. **README.md** — uFawkes Stack Ecosystem table has correct links
-10. **docs/pipeline-contract.md** — Exists and documents all sections of `.fawkespipe.yml`: app, build, stages, notifications, kubernetes, advanced
-11. **docs/pipeline-contract.md** — Includes field descriptions, valid values, examples for each section
-12. **docs/pipeline-contract.md** — Links to `.fawkespipe.yml.example` and `examples/` language-specific files
-13. All markdown passes `markdownlint` and `pre-commit run --all-files`
+1. **Pipeline Structure**
+   - `.woodpecker.yml` uses `stages:` with named stages: `validate`, `test`, `security`, `build`, `publish`, `deploy`
+   - Steps within stages run in parallel where dependencies allow
+   - Reusable step definitions via YAML anchors (`&step-name`) or separate files in `.woodpecker/steps/`
+
+2. **Secrets & Environment**
+   - All `from_secret:` references moved to top-level `environment:` or stage-level `environment:`
+   - No inline secret references in step commands
+
+3. **Test Consolidation**
+   - `tests/unit/` — existing unit tests (93 tests), no changes to test logic
+   - `tests/integration/` — new directory for cross-component tests (e.g., pipeline contract validation)
+   - `tests/smoke/` — new directory for deployment smoke tests
+   - `tests/acceptance/` — new directory for full E2E acceptance tests
+   - `tests/conftest.py` — shared fixtures for all test types
+   - `pytest.ini` updated with markers: `unit`, `integration`, `smoke`, `acceptance`
+
+4. **DORA Logging Utility**
+   - `scripts/dora-log.sh` or Python utility provides `dora_start`, `dora_end`, `dora_info`, `dora_warn`, `dora_error` functions
+   - All pipeline steps use the shared utility instead of inline JSON
+
+5. **Validation**
+   - `woodpecker-cli pipeline lint .woodpecker.yml` passes
+   - `pytest tests/unit/ -v` — 93 tests pass
+   - `pytest tests/integration/ -v` — passes (new tests)
+   - `pre-commit run --all-files` — all hooks pass
 
 ---
 
 ## 4. Dependencies
 
-- **WP-001** (init): Artifact directories exist for pipeline validation
-- **WP-004** (vuln-scan-fs): Documented in pipeline steps
-- **WP-005** (upload-defectdojo): Documented in pipeline steps
-- **WP-006** (notify-obs): Documented in pipeline steps
-- **WP-007** (QUICKSTART v0.2): Consistent terminology and commands
+- **WP-001** — Artifact directories must exist for security scans
+- **WP-004** — vuln-scan-fs step must be preserved in security stage
+- **WP-005** — upload-defectdojo step must be preserved in security stage
+- **WP-006** — notify-obs step must be preserved in deploy stage
+- **WP-007** — QUICKSTART.md references updated pipeline commands
+- **WP-008** — README.md and docs/pipeline-contract.md reference new structure
 
 ---
 
 ## 5. Out of Scope
 
-- Full `QUICKSTART.md` rewrite (done in WP-007)
-- `docs/ARCHITECTURE.md` updates
-- `docs/KNOWN_LIMITATIONS.md` updates
-- Migration guide for Jenkins → Woodpecker
+- Adding new security tools (only restructuring existing)
+- Changing test logic (only moving/organizing)
+- Woodpecker server configuration changes
+- Kubernetes deployment manifests (future work)

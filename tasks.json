@@ -1,121 +1,131 @@
 {
-  "feature": "WP-008",
-  "title": "Update README and Add docs/pipeline-contract.md",
-  "description": "Rewrite README.md to accurately reflect the v0.2 Woodpecker CI + CNB stack, removing stale k8s/ and Jenkins references, and create docs/pipeline-contract.md as the authoritative reference for the .fawkespipe.yml pipeline contract.",
-  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006", "WP-007"],
-  "branch": "feature/wp-008-readme-pipeline-contract",
+  "feature": "WP-009",
+  "title": "Full .woodpecker.yml Replacement and Test Suite Consolidation",
+  "description": "Restructure .woodpecker.yml into staged pipeline with reusable steps, matrix builds, and centralized secrets. Consolidate test suite into unit/integration/smoke/acceptance with shared DORA logging utility.",
+  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006", "WP-007", "WP-008"],
+  "branch": "feature/wp-009-woodpecker-replacement",
   "tasks": [
     {
-      "id": "WP-008-01",
-      "title": "Update README features, intro, and badges",
-      "description": "Update README.md header badges, tagline, and Features list to match v0.2. Remove any stale Jenkins/k8s references. Features should highlight: polyglot support via CNB, .fawkespipe.yml contract, Woodpecker CI, security pipeline (Gitleaks+Trivy), standalone+suite modes.",
+      "id": "WP-009-01",
+      "title": "Create DORA logging utility script",
+      "description": "Create scripts/dora-log.sh with dora_start, dora_end, dora_info, dora_warn, dora_error functions for structured JSON logging. Make it sourceable in pipeline steps.",
       "depends_on": [],
       "acceptance": [
-        "Badges point to current CI workflows",
-        "Features list highlights Woodpecker, CNB, .fawkespipe.yml",
-        "No Jenkins or k8s references in Features section"
+        "scripts/dora-log.sh exists and is executable",
+        "Functions emit valid JSON with @timestamp, level, logger, message, pipeline, repo, step fields",
+        "Script can be sourced in alpine:3.20 and python:3.12-slim containers"
       ]
     },
     {
-      "id": "WP-008-02",
-      "title": "Rewrite Pipeline Stages section to match .woodpecker.yml",
-      "description": "Replace the 8 generic pipeline stages with actual .woodpecker.yml steps: init, secrets-scan, lint-yaml, lint-shell, validate-pipeline-contract, vuln-scan-fs, vuln-scan-image, upload-defectdojo, notify-obs. Describe what each step does.",
-      "depends_on": ["WP-008-01"],
+      "id": "WP-009-02",
+      "title": "Create reusable step definitions",
+      "description": "Create .woodpecker/steps/common.yaml with YAML anchors for common step patterns: dora-logging, gitleaks-scan, trivy-fs, trivy-image, sonarqube-sast, defectdojo-upload, notify-obs, init-artifact-dirs, yamllint, shellcheck.",
+      "depends_on": ["WP-009-01"],
       "acceptance": [
-        "Pipeline stages match actual .woodpecker.yml steps",
-        "Each step has a brief description of its purpose",
-        "No generic 'Lint/Test/SAST/Build/Push/Deploy' stages"
+        ".woodpecker/steps/common.yaml exists",
+        "All 10 anchors defined with proper structure",
+        "Anchors reference dora-log.sh utility"
       ]
     },
     {
-      "id": "WP-008-03",
-      "title": "Update Architecture section for v0.2",
-      "description": "Update architecture description and ASCII diagram. Remove k8s/ references from diagram. Add suite mode connectivity (uFawkesRes PostgreSQL, uFawkesObs OTEL). Ensure SonarQube port is 9000 (not 9001).",
-      "depends_on": ["WP-008-02"],
+      "id": "WP-009-03",
+      "title": "Restructure .woodpecker.yml into staged pipeline",
+      "description": "Rewrite .woodpecker.yml using stages (validate, test, security, build, publish, deploy), matrix builds, reusable step anchors from .woodpecker/steps/common.yaml, centralized environment/secrets at top level, and stage dependencies.",
+      "depends_on": ["WP-009-02"],
       "acceptance": [
-        "Architecture diagram uses correct components (Woodpecker, SonarQube, Portainer, CNB)",
-        "No k8s/ directory references in architecture",
-        "SonarQube port shown as 9000",
-        "Suite mode connectivity mentioned"
+        "Pipeline has 6 explicit stages: validate, test, security, build, publish, deploy",
+        "Validate stage runs lint-yaml, lint-shell, lint-markdown in parallel",
+        "Test stage runs unit-tests (matrix), integration-tests, contract-tests in parallel",
+        "Security stage runs sequential gates: secrets-scan → sast-sonarqube → vuln-scan-fs → vuln-scan-image",
+        "Build stage builds container image",
+        "Publish stage pushes image and uploads to DefectDojo (main only)",
+        "Deploy stage runs notify-obs (main only)",
+        "All from_secret references moved to top-level or stage-level environment",
+        "woodpecker-cli pipeline lint .woodpecker.yml passes"
       ]
     },
     {
-      "id": "WP-008-04",
-      "title": "Update Quick Start section for v0.2",
-      "description": "Update the Quick Start section in README.md to document both standalone mode (make up) and suite mode (make up-suite). Keep it brief — full details are in QUICKSTART.md. Update Service Access table with correct ports.",
-      "depends_on": ["WP-008-03"],
+      "id": "WP-009-04",
+      "title": "Create integration test directory and tests",
+      "description": "Create tests/integration/ with test_pipeline_contract.py (moved/expanded from unit) and test_compose_integration.py for cross-component validation.",
+      "depends_on": [],
       "acceptance": [
-        "Installation shows `make up` (standalone) and `make up-suite` (suite mode)",
-        "Service Access table: Woodpecker 8000, Portainer 9443, SonarQube 9000",
-        "Links to QUICKSTART.md for full details",
-        "No Jenkins or k8s references"
+        "tests/integration/ directory exists",
+        "test_pipeline_contract.py validates .fawkespipe.yml, compose.yaml, .woodpecker.yml",
+        "test_compose_integration.py validates docker-compose composition",
+        "Tests use pytest markers: @pytest.mark.integration"
       ]
     },
     {
-      "id": "WP-008-05",
-      "title": "Update Pipeline Contract Reference section",
-      "description": "Rewrite the Pipeline Contract Reference section to link to docs/pipeline-contract.md as the authoritative source. Keep a brief summary of key sections (app, build, stages) and list the language-specific examples with links to examples/.",
-      "depends_on": ["WP-008-04"],
+      "id": "WP-009-05",
+      "title": "Create smoke test directory and tests",
+      "description": "Create tests/smoke/ with test_woodpecker_health.py and test_sonarqube_health.py for deployment verification.",
+      "depends_on": [],
       "acceptance": [
-        "Section links to docs/pipeline-contract.md",
-        "Key sections summarized (app, build, stages)",
-        "Language examples listed with paths to examples/"
+        "tests/smoke/ directory exists",
+        "test_woodpecker_health.py checks /healthz endpoint",
+        "test_sonarqube_health.py checks /api/system/status",
+        "Tests use pytest markers: @pytest.mark.smoke"
       ]
     },
     {
-      "id": "WP-008-06",
-      "title": "Create docs/pipeline-contract.md — app, build, stages sections",
-      "description": "Create docs/pipeline-contract.md as the authoritative reference for the .fawkespipe.yml pipeline contract. Include detailed field tables for: app (name, type, language, version), build (builder, cnb, docker, image), and stages (lint, test, sast, dependency_scan, build, image_scan, push). Each field should have: name, type, required, default, description, valid values.",
-      "depends_on": ["WP-008-05"],
+      "id": "WP-009-06",
+      "title": "Create acceptance test directory and tests",
+      "description": "Create tests/acceptance/ with test_full_pipeline.py for end-to-end pipeline validation.",
+      "depends_on": [],
       "acceptance": [
-        "app section documents name, type, language, version fields",
-        "build section documents builder types (cnb, docker, custom)",
-        "cnb subsection documents builder, buildpacks, env fields",
-        "docker subsection documents dockerfile, context, target, buildArgs",
-        "image subsection documents registry, namespace, name, tags",
-        "stages.lint documents commands, dockerfile sub-fields",
-        "stages.test documents commands, coverage (threshold, report)",
-        "stages.sast documents sonarqube, trivy sub-fields",
-        "stages.dependency_scan documents tools, fail_on, suppressions",
-        "stages.image_scan documents tools, severity, fail_on",
-        "All sections include example YAML snippets"
+        "tests/acceptance/ directory exists",
+        "test_full_pipeline.py simulates full pipeline run",
+        "Tests use pytest markers: @pytest.mark.acceptance"
       ]
     },
     {
-      "id": "WP-008-07",
-      "title": "Create docs/pipeline-contract.md — notifications, kubernetes, advanced sections",
-      "description": "Continue docs/pipeline-contract.md with remaining sections: notifications (slack, email), kubernetes (manifests, helm, namespace, cluster), and advanced (timeout, retry, parallel, artifacts, workspace). Include complete YAML example at end.",
-      "depends_on": ["WP-008-06"],
+      "id": "WP-009-07",
+      "title": "Update tests/conftest.py and pytest.ini for consolidated structure",
+      "description": "Expand conftest.py with shared fixtures for all test types. Update pytest.ini with markers (unit, integration, smoke, acceptance) and test paths.",
+      "depends_on": ["WP-009-04", "WP-009-05", "WP-009-06"],
       "acceptance": [
-        "notifications section documents slack and email",
-        "kubernetes section documents manifests and helm",
-        "advanced section documents timeout, retry, parallel, artifacts, workspace",
-        "Complete example section with full .fawkespipe.yml",
-        "Links to .fawkespipe.yml.example and examples/*"
+        "conftest.py provides fixtures: project_root, compose_file, compose_config, woodpecker_file, woodpecker_config, env_example, docker_compose_file, docker_compose_config",
+        "pytest.ini defines markers: unit, integration, smoke, acceptance",
+        "pytest.ini configures testpaths for each marker",
+        "All existing unit tests still pass with pytest tests/unit/"
       ]
     },
     {
-      "id": "WP-008-08",
-      "title": "Update remaining README sections (Webhook, Security, Config, Troubleshooting, Ecosystem)",
-      "description": "Update Webhook API section (Woodpecker webhooks, CLI commands), Security Features (match actual pipeline steps: Gitleaks, Trivy, SonarQube), Configuration (compose.yaml, volumes), Troubleshooting (v0.2 stack), uFawkes Stack Ecosystem table.",
-      "depends_on": ["WP-008-05"],
+      "id": "WP-009-08",
+      "title": "Update validate-pipeline-contract step to use new test structure",
+      "description": "Modify the validate-pipeline-contract step in .woodpecker.yml to run pytest with appropriate markers for each stage.",
+      "depends_on": ["WP-009-03", "WP-009-07"],
       "acceptance": [
-        "Webhook section documents Woodpecker GitHub webhooks and CLI",
-        "Security Features section matches actual pipeline (Gitleaks, Trivy, SonarQube)",
-        "Configuration section references compose.yaml and volumes",
-        "Troubleshooting covers Woodpecker, SonarQube, OTEL, pack, ports",
-        "uFawkes Ecosystem table has correct repo URLs"
+        "Validate stage runs pytest tests/unit/ -m unit",
+        "Test stage runs pytest tests/ -m \"integration or contract\"",
+        "Smoke tests run in deploy stage via pytest tests/smoke/ -m smoke",
+        "All test commands output JUnit XML to artifacts/tests/"
       ]
     },
     {
-      "id": "WP-008-09",
-      "title": "Run validation: tests, pre-commit, link checks",
-      "description": "Run pytest, pre-commit, and verify all internal links resolve. Fix any issues found.",
-      "depends_on": ["WP-008-07", "WP-008-08"],
+      "id": "WP-009-09",
+      "title": "Run full validation suite",
+      "description": "Execute all test types and validate pipeline locally.",
+      "depends_on": ["WP-009-08"],
       "acceptance": [
-        "pytest tests/unit/ passes",
-        "pre-commit run --all-files passes",
-        "All internal links in README.md and docs/pipeline-contract.md resolve"
+        "pytest tests/unit/ -v — 93+ tests pass",
+        "pytest tests/integration/ -v — passes",
+        "pytest tests/smoke/ -v — passes (or skipped if no stack)",
+        "pytest tests/acceptance/ -v — passes (or skipped if no stack)",
+        "woodpecker-cli pipeline lint .woodpecker.yml — passes",
+        "pre-commit run --all-files — all hooks pass"
+      ]
+    },
+    {
+      "id": "WP-009-10",
+      "title": "Update documentation references",
+      "description": "Update README.md and docs/pipeline-contract.md to reference new pipeline structure and test commands.",
+      "depends_on": ["WP-009-03"],
+      "acceptance": [
+        "README.md Pipeline Stages section matches new 6-stage structure",
+        "QUICKSTART.md smoke test section references new pytest commands",
+        "docs/pipeline-contract.md references new test structure"
       ]
     }
   ]

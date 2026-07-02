@@ -1,9 +1,16 @@
-# uFawkesPipe CI Pipeline
+# uFawkesPipe CI Pipeline — v2.0
 # Runs on every push and pull request
 #
-# Structured JSON logging: All steps emit JSON log entries that uFawkesObs
-# Alloy scrapes from Docker container logs. In standalone mode, these are
-# visible via `docker logs`. In suite mode, Alloy ships them to Loki.
+# Pipeline stages (ordered by depends_on):
+#   1. validate   — init, lint-yaml, lint-shell (parallel)
+#   2. test       — unit-tests, integration-tests, contract-tests (parallel)
+#   3. security   — secrets-scan → vuln-scan-fs → vuln-scan-image (sequential)
+#   4. build      — build-image (main only)
+#   5. publish    — upload-defectdojo (main only)
+#   6. deploy     — notify-obs (main only)
+#
+# DORA logging: All steps use scripts/dora-log.sh for structured JSON
+# output compatible with uFawkesObs/Loki ingestion via Alloy.
 #
 # Telemetry:
 #   Metrics — Woodpecker server exposes /metrics (prometheus scrape)
@@ -14,90 +21,179 @@
 when:
   - event: [push, pull_request]
 
+# ============================================================================
+# Reusable step anchors (defined here for YAML-compatible merging)
+# Reference patterns in .woodpecker/steps/common.yaml as source of truth.
+# ============================================================================
+
+x-dora-log: &dora-log
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_start "${CI_STEP_NAME}"
+
+x-dora-end: &dora-end
+  commands:
+    - source /drone/src/scripts/dora-log.sh
+    - dora_end "${CI_STEP_NAME}"
+
+# ============================================================================
+# Stage 1: validate — Lint, syntax checks (fast, parallel)
+# ============================================================================
+
 steps:
+  # Initialize artifact directories
   - name: init
     image: alpine:3.20
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"init","message":"Creating artifact directories","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"init"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "init"
       - mkdir -p artifacts/security artifacts/coverage artifacts/tests
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"init","message":"Artifact directories created","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"init"}'
+      - dora_info "init" "Artifact directories created"
+      - dora_end "init"
 
-  # Gitleaks secret scan — hard gate. Uses .gitleaks.toml for custom rules
-  # and .secrets.baseline for known false positives.
-  - name: secrets-scan
-    image: zricethezav/gitleaks:v8.18.2
-    commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting Gitleaks secret scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"secrets-scan"}'
-      - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1 && rc=$? || rc=$?
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Gitleaks scan completed","exit_code":'$rc',"secrets_found":$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi),"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"secrets-scan"}'
-      - exit $rc
-
+  # YAML linting — validate compose.yaml, .woodpecker.yml, .env.example
   - name: lint-yaml
     image: python:3.12-slim
+    depends_on: [init]
     commands:
       - pip install yamllint pyyaml --quiet
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"validate","message":"Running yamllint on compose.yaml, .woodpecker.yml, .env.example","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-yaml"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "lint-yaml"
       - yamllint compose.yaml .woodpecker.yml .env.example && rc=$? || rc=$?
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)"'","logger":"validate","message":"yamllint completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-yaml"}'
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "yamllint completed" ",\"exit_code\":$rc"
       - exit $rc
 
+  # Shell script linting
   - name: lint-shell
     image: koalaman/shellcheck-alpine:stable
+    depends_on: [init]
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"validate","message":"Running shellcheck on scripts/*.sh validate.sh","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-shell"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "lint-shell"
       - shellcheck scripts/*.sh validate.sh && rc=$? || rc=$?
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)"'","logger":"validate","message":"shellcheck completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"lint-shell"}'
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "shellcheck completed" ",\"exit_code\":$rc"
       - exit $rc
 
-  - name: validate-pipeline-contract
+# ============================================================================
+# Stage 2: test — Unit, integration, and contract tests (parallel)
+# ============================================================================
+
+  # Unit tests — fast, isolated, no external deps
+  - name: unit-tests
     image: python:3.12-slim
+    depends_on: [lint-yaml, lint-shell]
     commands:
       - pip install -r tests/requirements.txt --quiet
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"test","message":"Running pipeline contract tests","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
-      - pytest tests/ -v --tb=short --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"test","message":"Pipeline contract tests completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"validate-pipeline-contract"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "unit-tests"
+      - pytest tests/unit/ -v --tb=short -m "not integration and not smoke and not acceptance" --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Unit tests completed" ",\"exit_code\":$rc"
       - exit $rc
 
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
+  # Integration tests — cross-component, may require Docker
+  - name: integration-tests
+    image: python:3.12-slim
+    depends_on: [lint-yaml, lint-shell]
+    commands:
+      - pip install -r tests/requirements.txt --quiet
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "integration-tests"
+      - pytest tests/integration/ -v --tb=short -m integration --junitxml=artifacts/tests/junit-integration.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Integration tests completed" ",\"exit_code\":$rc"
+      - exit $rc
+
+  # Contract tests — pipeline contract validation
+  - name: contract-tests
+    image: python:3.12-slim
+    depends_on: [lint-yaml, lint-shell]
+    commands:
+      - pip install -r tests/requirements.txt --quiet
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "contract-tests"
+      - pytest tests/ tests/integration/ -v --tb=short -k "contract or compose or yaml" --junitxml=artifacts/tests/junit-contract.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Contract tests completed" ",\"exit_code\":$rc"
+      - exit $rc
+
+# ============================================================================
+# Stage 3: security — Secret scan, vulnerability scan, SAST (sequential gates)
+# ============================================================================
+
+  # Hard gate: Gitleaks secret detection
+  - name: secrets-scan
+    image: zricethezav/gitleaks:v8.18.2
+    depends_on: [unit-tests, integration-tests, contract-tests]
+    commands:
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "secrets-scan"
+      - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1 && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Gitleaks scan completed" ",\"exit_code\":$rc,\"secrets_found\":$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi)"
+      - exit $rc
+
+  # Trivy filesystem vulnerability scan (entire working tree)
   - name: vuln-scan-fs
     image: aquasec/trivy:latest
+    depends_on: [secrets-scan]
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Running Trivy filesystem vulnerability scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"vuln-scan-fs"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "vuln-scan-fs"
       - trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Trivy filesystem scan completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"vuln-scan-fs"}'
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy filesystem scan completed" ",\"exit_code\":$rc"
       - exit $rc
 
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
+  # Trivy container image vulnerability scan (main branch only)
   - name: vuln-scan-image
     image: aquasec/trivy:latest
+    depends_on: [secrets-scan]
     environment:
       REGISTRY_USERNAME:
         from_secret: registry_username
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Running Trivy image vulnerability scan","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"vuln-scan-image"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "vuln-scan-image"
       - trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"'"$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)"'","logger":"security","message":"Trivy image scan completed","exit_code":'$rc',"pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"vuln-scan-image"}'
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy image scan completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
       - event: push
         branch: main
 
-  # Collect scanner artifacts (gitleaks, trivy-fs, trivy-image) and POST to
-  # DefectDojo import-scan API. Non-blocking — failures warn but don't fail.
+# ============================================================================
+# Stage 4: build — Container image build
+# ============================================================================
+
+  # Container image build via CNB
+  - name: build-image
+    image: alpine:3.20
+    depends_on: [vuln-scan-fs, vuln-scan-image]
+    commands:
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "build-image"
+      - echo "📦 Container build placeholder — CNB build would execute here"
+      - dora_info "build" "Build step completed (placeholder)"
+      - dora_end "build-image"
+    when:
+      - event: push
+        branch: main
+
+# ============================================================================
+# Stage 5: publish — Push to registry, upload security artifacts
+# ============================================================================
+
+  # Upload Gitleaks + Trivy results to DefectDojo (non-blocking, main only)
   - name: upload-defectdojo
     image: curlimages/curl:8.6.0
+    depends_on: [build-image]
     environment:
       DOJO_API_TOKEN:
         from_secret: defectdojo_api_token
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"Starting DefectDojo upload","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"upload-defectdojo"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "upload-defectdojo"
       - |
         for f in gitleaks trivy-repo trivy-image; do
           path="artifacts/security/${f}.json"
           if [ ! -f "$path" ]; then
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"Artifact not found, skipping","file":"'"${path}"'","step":"upload-defectdojo"}'
+            dora_warn "security" "Artifact not found, skipping" ",\"file\":\"${path}\""
             continue
           fi
           case "$f" in
@@ -113,33 +209,33 @@ steps:
             -F "file=@${path}" \
             -w '%{http_code}' -o /dev/null 2>&1) && rc=$? || rc=$?
           if [ $rc -eq 0 ] && [ "$HTTP_CODE" = "201" ]; then
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"security","message":"DefectDojo upload successful","file":"'"${f}"'","http_code":"'"${HTTP_CODE}"'","step":"upload-defectdojo"}'
+            dora_info "security" "DefectDojo upload successful" ",\"file\":\"${f}\",\"http_code\":\"${HTTP_CODE}\""
           else
-            echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"security","message":"DefectDojo upload failed","file":"'"${f}"'","http_code":"'"${HTTP_CODE:-000}"'","step":"upload-defectdojo"}'
+            dora_warn "security" "DefectDojo upload failed" ",\"file\":\"${f}\",\"http_code\":\"${HTTP_CODE:-000}\""
           fi
         done
+      - dora_end "upload-defectdojo"
     when:
       - event: push
         branch: main
 
-  # Emit structured deployment event to uFawkesObs OTEL collector.
-  # Non-blocking — observability failure must not fail the deployment.
-  # Uses OTEL_ENDPOINT and OTEL_HEADERS from secrets (suite mode: otel-collector:4318).
-  # OTLP HTTP traces endpoint: ${OTEL_ENDPOINT}/v1/traces
+# ============================================================================
+# Stage 6: deploy — OTEL deployment events
+# ============================================================================
+
+  # Emit structured deployment event to uFawkesObs OTEL collector (non-blocking)
   - name: notify-obs
-    image: curlimages/curl:latest
-    when:
-      - event: push
-        branch: main
+    image: curlimages/curl:8.6.0
+    depends_on: [upload-defectdojo]
     environment:
       OTEL_ENDPOINT:
         from_secret: otel_endpoint
       OTEL_HEADERS:
         from_secret: otel_headers
     commands:
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"observability","message":"Starting notify-obs deployment event emission","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "notify-obs"
       - |
-        # POST deployment event to OTEL collector (non-blocking)
         if [ -n "${OTEL_ENDPOINT:-}" ]; then
           curl -sf -X POST "${OTEL_ENDPOINT}/v1/traces" \
             -H "Content-Type: application/json" \
@@ -172,6 +268,9 @@ steps:
             -w "\nHTTP %{http_code}\n" \
             -o /dev/null || true
         else
-          echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"warn","logger":"observability","message":"OTEL_ENDPOINT not set — skipping OTEL collector POST","step":"notify-obs"}'
+          dora_warn "observability" "OTEL_ENDPOINT not set — skipping OTEL collector POST"
         fi
-      - echo '{"@timestamp":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","level":"info","logger":"observability","message":"notify-obs deployment event emission completed","pipeline":"'"${CI_PIPELINE_NUMBER:-unknown}"'","repo":"'"${CI_REPO:-unknown}"'","step":"notify-obs"}'
+      - dora_end "notify-obs"
+    when:
+      - event: push
+        branch: main

@@ -9,6 +9,7 @@ import yaml
 import pytest
 
 
+@pytest.mark.unit
 class TestArtifactDirs:
     """Validate WP-001 artifact directory initialization."""
 

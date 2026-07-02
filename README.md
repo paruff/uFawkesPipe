@@ -19,19 +19,33 @@ uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQ
 
 ## 📋 Pipeline Stages
 
-Every pipeline in uFawkesPipe follows these standardized stages, defined in [`.woodpecker.yml`](.woodpecker.yml):
+Every pipeline in uFawkesPipe follows these standardized stages (defined in [`.woodpecker.yml`](.woodpecker.yml)):
 
-1. **init** — Create artifact directories (security, coverage, tests)
-2. **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules and `.secrets.baseline`
-3. **lint-yaml** — Validate `compose.yaml`, `.woodpecker.yml`, `.env.example` with yamllint
-4. **lint-shell** — ShellCheck validation on `scripts/*.sh` and `validate.sh`
-5. **validate-pipeline-contract** — pytest suite validating `.fawkespipe.yml`, `compose.yaml`, manifests, and pipeline contract compliance
-6. **vuln-scan-fs** — Trivy filesystem vulnerability scan (entire working tree)
-7. **vuln-scan-image** — Trivy container image vulnerability scan (main branch only)
-8. **upload-defectdojo** — Collect Gitleaks + Trivy scan results and POST to DefectDojo API (main branch only, non-blocking)
-9. **notify-obs** — Emit structured deployment event to uFawkesObs OTEL collector (main branch only, non-blocking)
+| # | Stage | Steps | Parallel | Branch Gate |
+|---|-------|-------|----------|-------------|
+| 1 | **validate** | `init` → `lint-yaml` + `lint-shell` | Yes (lint) | None |
+| 2 | **test** | `unit-tests` + `integration-tests` + `contract-tests` | Yes | None |
+| 3 | **security** | `secrets-scan` → `vuln-scan-fs` → `vuln-scan-image` | Sequential | `vuln-scan-image`: main only |
+| 4 | **build** | `build-image` | — | main only |
+| 5 | **publish** | `upload-defectdojo` | — | main only |
+| 6 | **deploy** | `notify-obs` | — | main only |
 
-All steps emit structured JSON logs compatible with uFawkesObs/Loki ingestion.
+**Step details:**
+
+- **init** — Create artifact directories (security, coverage, tests)
+- **lint-yaml** — Validate `compose.yaml`, `.woodpecker.yml`, `.env.example` with yamllint
+- **lint-shell** — ShellCheck validation on `scripts/*.sh` and `validate.sh`
+- **unit-tests** — Fast, isolated pytest unit tests (no external deps)
+- **integration-tests** — Cross-component tests (may require Docker)
+- **contract-tests** — Pipeline contract, compose, and YAML validation
+- **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules and `.secrets.baseline`
+- **vuln-scan-fs** — Trivy filesystem vulnerability scan (entire working tree)
+- **vuln-scan-image** — Trivy container image vulnerability scan (main branch only)
+- **build-image** — Container image build via CNB (placeholder)
+- **upload-defectdojo** — Collect Gitleaks + Trivy results and POST to DefectDojo API (non-blocking)
+- **notify-obs** — Emit structured deployment event to uFawkesObs OTEL collector (non-blocking)
+
+All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uFawkesObs/Loki ingestion.
 
 ## 🏗️ Architecture
 

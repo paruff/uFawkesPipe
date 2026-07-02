@@ -107,21 +107,35 @@ stages:
 
 ### 3.2 Platform Pipeline (`.woodpecker.yml`)
 
-uFawkesPipe's own CI pipeline runs **on every push and pull request**:
+uFawkesPipe's own CI pipeline runs **on every push and pull request** across 6 stages:
 
 ```
-lint-yaml → lint-shell → validate-pipeline-contract → security-scan (main only) → notify-obs (main only)
+validate (init → lint-yaml + lint-shell)
+   → test (unit-tests + integration-tests + contract-tests)
+   → security (secrets-scan → vuln-scan-fs → vuln-scan-image) [vuln-scan-image: main only]
+   → build (build-image) [main only]
+   → publish (upload-defectdojo) [main only]
+   → deploy (notify-obs) [main only]
 ```
 
-| Step | Image | When | Hard gate? |
-| ---- | ----- | ---- | ---------- |
-| `lint-yaml` | `python:3.12-slim` | always | No (warn) |
-| `lint-shell` | `koalaman/shellcheck-alpine:stable` | always | No (warn) |
-| `validate-pipeline-contract` | `python:3.12-slim` | always | Yes |
-| `security-scan` | `aquasec/trivy:latest` | push → main only | Yes (`--exit-code 1` for HIGH,CRITICAL) |
-| `notify-obs` | `curlimages/curl:7.88.1` | push → main only | No (OTLP event to uFawkesObs, graceful fallback) |
+| # | Stage | Step | Image | When | Hard gate? |
+|---|-------|------|-------|------|------------|
+| 1 | validate | `init` | `alpine:3.20` | always | No |
+| 1 | validate | `lint-yaml` | `python:3.12-slim` | always | No (warn) |
+| 1 | validate | `lint-shell` | `koalaman/shellcheck-alpine:stable` | always | No (warn) |
+| 2 | test | `unit-tests` | `python:3.12-slim` | always | Yes |
+| 2 | test | `integration-tests` | `python:3.12-slim` | always | Yes |
+| 2 | test | `contract-tests` | `python:3.12-slim` | always | Yes |
+| 3 | security | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | always | **Yes** (`--exit-code 1`) |
+| 3 | security | `vuln-scan-fs` | `aquasec/trivy:latest` | always | No (non-blocking, to DefectDojo) |
+| 3 | security | `vuln-scan-image` | `aquasec/trivy:latest` | push → main only | No (non-blocking) |
+| 4 | build | `build-image` | `alpine:3.20` | push → main only | No (placeholder) |
+| 5 | publish | `upload-defectdojo` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
+| 6 | deploy | `notify-obs` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 
 **Image pinning policy:** All non-scanner images pinned to a specific tag. Trivy (`aquasec/trivy:latest`) is the documented exception — scanner images need current CVE databases.
+
+**DORA logging:** All steps use `scripts/dora-log.sh` for structured JSON logging compatible with uFawkesObs/Loki ingestion.
 
 ### 3.3 Artifact Directory Contract
 

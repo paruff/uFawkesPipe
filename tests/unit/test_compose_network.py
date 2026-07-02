@@ -42,6 +42,7 @@ def makefile_content():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 class TestComposeStandalone:
     """Standalone compose.yaml must work without fawkes-net."""
 
@@ -85,6 +86,7 @@ class TestComposeStandalone:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 class TestComposeSuiteMode:
     """Suite overlay must declare fawkes-net external network."""
 
@@ -147,6 +149,7 @@ class TestComposeSuiteMode:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 class TestMakefileNetworkTarget:
     """Validate Makefile network target and suite dependency."""
 

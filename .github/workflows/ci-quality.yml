@@ -1,4 +1,4 @@
-name: CI
+name: CI Quality
 
 on:
   push:
@@ -20,24 +20,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: ShellCheck all shell scripts
-        uses: ludeeus/action-shellcheck@2.0.0
+      - name: Run pre-commit hooks (shellcheck, yamllint, ruff, gitleaks, markdownlint)
+        uses: actions/setup-python@v6
         with:
-          severity: warning
+          python-version: "3.11"
 
-      - name: YAML lint
-        uses: ibiqlik/action-yamllint@v3
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v6
         with:
-          config_data: |
-            extends: default
-            rules:
-              line-length: disable
-              document-start: disable
-              truthy: disable
-              indentation:
-                spaces: 2
-                indent-sequences: whatever
-                check-multi-line-strings: false
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files
 
       - name: Hadolint pack Dockerfile
         uses: hadolint/hadolint-action@v3.3.0
@@ -94,32 +94,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate .env.example contains no sensitive values # pragma: allowlist-nextline secret
-        run: |
-          echo "🔍 Scanning .env.example for leaked sensitive values..."
-          issues=0
-          sensitive_key_regex="^(ADMIN|SECRET|TOKEN|PASSWORD|KEY|CREDENTIAL|PRIVATE)"
-          while IFS='=' read -r key value; do
-            if echo "$key" | grep -qE "$sensitive_key_regex"; then
-              if ! echo "$value" | grep -qE '^(|<.*>|REDACTED|CHANGEME|changeme|REPLACE_ME|example|your_.*)$'; then
-                echo "❌ $key appears to have a real value"
-                issues=$((issues + 1))
-              fi
-            fi
-          done < <(grep -v '^\s*#' .env.example | grep '=' || true)
-          if [ "$issues" -gt 0 ]; then
-            echo "❌ $issues secret leak(s) detected in .env.example"
-            exit 1
-          fi
-          echo "✅ .env.example is clean (no real secrets)"
+      - name: Run pre-commit security hooks (gitleaks, detect-secrets)
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
 
-      - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
+
+      - name: Run pre-commit gitleaks hook
+        run: pre-commit run gitleaks --all-files
+
+      - name: Run pre-commit detect-secrets hook
+        run: pre-commit run detect-secrets --all-files
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8  # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
