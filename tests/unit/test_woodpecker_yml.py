@@ -161,6 +161,89 @@ class TestInitStep:
 
 
 @pytest.mark.unit
+class TestValidateAgentsStep:
+    """Acceptance: validate-agents step is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the validate-agents step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "validate-agents":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'validate-agents' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, (
+            "Step named 'validate-agents' must exist in .woodpecker.yml"
+        )
+
+    def test_uses_alpine_image(self, woodpecker_config):
+        """Acceptance: validate-agents uses 'alpine:3.20'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        assert step["image"] == "alpine:3.20", (
+            f"validate-agents must use 'alpine:3.20', got '{step.get('image')}'"
+        )
+
+    def test_depends_on_init(self, woodpecker_config):
+        """Acceptance: validate-agents depends on init step."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        depends_on = step.get("depends_on", [])
+        assert "init" in depends_on, (
+            f"validate-agents must depend on 'init', got {depends_on}"
+        )
+
+    def test_installs_bash(self, woodpecker_config):
+        """Acceptance: validate-agents installs bash via apk."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "apk add --no-cache bash" in command_str, (
+            f"validate-agents must install bash, got: {command_str}"
+        )
+
+    def test_calls_validate_agents_script(self, woodpecker_config):
+        """Acceptance: validate-agents calls scripts/validate-agents.sh."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "bash scripts/validate-agents.sh" in command_str, (
+            f"validate-agents must call 'scripts/validate-agents.sh', got: {command_str}"
+        )
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: validate-agents has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "validate-agents must source dora-log.sh for DORA logging"
+        )
+        assert 'dora_start "validate-agents"' in command_str, (
+            "validate-agents must call dora_start with step name"
+        )
+        assert "dora_emit" in command_str, (
+            "validate-agents must use dora_emit for structured JSON logging"
+        )
+
+    def test_image_is_pinned(self, woodpecker_config):
+        """Acceptance: validate-agents image tag is pinned (not 'latest')."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'validate-agents' not found"
+        image = step.get("image", "")
+        assert "latest" not in image, (
+            f"validate-agents image must be pinned, got '{image}'"
+        )
+        assert ":" in image, f"validate-agents image must have a tag, got '{image}'"
+
+
+@pytest.mark.unit
 class TestVulnScanFsStep:
     """Acceptance: vuln-scan-fs step (WP-004) is correctly configured."""
 
