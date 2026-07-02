@@ -1,29 +1,19 @@
-# WP-009 — Full .woodpecker.yml Replacement and Test Suite Consolidation
+# PIPE-002 — Resolve Trivy Image Tag Policy Contradiction
 
-**Type:** feat / refactor
-**Depends on:** WP-001 (init), WP-004 (vuln-scan-fs), WP-005 (upload-defectdojo), WP-006 (notify-obs), WP-007 (QUICKSTART v0.2), WP-008 (README + pipeline-contract)
-**Branch:** `feature/wp-009-woodpecker-replacement`
+**Type:** docs / test
+**Depends on:** WP-009
+**Branch:** `feature/pipe-002-trivy-tag-policy-exception`
 
 ---
 
 ## 1. Problem
 
-The current `.woodpecker.yml` is a monolithic 177-line pipeline with all steps inline. This creates several issues:
+There is a contradiction in our repository's image tagging policies:
+1. `CONTRIBUTING.md` strictly forbids the use of `:latest` image tags, stating that "all versions must be pinned to a specific patch".
+2. `.woodpecker.yml` uses `aquasec/trivy:latest` in both `vuln-scan-fs` and `vuln-scan-image` steps. This is a deliberate, documented exception because vulnerability scanners require the latest engine and CVE database definitions to function correctly.
+3. `tests/unit/test_woodpecker_yml.py` explicitly asserts that both Trivy steps use `aquasec/trivy:latest`.
 
-- **Maintainability:** All steps defined inline — no reuse, no parameterization
-- **No stage separation:** Security, test, build, deploy stages are mixed
-- **No parallelism:** All steps run sequentially even when independent
-- **Hardcoded secrets handling:** Secrets referenced inline per step instead of centralized
-- **No matrix support:** Cannot run tests across multiple language versions or configurations
-- **Test suite fragmentation:** Tests scattered across `tests/unit/` with no clear integration/smoke/acceptance separation
-- **DORA logging inconsistent:** Each step hand-rolls JSON logging instead of shared utility
-
-The v0.2 platform needs a pipeline that:
-- Uses Woodpecker's native pipeline features (matrix, dependencies, reusable steps)
-- Separates stages clearly: validate → test → security → build → deploy
-- Supports parallel execution where possible
-- Centralizes configuration and secrets
-- Enables test suite consolidation with clear separation of concerns
+This contradiction causes confusion for contributors and tools validating policy compliance. We need to formally document this exception in `CONTRIBUTING.md` and clarify the reasoning in our test assertions.
 
 ---
 
@@ -33,71 +23,24 @@ The v0.2 platform needs a pipeline that:
 
 | # | Requirement | Rationale |
 |---|---|---|
-| F1 | Restructure `.woodpecker.yml` using Woodpecker v1.0+ pipeline features (stages, matrix, reusable steps) | Maintainability, parallelism |
-| F2 | Define explicit pipeline stages: validate, test, security, build, publish, deploy | Clear separation of concerns |
-| F3 | Extract common step logic into reusable YAML anchors or separate step files | DRY, consistency |
-| F4 | Centralize secrets and environment variable management | Security, operational clarity |
-| F5 | Enable matrix builds for multi-language test coverage | Polyglot support |
-| F6 | Consolidate test suite into `tests/unit/`, `tests/integration/`, `tests/smoke/`, `tests/acceptance/` with clear ownership | Test strategy clarity |
-| F7 | Create shared DORA logging utility for consistent structured logging | Observability standardization |
-| F8 | Update `validate-pipeline-contract` step to use consolidated test structure | Single test entry point for pipeline validation |
+| F1 | Add a formal exception block to `CONTRIBUTING.md` documenting the operational justification for keeping Trivy unpinned. | Resolve policy contradiction, clarify developer guidelines |
+| F2 | Add explanatory comments to the `test_uses_trivy_latest` test methods in `tests/unit/test_woodpecker_yml.py`. | Document why the test asserts `:latest` rather than treating it as a policy violation |
 
-### Non-Functional
+### Non-Functional / Constraints
 
 | # | Requirement | Rationale |
 |---|---|---|
-| NF1 | Total pipeline duration should not increase (target: ≤ current) | Performance |
-| NF2 | All existing security gates (Gitleaks, Trivy, SonarQube) preserved | Security compliance |
-| NF3 | All existing tests pass without modification (only structural moves) | Regression prevention |
-| NF4 | Woodpecker CLI `lint` passes on new pipeline YAML | Pipeline validity |
+| NF1 | Do not pin the Trivy image tag in this issue. | Out of scope — pinning scanner images requires automatic update setups (e.g., Renovate/Dependabot) and operational workflows |
+| NF2 | All existing tests must pass without any modifications to their functional assertions. | Maintain pipeline correctness and safety |
 
 ---
 
 ## 3. Acceptance Criteria
 
-1. **Pipeline Structure**
-   - `.woodpecker.yml` uses `stages:` with named stages: `validate`, `test`, `security`, `build`, `publish`, `deploy`
-   - Steps within stages run in parallel where dependencies allow
-   - Reusable step definitions via YAML anchors (`&step-name`) or separate files in `.woodpecker/steps/`
-
-2. **Secrets & Environment**
-   - All `from_secret:` references moved to top-level `environment:` or stage-level `environment:`
-   - No inline secret references in step commands
-
-3. **Test Consolidation**
-   - `tests/unit/` — existing unit tests (93 tests), no changes to test logic
-   - `tests/integration/` — new directory for cross-component tests (e.g., pipeline contract validation)
-   - `tests/smoke/` — new directory for deployment smoke tests
-   - `tests/acceptance/` — new directory for full E2E acceptance tests
-   - `tests/conftest.py` — shared fixtures for all test types
-   - `pytest.ini` updated with markers: `unit`, `integration`, `smoke`, `acceptance`
-
-4. **DORA Logging Utility**
-   - `scripts/dora-log.sh` or Python utility provides `dora_start`, `dora_end`, `dora_info`, `dora_warn`, `dora_error` functions
-   - All pipeline steps use the shared utility instead of inline JSON
-
-5. **Validation**
-   - `woodpecker-cli pipeline lint .woodpecker.yml` passes
-   - `pytest tests/unit/ -v` — 93 tests pass
-   - `pytest tests/integration/ -v` — passes (new tests)
-   - `pre-commit run --all-files` — all hooks pass
-
----
-
-## 4. Dependencies
-
-- **WP-001** — Artifact directories must exist for security scans
-- **WP-004** — vuln-scan-fs step must be preserved in security stage
-- **WP-005** — upload-defectdojo step must be preserved in security stage
-- **WP-006** — notify-obs step must be preserved in deploy stage
-- **WP-007** — QUICKSTART.md references updated pipeline commands
-- **WP-008** — README.md and docs/pipeline-contract.md reference new structure
-
----
-
-## 5. Out of Scope
-
-- Adding new security tools (only restructuring existing)
-- Changing test logic (only moving/organizing)
-- Woodpecker server configuration changes
-- Kubernetes deployment manifests (future work)
+| ID | Assertion | Verification Method |
+|----|-----------|---------------------|
+| AC1 | `CONTRIBUTING.md` contains a formal exception section for scanner images. | Manual inspection of `CONTRIBUTING.md` |
+| AC2 | The exception block explicitly mentions `aquasec/trivy:latest` and explains the operational justification (needs current CVE databases and scanner engine updates). | Manual inspection of `CONTRIBUTING.md` |
+| AC3 | Comments are added to both `test_uses_trivy_latest` test methods in `tests/unit/test_woodpecker_yml.py` referencing the documented exception. | Manual inspection of `tests/unit/test_woodpecker_yml.py` |
+| AC4 | No functional code or pipeline changes are made to `.woodpecker.yml`. | `git diff .woodpecker.yml` shows no changes |
+| AC5 | All 110+ unit/integration/smoke/acceptance tests pass. | `python3 -m pytest tests/` passes |

@@ -86,6 +86,23 @@ test(sonarqube): add quality gate validation
 - **Credentials or secrets** in any file — use `.env` and environment variable substitution
 - **Direct pushes to `main`** — all changes go through PRs
 
+### Exception: Vulnerability Scanner Images
+
+The following images are exempted from the no-`:latest` rule because they must
+contain the most current vulnerability definitions:
+
+- `aquasec/trivy:latest`
+
+**Operational justification:**
+
+Vulnerability scanners bundle CVE databases inside their container image. Pinning
+a specific tag would freeze the scanner to a stale vulnerability database, missing
+CVEs discovered after the pinned version. Updating scanner images automatically
+requires Renovate/Dependabot infrastructure that is out of scope for this repo.
+
+All other images (Woodpecker, SonarQube, Portainer, DefectDojo, buildpack tools,
+Python base images) remain pinned per the general rule.
+
 ## Running Tests
 
 ```bash

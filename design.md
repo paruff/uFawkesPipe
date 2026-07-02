@@ -1,199 +1,67 @@
-# WP-009 — Design: Full .woodpecker.yml Replacement and Test Suite Consolidation
+# PIPE-002 — Design: Trivy Image Tag Policy Exception
 
 ## 1. Impacted Components
 
 | Component | File | Change |
 |---|---|---|
-| Main Pipeline | `.woodpecker.yml` | Complete restructure with stages, matrix, reusable steps |
-| Test Structure | `tests/` | Consolidate into unit/integration/smoke/acceptance |
-| Shared Fixtures | `tests/conftest.py` | Expand for all test types |
-| DORA Logging | `scripts/dora-log.sh` | New shared utility |
-| Pipeline Steps | `.woodpecker/steps/` | New directory for reusable step definitions |
+| Contribution Policy | `CONTRIBUTING.md` | Add formal exception block for scanner images |
+| Security Unit Tests | `tests/unit/test_woodpecker_yml.py` | Add explanatory comments on `test_uses_trivy_latest` methods |
 
 ---
 
-## 2. Pipeline Architecture Redesign
+## 2. Design Approach
 
-### 2.1 Stage Definition
+### 2.1 Policy: Formal Exception Block
 
-```yaml
-stages:
-  - validate      # Lint, syntax checks (fast, parallel)
-  - test          # Unit + integration tests (parallel matrix)
-  - security      # Secret scan, vuln scan, SAST (sequential gates)
-  - build         # Container image build (CNB/Docker)
-  - publish       # Push to registry, upload security artifacts
-  - deploy        # Suite mode: notify-obs, integration deploy
+**Where:** `CONTRIBUTING.md`, after the "What We Don't Accept" section, before "Running Tests".
+
+**Rationale:** Vulnerability scanner images (like `aquasec/trivy:latest`) must remain unpinned because:
+- Vulnerability definitions (CVE database) are bundled into the scanner image.
+- Using a pinned version would scan against a stale vulnerability database, rendering scans ineffective for newly discovered CVEs.
+- Pinning would require constant automated updates (e.g., Renovate/Dependabot) and rebuilds of the CI pipeline — introducing operational complexity and risk.
+
+**Text to add:**
+
+```markdown
+### Exception: Vulnerability Scanner Images
+
+The following images are exempted from the no-`:latest` rule because they must
+contain the most current vulnerability definitions:
+
+- `aquasec/trivy:latest`
+- (placeholder for future scanner images that share the same operational constraint)
+
+**Operational justification:**
+
+Vulnerability scanners bundle CVE databases inside their container image. Pinning
+a specific tag would freeze the scanner to a stale vulnerability database, missing
+CVEs discovered after the pinned version. Updating scanner images automatically
+requires Renovate/Dependabot infrastructure that is out of scope for this repo.
+
+All other images (Woodpecker, SonarQube, Portainer, DefectDojo, buildpack tools,
+Python base images) remain pinned per the general rule.
 ```
 
-### 2.2 Stage Dependencies
+### 2.2 Test Comments
 
+**Where:** `tests/unit/test_woodpecker_yml.py`, methods `test_uses_trivy_latest` in both `TestVulnScanFsStep` and `TestVulnScanImageStep`.
+
+**What:** Add a comment above or at the top of each test method body explaining:
+
+```python
+# Trivy uses :latest intentionally — scanner images require current
+# CVE databases bundled in the image. This is a documented exception,
+# not a policy violation. See CONTRIBUTING.md §"Exception: Vulnerability
+# Scanner Images" and docs/ARCHITECTURE.md §"Image pinning policy".
 ```
-validate
-  ├── lint-yaml (parallel)
-  ├── lint-shell (parallel)
-  └── lint-markdown (parallel)  ← NEW
 
-test (depends on: validate)
-  ├── unit-tests (matrix: python 3.11, 3.12)
-  ├── integration-tests (parallel)
-  └── contract-tests (parallel)
-
-security (depends on: test)
-  ├── secrets-scan (hard gate)
-  ├── sast-sonarqube
-  ├── vuln-scan-fs
-  └── vuln-scan-image (main only)
-
-build (depends on: security)
-  ├── build-image (CNB/Docker matrix)
-
-publish (depends on: build)
-  ├── push-image (main only)
-  ├── upload-defectdojo (main only)
-
-deploy (depends on: publish)
-  ├── notify-obs (main only)
-  └── integration-deploy (suite mode only)
-```
+**Bug:** No functional changes. No image pinning. Comments only.
 
 ---
 
-## 3. Reusable Step Definitions
+## 3. Anti-Goals
 
-Create `.woodpecker/steps/` with YAML anchors for common patterns:
-
-```yaml
-# .woodpecker/steps/common.yaml
-x-dora-logging: &dora-logging
-  commands:
-    - source /drone/src/scripts/dora-log.sh
-    - dora_start "${CI_STEP_NAME}"
-
-x-gitleaks-scan: &gitleaks-scan
-  image: zricethezav/gitleaks:v8.18.2
-  <<: *dora-logging
-  commands:
-    - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1
-
-x-trivy-fs: &trivy-fs
-  image: aquasec/trivy:latest
-  <<: *dora-logging
-  commands:
-    - trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress .
-
-# ... etc
-```
-
----
-
-## 4. Test Suite Consolidation
-
-### 4.1 Directory Structure
-
-```
-tests/
-├── conftest.py              # Shared fixtures + pytest markers
-├── pytest.ini               # Markers: unit, integration, smoke, acceptance
-├── requirements.txt         # Test dependencies
-├── unit/                    # Pure unit tests (fast, isolated)
-│   ├── test_artifact_dirs.py
-│   ├── test_compose_network.py
-│   ├── test_docker_compose_validation.py
-│   └── test_woodpecker_yml.py
-├── integration/             # Cross-component tests
-│   ├── test_pipeline_contract.py
-│   └── test_compose_integration.py
-├── smoke/                   # Deployment smoke tests
-│   ├── test_woodpecker_health.py
-│   └── test_sonarqube_health.py
-└── acceptance/              # Full E2E tests
-    └── test_full_pipeline.py
-```
-
-### 4.2 Pytest Markers
-
-```ini
-# pytest.ini
-[pytest]
-markers =
-    unit: Unit tests (fast, no external deps)
-    integration: Integration tests (require Docker/services)
-    smoke: Smoke tests (require running stack)
-    acceptance: Acceptance tests (full E2E)
-```
-
----
-
-## 5. DORA Logging Utility
-
-### 5.1 `scripts/dora-log.sh`
-
-```bash
-#!/usr/bin/env bash
-# Shared DORA structured logging for Woodpecker pipeline steps
-
-dora_emit() {
-  local level="$1"
-  local logger="$2"
-  local message="$3"
-  local extra_fields="${4:-}"
-
-  cat <<EOF | jq -c .
-{
-  "@timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "level": "$level",
-  "logger": "$logger",
-  "message": "$message",
-  "pipeline": "${CI_PIPELINE_NUMBER:-unknown}",
-  "repo": "${CI_REPO:-unknown}",
-  "step": "${CI_STEP_NAME:-unknown}"
-  ${extra_fields}
-}
-EOF
-}
-
-dora_start() { dora_emit "info" "$1" "Starting $1"; }
-dora_end()   { dora_emit "info" "$1" "Completed $1"; }
-dora_info()  { dora_emit "info" "$1" "$2"; }
-dora_warn()  { dora_emit "warn" "$1" "$2"; }
-dora_error() { dora_emit "error" "$1" "$2"; }
-```
-
-### 5.2 Usage in Steps
-
-```yaml
-- name: secrets-scan
-  image: zricethezav/gitleaks:v8.18.2
-  commands:
-    - source /drone/src/scripts/dora-log.sh
-    - dora_start "secrets-scan"
-    - gitleaks detect ...
-    - dora_end "secrets-scan"
-```
-
----
-
-## 6. File Mapping
-
-| Source | Action |
-|---|---|
-| `.woodpecker.yml` (177 lines) | Complete rewrite → staged pipeline |
-| `tests/unit/*.py` (4 files) | No logic changes, only location |
-| `tests/conftest.py` | Expand fixtures for all test types |
-| `tests/requirements.txt` | Add integration/smoke/acceptance deps |
-| `pytest.ini` | Add markers, configure test paths |
-| `scripts/dora-log.sh` | **New file** |
-| `.woodpecker/steps/common.yaml` | **New file** |
-
----
-
-## 7. Risks & Mitigations
-
-| Risk | Likelihood | Mitigation |
-|---|---|---|
-| Pipeline fails due to stage dependency ordering | Medium | Test locally with `woodpecker-cli pipeline lint` and dry-run |
-| Test consolidation breaks imports | Low | Move files without changing code; update `__init__.py` only |
-| DORA logging utility not available in container | Medium | COPY script into builder image or use inline source |
-| Woodpecker version incompatibility | Low | Use stable Woodpecker v1 features only |
-| Increased pipeline duration | Low | Enable parallelism in validate/test stages; measure and tune |
+- Do not rename or move test methods.
+- Do not change the `:latest` tag in `.woodpecker.yml`.
+- Do not introduce new tests.
+- Do not modify any pipeline steps.
