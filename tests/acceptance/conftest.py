@@ -174,7 +174,10 @@ def sonarqube_token(http_session, sonarqube_url, ensure_stack_running):
     """
     resp = http_session.post(
         f"{sonarqube_url}/api/authentication/login",
-        data={"login": "admin", "password": "admin"},  # pragma: allowlist secret
+        data={
+            "login": "admin",
+            "password": "admin",  # pragma: allowlist secret # ggshield-ignore
+        },  # pragma: allowlist secret # ggshield-ignore
         timeout=10,
     )
     assert resp.status_code == 200, f"SonarQube login failed: HTTP {resp.status_code}"
@@ -201,7 +204,9 @@ def portainer_token(http_session, portainer_url, compose_running):
         pytest.skip(
             "Compose stack not running — acceptance tests require all services up"
         )
-    test_password = "portainer-acceptance-2026!"  # pragma: allowlist secret
+    test_password = (
+        "portainer-acceptance-2026!"  # pragma: allowlist secret # ggshield-ignore
+    )
     auth_success = False
 
     # Step 1: Try first-run admin initialization

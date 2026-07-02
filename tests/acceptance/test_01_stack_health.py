@@ -83,7 +83,7 @@ class TestStackHealth:
             f"{portainer_url}/api/users/admin/init",
             json={
                 "Username": "admin",
-                "Password": "probe-only",  # pragma: allowlist secret
+                "Password": "probe-only",  # pragma: allowlist secret # ggshield-ignore
             },
             timeout=10,
         )

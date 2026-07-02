@@ -47,7 +47,10 @@ class TestSonarQubeAuthentication:
         """SonarQube must accept admin/admin login."""
         resp = http_session.post(
             f"{sonarqube_url}/api/authentication/login",
-            data={"login": "admin", "password": "admin"},  # pragma: allowlist secret
+            data={
+                "login": "admin",
+                "password": "admin",  # pragma: allowlist secret # ggshield-ignore
+            },  # pragma: allowlist secret # ggshield-ignore
             timeout=10,
         )
         assert resp.status_code == 200, (
@@ -66,7 +69,10 @@ class TestSonarQubeAuthentication:
         # Login
         login = http_session.post(
             f"{sonarqube_url}/api/authentication/login",
-            data={"login": "admin", "password": "admin"},  # pragma: allowlist secret
+            data={
+                "login": "admin",
+                "password": "admin",  # pragma: allowlist secret # ggshield-ignore
+            },
             timeout=10,
         )
         assert login.status_code == 200, (
