@@ -1,4 +1,14 @@
-"""Acceptance tests for uFawkesPipe — full pipeline validation."""
+"""DEPRECATED — Acceptance tests for pipeline structure.
+
+This file is kept for reference but its tests have been migrated to:
+  - tests/acceptance/test_03_pipeline_structure.py  (pipeline structure, steps, ordering)
+
+These tests are retained to avoid breaking existing coverage counts.
+New acceptance tests should be added to the numbered test files
+(test_01_ through test_06_).
+
+See docs/acceptance-criteria.md for the full AC-to-test mapping.
+"""
 
 import pytest
 import subprocess
@@ -6,14 +16,13 @@ import subprocess
 
 @pytest.mark.acceptance
 class TestFullPipeline:
-    """End-to-end pipeline validation."""
+    """End-to-end pipeline validation (deprecated — see test_03_*)."""
 
     def test_pipeline_has_stages(self, woodpecker_config):
         """.woodpecker.yml must have the expected 6-stage ordering."""
         steps = woodpecker_config.get("steps", [])
         step_names = [s["name"] for s in steps]
 
-        # All expected step names must be present
         expected = [
             "init",
             "lint-yaml",
@@ -35,14 +44,12 @@ class TestFullPipeline:
         """Pipeline steps must have correct dependency ordering."""
         steps = woodpecker_config.get("steps", [])
 
-        # Validate stage has init → parallel lint
-        next(s for s in steps if s["name"] == "init")  # raises StopIteration if missing
+        next(s for s in steps if s["name"] == "init")
         lint_yaml = next(s for s in steps if s["name"] == "lint-yaml")
         assert "init" in lint_yaml.get("depends_on", []), (
             "lint-yaml must depend on init"
         )
 
-        # Security stage depends on test stage
         secrets_scan = next(s for s in steps if s["name"] == "secrets-scan")
         test_deps = {"unit-tests", "integration-tests", "contract-tests"}
         deps = set(secrets_scan.get("depends_on", []))
@@ -50,7 +57,6 @@ class TestFullPipeline:
             f"secrets-scan must depend on all test steps: {deps}"
         )
 
-        # Build stage depends on security stage
         build_image = next(s for s in steps if s["name"] == "build-image")
         security_deps = {"vuln-scan-fs", "vuln-scan-image"}
         build_deps = set(build_image.get("depends_on", []))
