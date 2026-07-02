@@ -180,7 +180,14 @@ class TestVulnScanFsStep:
         )
 
     def test_uses_trivy_latest(self, woodpecker_config):
-        """Acceptance: vuln-scan-fs uses 'aquasec/trivy:latest'."""
+        """Acceptance: vuln-scan-fs uses 'aquasec/trivy:latest'.
+
+        Trivy uses :latest intentionally — scanner images require the most
+        current CVE databases, which are bundled inside the container image.
+        This is a documented exception, not a policy violation. See
+        CONTRIBUTING.md §"Exception: Vulnerability Scanner Images" and
+        docs/ARCHITECTURE.md §"Image pinning policy".
+        """
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'vuln-scan-fs' not found"
         assert step["image"] == "aquasec/trivy:latest", (
@@ -296,7 +303,14 @@ class TestVulnScanImageStep:
         )
 
     def test_uses_trivy_latest(self, woodpecker_config):
-        """Acceptance: vuln-scan-image uses 'aquasec/trivy:latest'."""
+        """Acceptance: vuln-scan-image uses 'aquasec/trivy:latest'.
+
+        Trivy uses :latest intentionally — scanner images require the most
+        current CVE databases, which are bundled inside the container image.
+        This is a documented exception, not a policy violation. See
+        CONTRIBUTING.md §"Exception: Vulnerability Scanner Images" and
+        docs/ARCHITECTURE.md §"Image pinning policy".
+        """
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'vuln-scan-image' not found"
         assert step["image"] == "aquasec/trivy:latest", (

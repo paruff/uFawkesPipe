@@ -1,131 +1,43 @@
 {
-  "feature": "WP-009",
-  "title": "Full .woodpecker.yml Replacement and Test Suite Consolidation",
-  "description": "Restructure .woodpecker.yml into staged pipeline with reusable steps, matrix builds, and centralized secrets. Consolidate test suite into unit/integration/smoke/acceptance with shared DORA logging utility.",
-  "depends_on": ["WP-001", "WP-004", "WP-005", "WP-006", "WP-007", "WP-008"],
-  "branch": "feature/wp-009-woodpecker-replacement",
+  "feature": "PIPE-002",
+  "title": "Resolve Trivy Image Tag Policy Contradiction",
+  "description": "Add formal exception block to CONTRIBUTING.md documenting operational justification for Trivy :latest tag. Add explanatory comments to test_uses_trivy_latest assertions in test_woodpecker_yml.py.",
+  "depends_on": ["WP-009"],
+  "branch": "feature/pipe-002-trivy-tag-policy-exception",
   "tasks": [
     {
-      "id": "WP-009-01",
-      "title": "Create DORA logging utility script",
-      "description": "Create scripts/dora-log.sh with dora_start, dora_end, dora_info, dora_warn, dora_error functions for structured JSON logging. Make it sourceable in pipeline steps.",
+      "id": "PIPE-002-01",
+      "title": "Add scanner image exception block to CONTRIBUTING.md",
+      "description": "Add a new section 'Exception: Vulnerability Scanner Images' after 'What We Don't Accept' section in CONTRIBUTING.md. Include operational justification for aquasec/trivy:latest and a placeholder for future scanners.",
       "depends_on": [],
       "acceptance": [
-        "scripts/dora-log.sh exists and is executable",
-        "Functions emit valid JSON with @timestamp, level, logger, message, pipeline, repo, step fields",
-        "Script can be sourced in alpine:3.20 and python:3.12-slim containers"
+        "CONTRIBUTING.md contains formal exception block in correct position",
+        "Block explicitly mentions aquasec/trivy:latest",
+        "Operational justification is clearly explained",
+        "General no-:latest rule remains intact for all other images"
       ]
     },
     {
-      "id": "WP-009-02",
-      "title": "Create reusable step definitions",
-      "description": "Create .woodpecker/steps/common.yaml with YAML anchors for common step patterns: dora-logging, gitleaks-scan, trivy-fs, trivy-image, sonarqube-sast, defectdojo-upload, notify-obs, init-artifact-dirs, yamllint, shellcheck.",
-      "depends_on": ["WP-009-01"],
-      "acceptance": [
-        ".woodpecker/steps/common.yaml exists",
-        "All 10 anchors defined with proper structure",
-        "Anchors reference dora-log.sh utility"
-      ]
-    },
-    {
-      "id": "WP-009-03",
-      "title": "Restructure .woodpecker.yml into staged pipeline",
-      "description": "Rewrite .woodpecker.yml using stages (validate, test, security, build, publish, deploy), matrix builds, reusable step anchors from .woodpecker/steps/common.yaml, centralized environment/secrets at top level, and stage dependencies.",
-      "depends_on": ["WP-009-02"],
-      "acceptance": [
-        "Pipeline has 6 explicit stages: validate, test, security, build, publish, deploy",
-        "Validate stage runs lint-yaml, lint-shell, lint-markdown in parallel",
-        "Test stage runs unit-tests (matrix), integration-tests, contract-tests in parallel",
-        "Security stage runs sequential gates: secrets-scan → sast-sonarqube → vuln-scan-fs → vuln-scan-image",
-        "Build stage builds container image",
-        "Publish stage pushes image and uploads to DefectDojo (main only)",
-        "Deploy stage runs notify-obs (main only)",
-        "All from_secret references moved to top-level or stage-level environment",
-        "woodpecker-cli pipeline lint .woodpecker.yml passes"
-      ]
-    },
-    {
-      "id": "WP-009-04",
-      "title": "Create integration test directory and tests",
-      "description": "Create tests/integration/ with test_pipeline_contract.py (moved/expanded from unit) and test_compose_integration.py for cross-component validation.",
+      "id": "PIPE-002-02",
+      "title": "Add explanatory comments to test_uses_trivy_latest methods",
+      "description": "In tests/unit/test_woodpecker_yml.py, add comments above both test_uses_trivy_latest methods (TestVulnScanFsStep and TestVulnScanImageStep) explaining that :latest is a documented exception for vulnerability scanner images.",
       "depends_on": [],
       "acceptance": [
-        "tests/integration/ directory exists",
-        "test_pipeline_contract.py validates .fawkespipe.yml, compose.yaml, .woodpecker.yml",
-        "test_compose_integration.py validates docker-compose composition",
-        "Tests use pytest markers: @pytest.mark.integration"
+        "TestVulnScanFsStep::test_uses_trivy_latest has explanatory comment",
+        "TestVulnScanImageStep::test_uses_trivy_latest has explanatory comment",
+        "Comments reference CONTRIBUTING.md exception section",
+        "No functional assertion changes made"
       ]
     },
     {
-      "id": "WP-009-05",
-      "title": "Create smoke test directory and tests",
-      "description": "Create tests/smoke/ with test_woodpecker_health.py and test_sonarqube_health.py for deployment verification.",
-      "depends_on": [],
+      "id": "PIPE-002-03",
+      "title": "Verify all tests pass and no functional regressions",
+      "description": "Run python3 -m pytest tests/ and confirm all 110+ tests pass. Verify no changes to .woodpecker.yml.",
+      "depends_on": ["PIPE-002-01", "PIPE-002-02"],
       "acceptance": [
-        "tests/smoke/ directory exists",
-        "test_woodpecker_health.py checks /healthz endpoint",
-        "test_sonarqube_health.py checks /api/system/status",
-        "Tests use pytest markers: @pytest.mark.smoke"
-      ]
-    },
-    {
-      "id": "WP-009-06",
-      "title": "Create acceptance test directory and tests",
-      "description": "Create tests/acceptance/ with test_full_pipeline.py for end-to-end pipeline validation.",
-      "depends_on": [],
-      "acceptance": [
-        "tests/acceptance/ directory exists",
-        "test_full_pipeline.py simulates full pipeline run",
-        "Tests use pytest markers: @pytest.mark.acceptance"
-      ]
-    },
-    {
-      "id": "WP-009-07",
-      "title": "Update tests/conftest.py and pytest.ini for consolidated structure",
-      "description": "Expand conftest.py with shared fixtures for all test types. Update pytest.ini with markers (unit, integration, smoke, acceptance) and test paths.",
-      "depends_on": ["WP-009-04", "WP-009-05", "WP-009-06"],
-      "acceptance": [
-        "conftest.py provides fixtures: project_root, compose_file, compose_config, woodpecker_file, woodpecker_config, env_example, docker_compose_file, docker_compose_config",
-        "pytest.ini defines markers: unit, integration, smoke, acceptance",
-        "pytest.ini configures testpaths for each marker",
-        "All existing unit tests still pass with pytest tests/unit/"
-      ]
-    },
-    {
-      "id": "WP-009-08",
-      "title": "Update validate-pipeline-contract step to use new test structure",
-      "description": "Modify the validate-pipeline-contract step in .woodpecker.yml to run pytest with appropriate markers for each stage.",
-      "depends_on": ["WP-009-03", "WP-009-07"],
-      "acceptance": [
-        "Validate stage runs pytest tests/unit/ -m unit",
-        "Test stage runs pytest tests/ -m \"integration or contract\"",
-        "Smoke tests run in deploy stage via pytest tests/smoke/ -m smoke",
-        "All test commands output JUnit XML to artifacts/tests/"
-      ]
-    },
-    {
-      "id": "WP-009-09",
-      "title": "Run full validation suite",
-      "description": "Execute all test types and validate pipeline locally.",
-      "depends_on": ["WP-009-08"],
-      "acceptance": [
-        "pytest tests/unit/ -v — 93+ tests pass",
-        "pytest tests/integration/ -v — passes",
-        "pytest tests/smoke/ -v — passes (or skipped if no stack)",
-        "pytest tests/acceptance/ -v — passes (or skipped if no stack)",
-        "woodpecker-cli pipeline lint .woodpecker.yml — passes",
-        "pre-commit run --all-files — all hooks pass"
-      ]
-    },
-    {
-      "id": "WP-009-10",
-      "title": "Update documentation references",
-      "description": "Update README.md and docs/pipeline-contract.md to reference new pipeline structure and test commands.",
-      "depends_on": ["WP-009-03"],
-      "acceptance": [
-        "README.md Pipeline Stages section matches new 6-stage structure",
-        "QUICKSTART.md smoke test section references new pytest commands",
-        "docs/pipeline-contract.md references new test structure"
+        "pytest tests/ passes all unit/integration/smoke/acceptance tests",
+        "git diff .woodpecker.yml confirms no changes to pipeline",
+        "yamllint passes on all changed YAML files"
       ]
     }
   ]
