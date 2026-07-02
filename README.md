@@ -230,6 +230,43 @@ See the [`kubernetes` section](docs/pipeline-contract.md#kubernetes---kubernetes
 - Automated upload of Gitleaks and Trivy scan results to DefectDojo API
 - Non-blocking — scan ingestion failure does not fail the pipeline
 
+## 🧪 Test Coverage
+
+The `tests/unit/` suite validates the `.woodpecker.yml` pipeline definition statically — it does **not** execute the pipeline against a live Woodpecker instance. End-to-end pipeline execution is verified manually via `make up` + Woodpecker UI.
+
+### What `pytest tests/unit/` Verifies
+
+| Test Module | Coverage |
+|-------------|----------|
+| `test_woodpecker_yml.py` | **Pipeline structure**: Valid YAML, `steps` list exists, `when` section present. **Step ordering**: `init` first, lint before security, test before security. **Step configuration** (per step): correct image & version pinning (e.g., `alpine:3.20`, `zricethezav/gitleaks:v8.18.2`, `curlimages/curl:8.6.0`), required commands/flags (`--format json`, `--no-progress`, `--exit-code=1` for secrets), output paths (`artifacts/security/*.json`), secret wiring (`from_secret`), branch conditions (`when: branch: main`), DORA logging (`source dora-log.sh`, `dora_start`, `dora_emit`), non-blocking behavior (`dora_warn` on failure). **Trivy exception**: Explicitly asserts `aquasec/trivy:latest` for scanner images with documented justification. **Artifact directories**: `init` creates `artifacts/security`, `artifacts/coverage`, `artifacts/tests` via `mkdir -p`. |
+| `test_docker_compose_validation.py` | **Compose structure**: Valid YAML, `services` section, all services have `image`, no `:latest` tags, all services have `labels`, volume declarations exist, named volumes (no host paths), no secrets in compose. **Healthchecks**: Services declare `healthcheck` (except `dependency-check`, `pack-cli`). |
+| `test_compose_network.py` | **Standalone mode**: `compose.yaml` declares NO `fawkes-net`, no services attach to it, `woodpecker-agent` has no `WOODPECKER_BACKEND_DOCKER_NETWORK`. **Suite mode**: `compose.suite.yaml` declares `fawkes-net` as `external: true` with `name: fawkes-net`, all 4 services attach, agent has `WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net`. **Makefile**: `network` target creates `fawkes-net` idempotently (`|| true`); `up` has NO `network` dep; `up-suite` HAS `network` dep. |
+| `test_artifact_dirs.py` | **Init step**: First step is `init` with `alpine:3.20`; commands include `mkdir -p artifacts/security`, `artifacts/coverage`, `artifacts/tests` using `mkdir -p`. |
+
+### What Unit Tests Do NOT Cover
+
+- ❌ Live pipeline execution against Woodpecker server
+- ❌ GitHub webhook delivery / repository activation flow
+- ❌ Docker image build / CNB buildpack execution
+- ❌ SonarQube quality gate evaluation
+- ❌ DefectDojo API ingestion
+- ❌ OTEL collector event emission / Loki ingestion
+- ❌ Cross-service integration (Woodpecker ↔ SonarQube ↔ Portainer)
+- ❌ Performance / load characteristics
+
+### Running Tests
+
+```bash
+# All unit tests (fast, no external deps)
+python3 -m pytest tests/unit/ -v
+
+# With markers (unit, integration, smoke, acceptance)
+python3 -m pytest tests/ -m unit
+python3 -m pytest tests/ -m integration
+python3 -m pytest tests/ -m smoke
+python3 -m pytest tests/ -m acceptance
+```
+
 ## 🔧 Configuration
 
 ### Pipeline Configuration
