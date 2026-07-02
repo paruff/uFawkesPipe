@@ -10,7 +10,6 @@ They do NOT require the compose stack unless testing stack-dependent
 tests.
 """
 
-import json
 import re
 import subprocess
 import sys
@@ -21,10 +20,13 @@ import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 PYTEST_ARGS = [
-    sys.executable, "-m", "pytest",
+    sys.executable,
+    "-m",
+    "pytest",
     "-v",
     "--tb=short",
-    "-p", "no:cacheprovider",  # Disable cache for clean results
+    "-p",
+    "no:cacheprovider",  # Disable cache for clean results
 ]
 
 
@@ -127,8 +129,7 @@ class TestSuiteSkipSafety:
         # Count collected tests from stdout
         collected = re.findall(r"<Function\s+(\w+)>", result.stdout)
         assert len(collected) >= 10, (
-            f"Expected 10+ tests in test_03, collected {len(collected)}: "
-            f"{collected}"
+            f"Expected 10+ tests in test_03, collected {len(collected)}: {collected}"
         )
 
 
@@ -154,9 +155,7 @@ class TestSuiteIdempotency:
         )
 
         # At least some tests passed (structure validation)
-        assert summary1["passed"] >= 10, (
-            f"Expected 10+ passed tests, got {summary1}"
-        )
+        assert summary1["passed"] >= 10, f"Expected 10+ passed tests, got {summary1}"
 
     def test_security_tests_idempotent(self):
         """Two runs of test_04 must produce identical pass/fail/skip counts."""

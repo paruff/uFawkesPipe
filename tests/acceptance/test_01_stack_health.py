@@ -81,9 +81,12 @@ class TestStackHealth:
         """
         resp = http_session.post(
             f"{portainer_url}/api/users/admin/init",
-            json={"Username": "admin", "Password": "probe-only"},  # pragma: allowlist secret
+            json={
+                "Username": "admin",
+                "Password": "probe-only",  # pragma: allowlist secret
+            },
             timeout=10,
-        )  # pragma: allowlist secret
+        )
         assert resp.status_code in (200, 201, 400, 409, 303), (
             f"Portainer init endpoint expected 200/400/409/303, "
             f"got {resp.status_code}: {resp.text[:100]}"

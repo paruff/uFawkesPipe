@@ -84,8 +84,7 @@ class TestPortainerCDReadiness:
             timeout=10,
         )
         assert auth_check.status_code == 200, (
-            f"Portainer JWT validation failed: "
-            f"HTTP {auth_check.status_code}"
+            f"Portainer JWT validation failed: HTTP {auth_check.status_code}"
         )
 
         # Verify the response is parseable
@@ -123,6 +122,5 @@ class TestPortainerWebhookEndpoint:
         if resp.status_code == 200:
             data = resp.json()
             assert isinstance(data, list), (
-                f"Webhooks response expected list, "
-                f"got {type(data).__name__}"
+                f"Webhooks response expected list, got {type(data).__name__}"
             )
