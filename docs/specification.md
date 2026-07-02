@@ -1,11 +1,11 @@
-# uFawkesPipe — Specification v0.2
+# uFawkesPipe — Specification v0.3
 
 *CI/CD Plane of the Fawkes IDP Family*
 
-**Status:** Draft — 2026-06-23
+**Status:** Draft — 2026-07-02
 **Author:** Platform Engineering (solo contributor)
 **Repo:** https://github.com/paruff/uFawkesPipe
-**Supersedes:** README v0.1 (Jenkins framing, now removed)
+**Supersedes:** v0.2 (2026-06-23)
 
 ---
 
@@ -15,23 +15,22 @@ uFawkesPipe is the integration and delivery plane of the Fawkes IDP family. It p
 **standardised pipeline contract** that polyglot application teams declare once (`.fawkespipe.yml`)
 and the platform executes consistently across every push.
 
-This specification covers the scope increase from the v0.1 baseline (Woodpecker + SonarQube +
-Portainer + CNB) to the v0.2 target state that adds:
+This specification covers the scope increase from the v0.2 baseline (Woodpecker + SonarQube +
+Portainer + CNB + security scanning) to the v0.3 target state that adds:
 
-- A **DefectDojo security ingestion loop** for Gitleaks and Trivy findings
-- A **standardised artifact directory contract** (`artifacts/security/`, `artifacts/coverage/`,
-  `artifacts/tests/`) shared across all pipeline steps via Woodpecker workspace
-- A **Gitleaks secrets-scan step** as a hard gate before any build step
-- A **fawkes-net shared Docker network** so pipeline step containers can reach platform services
-  by DNS name
-- A **notify-obs step** that emits a structured deployment event to uFawkesObs (currently a
-  stub; will carry pipeline duration, stage results, and SHA for DORA lead-time calculation)
+- An **automated acceptance test suite** (`tests/acceptance/`) that verifies the full golden path:
+  stack health, authentication, pipeline execution, security scanning, and deployment
+- A **Portainer health and authentication verification** layer — currently untested
+- A **golden-path pipeline simulation** that validates the end-to-end flow from build trigger
+  to SonarQube analysis to Portainer deploy webhook
+- **Service-level authentication tests** for Woodpecker, SonarQube, and Portainer
 
-**Out of scope for v0.2:**
-- DefectDojo provisioning (assumed pre-existing on `fawkes-net`)
-- Vault / Infisical integration (secrets still use Woodpecker native secrets store)
-- Kubernetes promotion path (k8s/ manifests remain reference only)
-- Fifth DORA metric (unconfirmed upstream; not encoded here)
+**Out of scope for v0.3:**
+- DefectDojo provisioning and integration (Q1 remains open from v0.2)
+- Actual container image building (simulated pipeline triggers only)
+- Kubernetes promotion path testing
+- External GitHub webhook integration (Woodpecker token scoping)
+- Performance/stress testing
 
 ---
 
@@ -41,105 +40,73 @@ Portainer + CNB) to the v0.2 target state that adds:
 | --- | --- |
 | **App developer** | Push code and get a pass/fail signal with actionable security findings in under 10 min |
 | **Platform engineer** | Onboard a new repo to the pipeline in < 30 min with zero per-app pipeline YAML |
+| **Platform engineer** (v0.3 new) | Start the stack with `make up` and run one command to verify the entire golden path works |
 | **Security engineer** | See all secret and CVE findings aggregated in DefectDojo without touching CI config |
 | **DORA practitioner** | Consume deployment frequency and lead-time events from uFawkesObs without manual tagging |
 
 ---
 
-## 3. Functional Requirements
+## 3. Functional Requirements — v0.3 Acceptance Test Suite
 
-### 3.1 Pipeline Contract File (`.fawkespipe.yml`)
+### 3.1 Stack Health Verification
 
-- Every application repository declares build metadata: `app.name`, `app.language`, `build.builder`
-  (`cnb` or `docker`), `build.image.namespace`, and per-stage `enabled` flags.
-- The platform `.woodpecker.yml` in uFawkesPipe reads no application-specific config at platform
-  level; the contract file lives in the application repo.
-- uFawkesPipe provides validated example contract files in `examples/` for: Java/Maven,
-  Python/Flask, Node.js/Express, Go.
+- FR-3.1.1: Every service in `compose.yaml` (Woodpecker server, Woodpecker agent, SonarQube,
+  Portainer) must respond to a health check or API endpoint within 30 seconds of `make up`.
+- FR-3.1.2: Woodpecker UI must be accessible at `http://localhost:8000` with HTTP 200.
+- FR-3.1.3: Woodpecker `/healthz` endpoint must return HTTP 200.
+- FR-3.1.4: SonarQube `/api/system/status` must return `{"status": "UP"}` with HTTP 200.
+- FR-3.1.5: SonarQube UI must be accessible at `http://localhost:9001` with HTTP 200 or 302.
+- FR-3.1.6: Portainer UI must be accessible at `https://localhost:9443`.
+- FR-3.1.7: Portainer API must be accessible; first-run admin initialization must succeed
+  via `POST /api/users/admin/init` with a generated password.
 
-### 3.2 Pipeline Stages (ordered, all run in Woodpecker workspace)
+### 3.2 Authentication Verification
 
-| # | Stage | Image (pinned) | Artifact written | Hard gate? |
-| --- | --- | --- | --- | --- |
-| 1 | `init` | `alpine:3.20` | Creates `artifacts/{security,coverage,tests}/` dirs | No |
-| 2 | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | `artifacts/security/gitleaks.json` | **Yes** (`--exit-code 1`) |
-| 3 | `lint-yaml` | `python:3.12-slim` | — | No (warn) |
-| 4 | `lint-shell` | `koalaman/shellcheck-alpine:stable` | — | No (warn) |
-| 5 | `unit-tests` | language-specific | `artifacts/tests/junit.xml`, `artifacts/coverage/coverage.xml` | Yes |
-| 6 | `sast-sonarqube` | `sonarsource/sonar-scanner-cli:5.0` | SonarQube project analysis | Quality gate via SonarQube webhook |
-| 7 | `vuln-scan-fs` | `aquasec/trivy:latest` | `artifacts/security/trivy-repo.json` | No (upload to Dojo) |
-| 8 | `build` | `buildpacksio/pack:latest` or Docker | OCI image pushed to registry | Yes |
-| 9 | `vuln-scan-image` | `aquasec/trivy:latest` | `artifacts/security/trivy-image.json` | No (upload to Dojo) |
-| 10 | `upload-defectdojo` | `curlimages/curl:8.6.0` | — (POST to DefectDojo API v2) | No |
-| 11 | `deploy-portainer` | `curlimages/curl:8.6.0` | — (POST to Portainer webhook) | Yes (on main branch only) |
-| 12 | `notify-obs` | `curlimages/curl:8.6.0` | — (POST deployment event to uFawkesObs) | No |
+- FR-3.2.1: Woodpecker must be open-access (`WOODPECKER_OPEN=true`) — no authentication
+  required when accessing the UI and API. The test must verify this is the configured state.
+- FR-3.2.2: SonarQube must authenticate with default credentials (`admin`/`admin`) and
+  return a valid session token. The test must also verify the default password can be
+  changed (but not leave the changed password in place).
+- FR-3.2.3: Portainer must complete first-run admin initialization and return a valid
+  JWT authentication token from `POST /api/auth`. The test must use the token to access
+  an authenticated endpoint (`GET /api/endpoints`).
 
-**Note on Trivy tag:** `aquasec/trivy:latest` is intentionally unpinned for scanner images
-so the CVE database stays current. This is an explicit, documented exception to the
-pinned-image rule. All other images must be pinned to a digest or tag.
+### 3.3 Golden Path Pipeline Simulation
 
-### 3.3 Artifact Directory Contract
+- FR-3.3.1: A Woodpecker pipeline for uFawkesPipe itself must exist and be triggerable
+  (verified by inspecting Woodpecker API or UI for the repo).
+- FR-3.3.2: The pipeline must contain all expected stages: validate, test, security, build,
+  publish, deploy — in correct dependency order.
+- FR-3.3.3: The Gitleaks secrets-scan step must be present as a hard gate.
+- FR-3.3.4: The Trivy vulnerability scan steps must be present (filesystem scan on all
+  branches, image scan on main only).
 
-All pipeline step containers share a single Woodpecker workspace directory. Steps write
-artifacts to:
+### 3.4 Security Verification
 
-```
-artifacts/
-  security/
-    gitleaks.json       # Gitleaks output (JSON format)
-    trivy-repo.json     # Trivy filesystem scan (JSON format)
-    trivy-image.json    # Trivy image scan (JSON format)
-  coverage/
-    coverage.xml        # Language-specific coverage (Cobertura XML preferred)
-  tests/
-    junit.xml           # JUnit XML (standard across all languages)
-```
+- FR-3.4.1: SonarQube must accept a project creation via API, simulating the SAST stage.
+- FR-3.4.2: The Woodpecker pipeline must produce security artifacts in the expected
+  directory structure (`artifacts/security/gitleaks.json`, `artifacts/security/trivy-repo.json`).
 
-Steps downstream of a scanner must not assume the file exists if the producing step was
-skipped; the `upload-defectdojo` step must check for file existence before POSTing.
+### 3.5 Deployment & Observability
 
-### 3.4 DefectDojo Integration
+- FR-3.5.1: Portainer must expose a webhook-capable stack endpoint. The test verifies
+  Portainer is configured for CD, not that a specific webhook fires.
+- FR-3.5.2: The `notify-obs` step must be present in the pipeline and emit a DORA-structured
+  deployment event payload.
 
-- POST to `/api/v2/import-scan/` using `Authorization: Token $DOJO_API_TOKEN`
-- `scan_type` values: `Gitleaks Scan` for `gitleaks.json`, `Trivy Scan` for Trivy outputs
-- `engagement_name`: `CI-Engagement` (static)
-- `project_name`: `${CI_REPO}` (Woodpecker built-in variable)
-- `active=true`, `verified=false` for automated imports
-- DefectDojo is assumed reachable at `http://defectdojo:8080` on `fawkes-net`
+### 3.6 Test Infrastructure
 
-### 3.5 Portainer CD
+- FR-3.6.1: Tests must use `@pytest.mark.acceptance` marker for targeting.
+- FR-3.6.2: Tests must gracefully skip (`pytest.skip`) when the compose stack is not running.
+- FR-3.6.3: Tests must be runnable via `make test-acceptance`.
+- FR-3.6.4: Tests must not modify production state — SonarQube password changes must be
+  reverted; Portainer admin initialization must use a test-only password.
+- FR-3.6.5: All tests must produce binary pass/fail results — no "warning" or "partial" outcomes.
 
-- Deploy step fires on `branch: main` only
-- Uses Woodpecker secret `portainer_webhook_stack_url`
-- Single `POST` — no body required (Portainer webhook pulls and recreates the stack)
+### 3.7 Documentation
 
-### 3.6 uFawkesObs Notification (stub for v0.2)
-
-- Step runs after deploy on `branch: main`
-- Payload (JSON): `{ "event": "deploy", "repo": "$CI_REPO", "sha": "$CI_COMMIT_SHA",
-  "pipeline": "$CI_PIPELINE_NUMBER", "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)" }`
-- Target URL: Woodpecker secret `obs_webhook_url`
-- Non-blocking: failure does not fail the pipeline
-
-### 3.7 Docker Network
-
-- Woodpecker agent must be attached to `fawkes-net` (external network, pre-existing)
-- `compose.yaml` declares `fawkes-net` as an external network
-- Pipeline step containers inherit the agent's network, enabling DNS resolution of
-  `defectdojo`, `sonarqube`, `portainer` by service name
-
-### 3.8 Secrets
-
-All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` or `.woodpecker.yml`.
-
-| Secret name | Used by stage | Description |
-| --- | --- | --- |
-| `sonar_token` | `sast-sonarqube` | SonarQube user token |
-| `defectdojo_api_token` | `upload-defectdojo` | DefectDojo API token |
-| `portainer_webhook_stack_url` | `deploy-portainer` | Full Portainer webhook URL |
-| `obs_webhook_url` | `notify-obs` | uFawkesObs event receiver URL |
-| `registry_username` | `build` | OCI registry username |
-| `registry_token` | `build` | OCI registry token |
+- FR-3.7.1: README.md must document the acceptance test suite, its purpose, and how to run it.
+- FR-3.7.2: `docs/KNOWN_LIMITATIONS.md` must be updated to reflect that acceptance tests now exist.
 
 ---
 
@@ -147,25 +114,32 @@ All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` 
 
 | Concern | Requirement |
 | --- | --- |
-| **Pipeline duration** | End-to-end (excl. first-run CVE DB download) < 10 min on a 4-core dev node |
-| **Image pinning** | All non-scanner images pinned to tag; Trivy exception documented in `.woodpecker.yml` comment |
-| **Secret hygiene** | No secrets in repo files; pre-commit Gitleaks hook enforces this locally |
-| **Idempotency** | `make down && make up` must restore a clean working platform |
-| **Single-node dev** | Full stack runs on Docker Compose with 4 GB RAM minimum |
-| **Test coverage** | `pytest tests/` must pass on every PR; tests validate pipeline contract YAML structure |
-| **Lint gates** | `yamllint` and `shellcheck` run on every push; failures are warnings, not hard gates (configurable) |
+| **Execution time** | Full acceptance suite < 5 minutes from `make test-acceptance` (excluding service startup) |
+| **Idempotency** | Tests must be re-runnable without side effects; no state left behind |
+| **Skip-safe** | All tests skip gracefully when stack is not running — no false failures |
+| **Test isolation** | Tests must not depend on prior test state; each test file independently runnable |
+| **Error messages** | All assertions must produce clear error messages identifying what failed |
+| **Compose lifecycle** | Tests must not call `make up` or `make down`; they only verify a running stack |
 
 ---
 
 ## 5. Acceptance Criteria
 
-1. `make up` starts all 4 services (Woodpecker server + agent, SonarQube, Portainer) with no errors.
-2. Pushing a commit with a planted secret causes `secrets-scan` to fail the pipeline with exit code 1.
-3. A clean push on `main` produces: Trivy findings in DefectDojo, a Portainer stack redeploy,
-   and a deployment event payload logged in the `notify-obs` step output.
-4. `pytest tests/` passes with zero failures.
-5. `yamllint compose.yaml .woodpecker.yml` reports zero errors.
-6. All images in `compose.yaml` are pinned to a specific tag or digest (auditable via `grep image: compose.yaml`).
+See `docs/acceptance-criteria.md` for the full binary pass/fail criteria map.
+Summary acceptance criteria:
+
+1. `make test-acceptance` passes with zero failures when the stack is running and
+   all services are healthy.
+2. `make test-acceptance` produces 0 failures (only skips) when the stack is not
+   running — no false positives.
+3. All 8 service health checks pass (Woodpecker UI, Woodpecker healthz, Woodpecker agent,
+   SonarQube status, SonarQube UI, Portainer UI, Portainer API init, Portainer auth).
+4. SonarQube authentication succeeds with default credentials.
+5. Portainer first-run admin initialization succeeds and returns a valid JWT.
+6. Woodpecker pipeline for uFawkesPipe repo exists and contains all expected stages
+   in correct dependency order.
+7. Gitleaks secrets-scan step is present as a hard gate.
+8. Trivy vulnerability scan steps are present with correct branch constraints.
 
 ---
 
@@ -173,6 +147,8 @@ All secrets injected via Woodpecker native secrets (UI or CLI). Never in `.env` 
 
 | # | Question | Owner | Target |
 | --- | --- | --- | --- |
-| Q1 | Is DefectDojo deployed on `fawkes-net` before this work starts? | Platform engineer | Before issue WP-003 |
-| Q2 | Which OCI registry is canonical for v0.2? DockerHub or self-hosted Harbor? | Platform engineer | Before issue WP-005 |
-| Q3 | `notify-obs` payload schema — confirm field names with uFawkesObs team | Platform engineer | Before issue WP-006 |
+| Q1 | Is DefectDojo deployed on `fawkes-net` before this work starts? | Platform engineer | Before DefectDojo tests |
+| Q2 | Which OCI registry is canonical for v0.3? DockerHub or self-hosted Harbor? | Platform engineer | Before build simulation tests |
+| Q3 | `notify-obs` payload schema — confirm field names with uFawkesObs team | Platform engineer | Before observability tests |
+
+(Questions Q1-Q3 carried forward from v0.2 — no blockers for v0.3 scope.)
