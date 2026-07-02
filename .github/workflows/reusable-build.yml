@@ -43,6 +43,11 @@ on:
         required: false
         type: boolean
         default: true
+      allow-latest:
+        description: "Comma-separated list of image patterns (e.g., 'aquasec/trivy:latest') to allow :latest for"
+        required: false
+        type: string
+        default: ""
       enable-coverage-gate:
         description: "Enable coverage quality gate"
         required: false
@@ -89,11 +94,31 @@ jobs:
       - name: Fail if ':latest' is used
         if: inputs.fail-on-latest
         run: |
-          if grep -R "image: .*:latest" -n compose.yaml; then
-            echo "::error::Do not use :latest tags in compose.yaml"
-            exit 1
+          ALLOW_LIST="${{ inputs.allow-latest }}"
+          IFS=',' read -ra ALLOWED <<< "$ALLOW_LIST"
+          ALLOW_PATTERN=""
+          for a in "${ALLOWED[@]}"; do
+            a=$(echo "$a" | xargs)
+            if [ -n "$a" ]; then
+              ALLOW_PATTERN="${ALLOW_PATTERN}|${a}"
+            fi
+          done
+          if [ -n "$ALLOW_PATTERN" ]; then
+            ALLOW_PATTERN="${ALLOW_PATTERN#|}"
           fi
-          echo "✅ No :latest tags found"
+
+          if grep -R "image: .*:latest" -n compose.yaml; then
+            if [ -n "$ALLOW_PATTERN" ]; then
+              if grep -R "image: .*:latest" -n compose.yaml | grep -vE "$ALLOW_PATTERN"; then
+                echo "::error::Do not use :latest tags in compose.yaml (except allowed: $ALLOW_PATTERN)"; exit 1; fi
+              echo "✅ No :latest tags found (excluding allowed: $ALLOW_PATTERN)"
+            else
+              echo "::error::Do not use :latest tags in compose.yaml"
+              exit 1
+            fi
+          else
+            echo "✅ No :latest tags found"
+          fi
 
       # ─── Config Validation: Prometheus ──────────────────────────────────
       - name: Validate Prometheus config
@@ -199,7 +224,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ inputs.fail-on-latest }}" == "true" ]; then
-            echo "- ✅ Supply chain: No :latest tags" >> $GITHUB_STEP_SUMMARY
+            if [ -n "${{ inputs.allow-latest }}" ]; then
+              echo "- ✅ Supply chain: No :latest tags (allow: ${{ inputs.allow-latest }})" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ✅ Supply chain: No :latest tags" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
 
           if [ "${{ inputs.validate-prometheus }}" == "true" ]; then
