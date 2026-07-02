@@ -1,43 +1,27 @@
 {
-  "feature": "PIPE-002",
-  "title": "Resolve Trivy Image Tag Policy Contradiction",
-  "description": "Add formal exception block to CONTRIBUTING.md documenting operational justification for Trivy :latest tag. Add explanatory comments to test_uses_trivy_latest assertions in test_woodpecker_yml.py.",
-  "depends_on": ["WP-009"],
-  "branch": "feature/pipe-002-trivy-tag-policy-exception",
+  "feature": "PIPE-004",
+  "title": "Fix Stale File Reference in workflow-agent.md",
+  "description": "Update docker-compose.yml reference to compose.yaml in the context files table of .agents/agents/workflow-agent.md.",
+  "branch": "feature/pipe-004-fix-workflow-agent-stale-ref",
   "tasks": [
     {
-      "id": "PIPE-002-01",
-      "title": "Add scanner image exception block to CONTRIBUTING.md",
-      "description": "Add a new section 'Exception: Vulnerability Scanner Images' after 'What We Don't Accept' section in CONTRIBUTING.md. Include operational justification for aquasec/trivy:latest and a placeholder for future scanners.",
+      "id": "PIPE-004-01",
+      "title": "Update context files table reference",
+      "description": "Change docker-compose.yml to compose.yaml in the context files table of .agents/agents/workflow-agent.md.",
       "depends_on": [],
       "acceptance": [
-        "CONTRIBUTING.md contains formal exception block in correct position",
-        "Block explicitly mentions aquasec/trivy:latest",
-        "Operational justification is clearly explained",
-        "General no-:latest rule remains intact for all other images"
+        "context files table references compose.yaml",
+        "no docker-compose.yml references remain in the file"
       ]
     },
     {
-      "id": "PIPE-002-02",
-      "title": "Add explanatory comments to test_uses_trivy_latest methods",
-      "description": "In tests/unit/test_woodpecker_yml.py, add comments above both test_uses_trivy_latest methods (TestVulnScanFsStep and TestVulnScanImageStep) explaining that :latest is a documented exception for vulnerability scanner images.",
-      "depends_on": [],
+      "id": "PIPE-004-02",
+      "title": "Verify no other stale references",
+      "description": "Read full file to confirm no other stale references exist.",
+      "depends_on": ["PIPE-004-01"],
       "acceptance": [
-        "TestVulnScanFsStep::test_uses_trivy_latest has explanatory comment",
-        "TestVulnScanImageStep::test_uses_trivy_latest has explanatory comment",
-        "Comments reference CONTRIBUTING.md exception section",
-        "No functional assertion changes made"
-      ]
-    },
-    {
-      "id": "PIPE-002-03",
-      "title": "Verify all tests pass and no functional regressions",
-      "description": "Run python3 -m pytest tests/ and confirm all 110+ tests pass. Verify no changes to .woodpecker.yml.",
-      "depends_on": ["PIPE-002-01", "PIPE-002-02"],
-      "acceptance": [
-        "pytest tests/ passes all unit/integration/smoke/acceptance tests",
-        "git diff .woodpecker.yml confirms no changes to pipeline",
-        "yamllint passes on all changed YAML files"
+        "grep docker-compose.yml .agents/agents/workflow-agent.md returns empty",
+        "markdownlint passes on the file"
       ]
     }
   ]
