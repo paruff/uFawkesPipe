@@ -13,7 +13,7 @@ Manages CI workflows, GitOps standards, and repository governance for uFawkesPip
 | Priority | File                        | What You Learn                    |
 | -------- | --------------------------- | --------------------------------- |
 | 1        | `AGENTS.md`                 | PM contract, CI expectations      |
-| 2        | `docker-compose.yml`        | Services to validate              |
+| 2        | `compose.yaml`              | Services to validate              |
 | 3        | `validate.sh`               | Validation script to run in CI    |
 | 4        | `Makefile`                  | Targets to test                   |
 | 5        | `docs/CHANGE_IMPACT_MAP.md` | What breaks when workflows change |
