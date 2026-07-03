@@ -188,8 +188,47 @@ steps:
         branch: main
 
 # ============================================================================
-# Stage 5: publish — Push to registry, upload security artifacts
+# Stage 5: publish — SBOM, signing, push to registry, upload security artifacts
 # ============================================================================
+
+  # Generate SBOM in CycloneDX format using Trivy (main only)
+  - name: generate-sbom
+    image: aquasec/trivy:latest
+    depends_on: [build-image]
+    environment:
+      REGISTRY_USERNAME:
+        from_secret: registry_username
+    commands:
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "generate-sbom"
+      - mkdir -p artifacts/security
+      - trivy image --format cyclonedx --output artifacts/security/sbom.cdx.json ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "SBOM generation completed" ",\"exit_code\":$rc"
+      - exit $rc
+    when:
+      - event: push
+        branch: main
+
+  # Sign container image with Cosign using key from Woodpecker secret (main only)
+  - name: sign-image
+    image: bitnami/cosign:latest
+    depends_on: [generate-sbom]
+    environment:
+      REGISTRY_USERNAME:
+        from_secret: registry_username
+      COSIGN_PRIVATE_KEY:
+        from_secret: cosign_private_key  # pragma: allowlist secret
+      COSIGN_PASSWORD:
+        from_secret: cosign_password  # pragma: allowlist secret
+    commands:
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "sign-image"
+      - cosign sign --key env://COSIGN_PRIVATE_KEY --yes ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "Image signing completed" ",\"exit_code\":$rc"
+      - exit $rc
+    when:
+      - event: push
+        branch: main
 
   # Upload Gitleaks + Trivy results to DefectDojo (non-blocking, main only)
   - name: upload-defectdojo

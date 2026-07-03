@@ -59,6 +59,28 @@ class TestStepOrdering:
             f"'secrets-scan' at index {pos_secrets}"
         )
 
+    def test_generate_sbom_after_build_image(self, woodpecker_config):
+        """Acceptance: generate-sbom step comes after build-image step."""
+        steps = woodpecker_config["steps"]
+        names = [s["name"] for s in steps]
+        pos_build = names.index("build-image")
+        pos_sbom = names.index("generate-sbom")
+        assert pos_build < pos_sbom, (
+            f"'build-image' at index {pos_build} must come before "
+            f"'generate-sbom' at index {pos_sbom}"
+        )
+
+    def test_sign_image_after_generate_sbom(self, woodpecker_config):
+        """Acceptance: sign-image step comes after generate-sbom step."""
+        steps = woodpecker_config["steps"]
+        names = [s["name"] for s in steps]
+        pos_sbom = names.index("generate-sbom")
+        pos_sign = names.index("sign-image")
+        assert pos_sbom < pos_sign, (
+            f"'generate-sbom' at index {pos_sbom} must come before "
+            f"'sign-image' at index {pos_sign}"
+        )
+
 
 @pytest.mark.unit
 class TestSecretsScanStep:
@@ -808,3 +830,200 @@ class TestNotifyObsStep:
             "OTEL_ENDPOINT not set" in command_str
             or '[ -n "${OTEL_ENDPOINT:-}" ]' in command_str
         ), "notify-obs must handle missing OTEL_ENDPOINT gracefully"
+
+
+@pytest.mark.unit
+class TestGenerateSbomStep:
+    """Acceptance: generate-sbom step is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the generate-sbom step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "generate-sbom":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'generate-sbom' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, (
+            "Step named 'generate-sbom' must exist in .woodpecker.yml"
+        )
+
+    def test_uses_correct_image(self, woodpecker_config):
+        """Acceptance: generate-sbom uses 'aquasec/trivy:latest'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        assert step["image"] == "aquasec/trivy:latest", (
+            f"generate-sbom must use 'aquasec/trivy:latest', got '{step.get('image')}'"
+        )
+
+    def test_has_registry_username_secret(self, woodpecker_config):
+        """Acceptance: generate-sbom has REGISTRY_USERNAME from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        environment = step.get("environment", {})
+        username = environment.get("REGISTRY_USERNAME", {})
+        assert username.get("from_secret") == "registry_username", (
+            f"generate-sbom must have REGISTRY_USERNAME from_secret: registry_username, "
+            f"got: {username}"
+        )
+
+    def test_produces_sbom_output(self, woodpecker_config):
+        """Acceptance: generate-sbom produces artifacts/security/sbom.cdx.json."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "sbom.cdx.json" in command_str, (
+            f"generate-sbom must produce sbom.cdx.json, got: {command_str}"
+        )
+
+    def test_uses_cyclonedx_format(self, woodpecker_config):
+        """Acceptance: generate-sbom uses CycloneDX format."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "--format cyclonedx" in command_str, (
+            f"generate-sbom must use --format cyclonedx, got: {command_str}"
+        )
+
+    def test_references_image_variable(self, woodpecker_config):
+        """Acceptance: generate-sbom uses CI built-in variables for image ref."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "${CI_REPO_NAME}" in command_str or "${CI_COMMIT_SHA" in command_str, (
+            f"generate-sbom must use CI variables for image ref ({command_str})"
+        )
+
+    def test_has_artifacts_directory(self, woodpecker_config):
+        """Acceptance: generate-sbom creates artifacts/security directory."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "mkdir -p artifacts/security" in command_str, (
+            f"generate-sbom must create artifacts/security directory, got: {command_str}"
+        )
+
+    def test_has_when_branch_main(self, woodpecker_config):
+        """Acceptance: generate-sbom only runs on main branch."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        when = step.get("when", [])
+        assert len(when) > 0, "generate-sbom must have 'when' block"
+        has_main = any(w.get("branch") == "main" for w in when)
+        assert has_main, f"generate-sbom must have 'when: branch: main', got: {when}"
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: generate-sbom has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'generate-sbom' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "generate-sbom must source dora-log.sh for DORA logging"
+        )
+        assert 'dora_start "generate-sbom"' in command_str, (
+            "generate-sbom must call dora_start with step name"
+        )
+
+
+@pytest.mark.unit
+class TestSignImageStep:
+    """Acceptance: sign-image step is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the sign-image step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "sign-image":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'sign-image' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step named 'sign-image' must exist in .woodpecker.yml"
+
+    def test_uses_correct_image(self, woodpecker_config):
+        """Acceptance: sign-image uses bitnami/cosign image."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        image = step.get("image", "")
+        assert "bitnami/cosign" in image, (
+            f"sign-image must use a bitnami/cosign image, got '{image}'"
+        )
+
+    def test_has_cosign_private_key_secret(self, woodpecker_config):
+        """Acceptance: sign-image has COSIGN_PRIVATE_KEY from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        environment = step.get("environment", {})
+        key = environment.get("COSIGN_PRIVATE_KEY", {})
+        assert key.get("from_secret") == "cosign_private_key", (
+            f"sign-image must have COSIGN_PRIVATE_KEY from_secret: cosign_private_key, "
+            f"got: {key}"
+        )
+
+    def test_has_cosign_password_secret(self, woodpecker_config):
+        """Acceptance: sign-image has COSIGN_PASSWORD from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        environment = step.get("environment", {})
+        password = environment.get("COSIGN_PASSWORD", {})
+        assert password.get("from_secret") == "cosign_password", (
+            f"sign-image must have COSIGN_PASSWORD from_secret: cosign_password, "
+            f"got: {password}"
+        )
+
+    def test_has_registry_username_secret(self, woodpecker_config):
+        """Acceptance: sign-image has REGISTRY_USERNAME from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        environment = step.get("environment", {})
+        username = environment.get("REGISTRY_USERNAME", {})
+        assert username.get("from_secret") == "registry_username", (
+            f"sign-image must have REGISTRY_USERNAME from_secret: registry_username, "
+            f"got: {username}"
+        )
+
+    def test_uses_env_key_syntax(self, woodpecker_config):
+        """Acceptance: sign-image uses '--key env://COSIGN_PRIVATE_KEY'."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "--key env://COSIGN_PRIVATE_KEY" in command_str, (
+            f"sign-image must use '--key env://COSIGN_PRIVATE_KEY', got: {command_str}"
+        )
+
+    def test_has_yes_flag(self, woodpecker_config):
+        """Acceptance: sign-image includes '--yes' flag."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "--yes" in command_str, (
+            f"sign-image must include '--yes' flag, got: {command_str}"
+        )
+
+    def test_has_when_branch_main(self, woodpecker_config):
+        """Acceptance: sign-image only runs on main branch."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        when = step.get("when", [])
+        assert len(when) > 0, "sign-image must have 'when' block"
+        has_main = any(w.get("branch") == "main" for w in when)
+        assert has_main, f"sign-image must have 'when: branch: main', got: {when}"
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: sign-image has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'sign-image' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "sign-image must source dora-log.sh for DORA logging"
+        )
+        assert 'dora_start "sign-image"' in command_str, (
+            "sign-image must call dora_start with step name"
+        )
