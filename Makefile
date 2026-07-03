@@ -86,6 +86,14 @@ logs: ## View uFawkesPipe stack logs — standalone mode (compose.yaml)
 status: ## List running containers — standalone mode
 	docker compose -f compose.yaml ps
 
+health: ## Show container health status table — standalone mode
+	@echo "Container Health Status (standalone mode):"
+	@docker compose -f compose.yaml ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+
+health-suite: ## Show container health status table — suite mode
+	@echo "Container Health Status (suite mode):"
+	@docker compose -f compose.yaml -f compose.suite.yaml ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+
 # ============================================================================
 # Suite Mode — connects to uFawkesRes + uFawkesObs
 # Prerequisites: uFawkesRes and uFawkesObs stacks must be running
