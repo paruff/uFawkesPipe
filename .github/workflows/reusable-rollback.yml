@@ -42,7 +42,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-        run: |
+        run: |  # pragma: allowlist secret
           set -euo pipefail
           missing=0
           if [ -z "${DEPLOY_HOST}" ]; then echo "::error::Missing required secret: DEPLOY_HOST"; missing=1; fi
@@ -53,6 +53,7 @@ jobs:
       - name: Start SSH agent
         uses: webfactory/ssh-agent@f1128c19fa8b02b0bb4a73ce8432cf0409445bee  # v0.10.0
         with:
+          # pragma: allowlist secret
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Add deploy host to known_hosts
