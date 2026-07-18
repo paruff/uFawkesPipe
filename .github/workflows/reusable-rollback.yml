@@ -1,0 +1,142 @@
+name: Reusable Rollback
+
+on:
+  workflow_call:
+    inputs:
+      deploy-path:
+        description: "Absolute path to the repo clone on the target host"
+        required: false
+        type: string
+        default: ""
+      restart-command:
+        description: "Command to restart services after revert (e.g., 'make up')"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      DEPLOY_HOST:
+        required: true
+      DEPLOY_USER:
+        required: true
+      DEPLOY_KEY:
+        required: true
+      # Optional: pre-verified host key fingerprint to skip ssh-keyscan
+      DEPLOY_HOST_KEY:
+        required: false
+
+permissions: {}  # deny all at workflow level; grant per job below
+
+jobs:
+  rollback:
+    permissions:
+      contents: read
+    name: "🔄 Rollback"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: "job-start"
+        run: echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Validate deploy secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        run: |  # pragma: allowlist secret
+          set -euo pipefail
+          missing=0
+          if [ -z "${DEPLOY_HOST}" ]; then echo "::error::Missing required secret: DEPLOY_HOST"; missing=1; fi
+          if [ -z "${DEPLOY_USER}" ]; then echo "::error::Missing required secret: DEPLOY_USER"; missing=1; fi
+          if [ -z "${DEPLOY_KEY}" ]; then echo "::error::Missing required secret: DEPLOY_KEY"; missing=1; fi
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@f1128c19fa8b02b0bb4a73ce8432cf0409445bee  # v0.10.0
+        with:
+          # pragma: allowlist secret
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Add deploy host to known_hosts
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_HOST_KEY: ${{ secrets.DEPLOY_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          if [ -n "${DEPLOY_HOST_KEY}" ]; then
+            printf '%s\n' "${DEPLOY_HOST_KEY}" >> ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_HOST_KEY not set — using ssh-keyscan TOFU fallback"
+            ssh-keyscan -T 10 -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Revert to previous commit on target host
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ inputs.deploy-path }}
+          RESTART_CMD: ${{ inputs.restart-command }}
+        run: |
+          set -euo pipefail
+
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          case "${REPO_NAME}" in
+            ""|.*|*..*|*.|*[!A-Za-z0-9._-]*)
+              echo "::error::Unsafe repository name: ${REPO_NAME}"
+              exit 1
+              ;;
+          esac
+
+          if [ -n "${DEPLOY_PATH}" ]; then
+            case "${DEPLOY_PATH}" in
+              /*) ;;
+              *) echo "::error::DEPLOY_PATH must be absolute"; exit 1 ;;
+            esac
+            case "${DEPLOY_PATH}" in
+              *"'"*|*..*|*[!A-Za-z0-9_./-]*) echo "::error::Unsafe DEPLOY_PATH"; exit 1 ;;
+            esac
+          fi
+
+          ssh -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "REPO_NAME='${REPO_NAME}' DEPLOY_PATH='${DEPLOY_PATH}' RESTART_CMD='${RESTART_CMD}' bash -s" <<'REMOTE'
+            set -euo pipefail
+
+            REPO_DIR="${DEPLOY_PATH:-$HOME/${REPO_NAME}}"
+            case "${REPO_DIR}" in
+              ""|*..*) echo "Unsafe repo path"; exit 1 ;;
+            esac
+            if [[ "${REPO_DIR}" != /* ]]; then echo "Repo path must be absolute"; exit 1; fi
+
+            if [ ! -d "${REPO_DIR}/.git" ]; then
+              echo "Repository not found at ${REPO_DIR}"
+              exit 1
+            fi
+
+            cd "${REPO_DIR}"
+
+            # Check that we have at least one commit to revert to
+            PREV_SHA=$(git rev-parse HEAD~1 2>/dev/null || true)
+            if [ -z "${PREV_SHA}" ]; then
+              echo "No previous commit to rollback to — nothing to revert"
+              exit 0
+            fi
+
+            echo "Reverting to previous commit: ${PREV_SHA}"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git revert --no-edit HEAD
+            git push origin main
+
+            echo "✅ Rollback complete — reverted to ${PREV_SHA}"
+
+            # Optional restart
+            if [ -n "${RESTART_CMD}" ]; then
+              echo "Running restart command: ${RESTART_CMD}"
+              eval "${RESTART_CMD}"
+              echo "✅ Restart command executed"
+            fi
+          REMOTE
+
+      - name: "job-finish"
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
