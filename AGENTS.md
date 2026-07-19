@@ -80,7 +80,8 @@ steps another agent calls directly.
 | 3 | `.fawkespipe.yml.example` | The pipeline contract that app teams use |
 | 4 | `docs/ARCHITECTURE.md` | How components connect |
 | 5 | `docs/KNOWN_LIMITATIONS.md` | Known issues — do not make these worse |
-| 6 | `docs/CHANGE_IMPACT_MAP.md` | What breaks when pipeline contract changes |
+| 6        | `docs/CHANGE_IMPACT_MAP.md`  | What breaks when pipeline contract changes |
+| 7        | `docs/PR_STANDARD.md`        | PR title and body format rules             |
 
 **Gaps** (noted — agents proceed with what's available):
 - `docs/GOLDEN_PATH.md` — exists. Read for the canonical idea → deploy workflow.
@@ -230,14 +231,22 @@ For uFawkesPipe specifically, every PR must also cover:
 
 ## 8. GitOps / Trunk-Based Delivery Contract
 
+### Branch & PR Discipline
+
 - Development happens on feature branches off trunk (`main`); never commit directly to trunk.
-- Branch naming: `feature/<short-slug>` — keep short and descriptive.
+- Branch naming: `feat/<short-slug>` — keep short and descriptive.
 - CI runs on push and on PR. `feature-flow`'s local test-execution and CI are separate events — if CI fails after local tests passed, `repair-flow` handles it; that is not a feature-flow failure.
 - PR size > 400 changed lines → CI blocks. Override requires an explicit human-applied label — agents never apply it themselves.
 - Pipeline contract changes (`.fawkespipe.yml`) require a migration example in `examples/` before merging.
 - Jenkins plugin updates require a full pipeline test run on a branch before merging.
 - Merge to trunk requires: green CI, review APPROVED, verification PASS, cross-validation PASS, and human approval. All five, every time.
 - Rework rate > 10% (PRs requiring `repair-flow` after merge attempt, or requiring more than one review/verification cycle): stop adding new scope, fix the instructions or gates that are letting bad output through before continuing.
+
+### Deployment Lifecycle Gates
+
+- **Main CI must be green before any PR merges.** Enforced by `main-ci-guard.yml` which calls `reusable-main-ci-guard@v1.2.0`.
+- **Observability is built-in.** Every CI job logs `job-start` / `job-finish` timestamps. Build times and test results are traceable in uFawkesObs.
+- **Progressive delivery is not applicable** to uFawkesPipe itself (it is a CI/CD platform, not a user-facing service). Pipeline contract changes are versioned via semver tags.
 
 ---
 
