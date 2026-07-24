@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Run pre-commit hooks (shellcheck, yamllint, ruff, gitleaks, markdownlint)
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -95,7 +95,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run pre-commit security hooks (gitleaks, detect-secrets)
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
