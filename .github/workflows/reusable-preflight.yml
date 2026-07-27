@@ -142,12 +142,20 @@ jobs:
               const marker = '<!-- pr-size-warning -->';
               const hasExistingComment = comments.some(c => c.body.includes(marker));
               if (!hasExistingComment) {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  body: `${marker}\n## ⚠️ Large PR Detected\n\nThis PR changes **${changed} lines** (limit: ${limit}).\n\nLarge PRs are harder to review and more likely to introduce bugs. Consider splitting into smaller, focused PRs.\n\n> To suppress this warning, apply the \`large-pr-approved\` label.`
-                });
+                // Warn-only: a missing issues:write grant (the job only requests
+                // pull-requests:read) must not turn this guidance comment into a
+                // hard failure — core.warning() above already surfaced the size
+                // warning regardless of whether the comment succeeds.
+                try {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    body: `${marker}\n## ⚠️ Large PR Detected\n\nThis PR changes **${changed} lines** (limit: ${limit}).\n\nLarge PRs are harder to review and more likely to introduce bugs. Consider splitting into smaller, focused PRs.\n\n> To suppress this warning, apply the \`large-pr-approved\` label.`
+                  });
+                } catch (err) {
+                  core.warning(`Could not post large-PR guidance comment (non-blocking): ${err.message}`);
+                }
               }
             } else if (changed > limit) {
               core.warning(`⚠️ Large PR override active: ${changed} lines changed. Human approved.`);
