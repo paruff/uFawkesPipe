@@ -1,7 +1,7 @@
 # Graph Report - uFawkesPipe  (2026-08-06)
 
 ## Corpus Check
-- 63 files · ~53,682 words
+- 63 files · ~53,691 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5a42a140`
+- Built from commit: `246a5819`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -400,14 +400,14 @@ Nodes (4): 1. Problem, 2. Requirements, 3. Acceptance Criteria, PIPE-004 — Fix
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DORA Logging Anchor` connect `Platform Architecture` to `Community 46`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **Why does `DORA Metrics Collection` connect `Community 53` to `Platform Architecture`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
+  _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Platform Architecture`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Why does `uFawkesPipe — Implementation Plan v0.2` connect `Community 47` to `Platform Architecture`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Are the 6 inferred relationships involving `DORA Logging Anchor` (e.g. with `Reusable Lint Workflow` and `Reusable Main CI Guard Workflow`) actually correct?**
   _`DORA Logging Anchor` has 6 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything` to the rest of the system?**
+- **What connects `Shared fixtures for uFawkesPipe acceptance test suite.  All fixtures here are se`, `Skip test if compose stack is not running.      Tests that require a running sta`, `Check that all 4 compose services are running.      Session-scoped — checked onc` to the rest of the system?**
   _661 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Platform Architecture` be split into smaller, more focused modules?**
   _Cohesion score 0.05870020964360587 - nodes in this community are weakly interconnected._
