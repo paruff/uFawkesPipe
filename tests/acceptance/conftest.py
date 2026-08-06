@@ -204,7 +204,9 @@ def portainer_token(http_session, portainer_url, compose_running):
         pytest.skip(
             "Compose stack not running — acceptance tests require all services up"
         )
-    test_password = "portainer-acceptance-2026!"  # pragma: allowlist secret # ggshield-ignore
+    test_password = (
+        "portainer-acceptance-2026!"  # pragma: allowlist secret # ggshield-ignore
+    )
     auth_success = False
 
     # Step 1: Try first-run admin initialization
