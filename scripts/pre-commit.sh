@@ -102,27 +102,27 @@ if [ -n "$deliveryd_refs" ]; then
     echo -e "${YELLOW}   After migration complete, these should be removed.${NC}"
 fi
 
-# 6. Docker Compose validation
+# 6. Docker Compose validation (compose.yaml — current stack)
 echo ""
-echo "🔍 Validating docker-compose.yml..."
+echo "🔍 Validating compose.yaml..."
 if command -v docker &> /dev/null && docker compose version &> /dev/null; then
-    if docker compose config > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ docker-compose.yml is valid${NC}"
+    if docker compose -f compose.yaml config > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ compose.yaml is valid${NC}"
     else
-        echo -e "${RED}❌ docker-compose.yml has errors${NC}"
+        echo -e "${RED}❌ compose.yaml has errors${NC}"
         errors=$((errors + 1))
     fi
 else
     echo -e "${YELLOW}⚠️  Docker Compose not available, skipping${NC}"
 fi
 
-# 7. No 'latest' image tags in docker-compose
+# 7. No 'latest' image tags in compose
 echo ""
 echo "🔍 Checking for 'latest' image tags..."
-if [ -f "docker-compose.yml" ]; then
-    latest_tags=$(grep -n "image:.*:latest" docker-compose.yml | grep -v "^\s*#" | grep -v "^.*#" || true)
+if [ -f "compose.yaml" ]; then
+    latest_tags=$(grep -n "image:.*:latest" compose.yaml | grep -v "^\s*#" | grep -v "^.*#" || true)
     if [ -n "$latest_tags" ]; then
-        echo -e "${RED}❌ Found 'latest' image tags in docker-compose.yml:${NC}"
+        echo -e "${RED}❌ Found 'latest' image tags in compose.yaml:${NC}"
         echo "$latest_tags"
         errors=$((errors + 1))
     else

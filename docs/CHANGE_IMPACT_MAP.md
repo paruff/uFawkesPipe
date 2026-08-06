@@ -10,9 +10,9 @@
 | If you change...                  | You must also update...                                                                       |
 | --------------------------------- | --------------------------------------------------------------------------------------------- |
 | Any field name                    | `examples/` — update all example files; `docs/` reference; migration guide for existing users |
-| Required → optional or vice versa | `shared/` library steps that read the field; `validate.sh`                                    |
+| Required → optional or vice versa | `shared/` steps that read the field; `validate.sh`                                            |
 | Default values                    | `docs/` reference; `examples/`                                                                |
-| Adding a new stage                | `shared/vars/` new step; `docs/ARCHITECTURE.md`; example `Jenkinsfile`                        |
+| Adding a new stage                | `shared/` new step; `docs/ARCHITECTURE.md`; example `.woodpecker.yml`                        |
 | Removing a stage                  | Deprecation notice in `docs/`; migration path; `examples/`                                    |
 
 ---
@@ -46,28 +46,6 @@
 
 ---
 
-## Jenkins Configuration (jenkins/) — DEPRECATED
-
-| If you change...            | You must also update...                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------------------- |
-| JCasC YAML structure        | Test with a fresh Jenkins container before merging                                           |
-| Plugin list / versions      | Test full pipeline run on a branch; check for plugin compatibility conflicts                 |
-| Seed job definitions        | Any manually-referenced job names in `docs/` or `examples/`                                  |
-| Jenkins port (default 8080) | `docker-compose.yml` exposure; `scripts/` health checks; `README.md`; Obstackd scrape config |
-| Jenkins agent configuration | `k8s/` agent pod templates if running on K8s                                                 |
-
----
-
-## Shared Library (shared/) — DEPRECATED
-
-| If you change...                    | You must also update...                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| A `vars/` step function signature   | All `Jenkinsfile` examples that call it in `examples/`; `docs/` reference |
-| A step's DORA logging output format | `docs/METRICS.md` if metrics collection depends on log parsing            |
-| Adding a new shared step            | `docs/API_SURFACE.md`; `docs/PROMPT_LIBRARY.md` if it's commonly used     |
-
----
-
 ## Pipeline Definition (.woodpecker.yml)
 
 | If you change...                    | You must also update...                                                   |
@@ -77,18 +55,6 @@
 | Structured JSON log format           | uFawkesObs Alloy log parsing config; `docs/` logging reference            |
 | Adding or removing a step           | `docs/ARCHITECTURE.md`; test pipeline contract validation                 |
 | Security scan severity thresholds   | `docs/`; team notification about changed gate                            |
-
----
-
-## docker-compose.yml — DEPRECATED (Jenkins legacy)
-
-| If you change...                   | You must also update...                                    |
-| ---------------------------------- | ---------------------------------------------------------- |
-| Jenkins image version              | Plugin compatibility check; test full pipeline             |
-| Jenkins port                       | `scripts/`, health checks, `docs/`, `README.md`            |
-| Jenkins home volume path           | Backup and restore procedures in `docs/RUNBOOKS.md`        |
-| OTEL endpoint environment variable | `docs/` integration guide with Obstackd                    |
-| Network name                       | Cross-plane integration with Obstackd if on shared network |
 
 ---
 
@@ -105,4 +71,4 @@
 | `.fawkespipe.yml` contract           | **developerd**: developer tooling that reads pipeline status       |
 | Pipeline stage names                 | **uFawkesObs**: Grafana dashboards that filter by stage name       |
 | Deployment event format              | **uFawkesObs**: DORA metrics pipeline that consumes deployment events |
-| Jenkins webhook port (legacy)        | **fawkes**: GitHub webhook configuration for the full IDP          |
+| Woodpecker webhook port (8000)        | **fawkes**: GitHub webhook configuration for the full IDP          |

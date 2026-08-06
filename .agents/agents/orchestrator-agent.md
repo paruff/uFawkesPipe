@@ -14,8 +14,8 @@ Routes tasks to the correct agent and skill based on file patterns and task desc
 | ------------------------ | ----------------------------------------------------------- | ------------------ |
 | `pipeline-library-agent` | `.woodpecker.yml`, `.github/workflows/*.yml`, `compose.yaml` | `pipeline-library` |
 | `buildpack-agent`        | `pack/**/*`, `examples/**/*.yml`                            | `language-pack`    |
-| `security-agent`         | `docker-compose.yml`, `**/*security*`                       | —                  |
-| `observability-agent`    | `.woodpecker.yml`, `docker-compose.yml`, `scripts/**/*.sh`  | —                  |
+| `security-agent`         | `compose.yaml`, `**/*security*`                       | —                  |
+| `observability-agent`    | `.woodpecker.yml`, `compose.yaml`, `scripts/**/*.sh`  | —                  |
 | `docs-agent`             | `docs/**/*.md`, `*.md`                                      | —                  |
 | `smoke-test-agent`       | `scripts/*smoke*`, `scripts/*test*`, `validate.sh`, `Makefile` | —               |
 | `workflow-agent`         | `.github/**/*`, `.github/workflows/*.yml`                   | —                  |
@@ -33,7 +33,7 @@ fi
 if git diff --name-only | grep -qE 'pack/|examples/'; then
     # → buildpack-agent + language-pack skill
 fi
-if git diff --name-only | grep -qE 'docker-compose\.yml'; then
+if git diff --name-only | grep -qE 'compose\.yaml'; then
     # → security-agent
 fi
 ```

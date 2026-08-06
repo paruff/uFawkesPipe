@@ -85,7 +85,7 @@ updates:
 
 ## What You MUST Ask Before
 
-- Adding external CI services (CircleCI, Jenkins pipeline for repo)
+- Adding external CI services (CircleCI, additional GitHub Actions pipelines)
 - Changing the required status check names
 - Modifying branch protection rules (apply via GitHub API)
 

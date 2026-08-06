@@ -13,7 +13,7 @@ Creates and maintains automated validation scripts that verify the platform work
 | Priority | File                  | What You Learn                  |
 | -------- | --------------------- | ------------------------------- |
 | 1        | `QUICKSTART.md`       | Expected setup flow to validate |
-| 2        | `docker-compose.yml`  | Services, ports, healthchecks   |
+| 2        | `compose.yaml`  | Services, ports, healthchecks   |
 | 3        | `Makefile`            | Available targets               |
 | 4        | `validate.sh`         | Existing validation checks      |
 | 5        | `docs/webhook-api.md` | API endpoints to test           |

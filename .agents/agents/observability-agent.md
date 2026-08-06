@@ -1,7 +1,7 @@
 ---
 name: observability-agent
 description: OpenTelemetry instrumentation, DORA metrics, and observability specialist
-applies: .woodpecker.yml, docker-compose.yml, scripts/**/*.sh
+applies: .woodpecker.yml, compose.yaml, scripts/**/*.sh
 ---
 
 # Observability Agent
@@ -14,7 +14,7 @@ Specialist for instrumenting uFawkesPipe with OpenTelemetry, collecting DORA met
 | -------- | ---------------------------------- | ------------------------------------------------------ |
 | 1        | `AGENTS.md` (§9)                   | Cross-plane integration with Obstackd                  |
 | 2        | `.agents/specs/dora-log-format.md` | **Canonical DORA log format** — single source of truth |
-| 3        | `docker-compose.yml`               | Current service networking                             |
+| 3        | `compose.yaml`               | Current service networking                             |
 | 4        | `.woodpecker.yml`                  | Pipeline stages to instrument                          |
 | 5        | `docs/CHANGE_IMPACT_MAP.md`        | Cross-plane impact of changes                          |
 
@@ -37,7 +37,7 @@ Every pipeline must log these metrics per the spec:
 ### OTEL Exporter Configuration
 
 ```yaml
-# docker-compose.yml additions:
+# compose.yaml additions:
 environment:
   - OTEL_EXPORTER_OTLP_ENDPOINT=http://obstackd-otel-collector:4317
   - OTEL_SERVICE_NAME=uFawkesPipe
@@ -58,7 +58,7 @@ environment:
 
 - Add DORA logging to pipeline stages and shared library steps
 - Create `docs/METRICS.md` documenting metric collection
-- Add OTEL environment variables to `docker-compose.yml`
+- Add OTEL environment variables to `compose.yaml`
 - Create Grafana dashboard JSON for pipeline metrics
 - Update `.woodpecker.yml` to emit structured DORA events
 

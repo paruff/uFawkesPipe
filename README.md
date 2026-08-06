@@ -38,7 +38,7 @@ Every pipeline in uFawkesPipe follows these standardized stages (defined in [`.w
 - **unit-tests** — Fast, isolated pytest unit tests (no external deps)
 - **integration-tests** — Cross-component tests (may require Docker)
 - **contract-tests** — Pipeline contract, compose, and YAML validation
-- **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules and `.secrets.baseline`
+- **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules
 - **vuln-scan-fs** — Trivy filesystem vulnerability scan (entire working tree)
 - **vuln-scan-image** — Trivy container image vulnerability scan (main branch only)
 - **build-image** — Container image build via CNB (placeholder)
@@ -205,9 +205,8 @@ See the [`kubernetes` section](docs/pipeline-contract.md#kubernetes---kubernetes
 
 ### Secret Detection
 
-- **Gitleaks** — Hard gate: scans all files for secrets, API keys, and credentials on every commit/push
-- **Pre-commit hook** — detect-secrets baseline for known false positives (`.secrets.baseline`)
-- **Baseline auto-update** — `.secrets.baseline` updates on line number changes
+- **Gitleaks** — Single secret-scanning tool (hard gate): scans all files for secrets, API keys, and credentials on every commit/push
+- **Config** — `.gitleaks.toml` allowlist for test fixtures / placeholders; runs in pre-commit, Woodpecker CI, and GitHub Actions
 
 ### Static Application Security Testing (SAST)
 

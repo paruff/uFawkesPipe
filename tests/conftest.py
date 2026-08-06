@@ -25,19 +25,6 @@ def compose_config(compose_file):
 
 
 @pytest.fixture
-def docker_compose_file(project_root):
-    """Return the docker-compose.yml file path (deprecated - use compose_file)."""
-    return project_root / "docker-compose.yml"
-
-
-@pytest.fixture
-def docker_compose_config(docker_compose_file):
-    """Load and return the docker-compose.yml configuration (deprecated - use compose_config)."""
-    with open(docker_compose_file) as f:
-        return yaml.safe_load(f)
-
-
-@pytest.fixture
 def woodpecker_file(project_root):
     """Return the .woodpecker.yml file path."""
     return project_root / ".woodpecker.yml"

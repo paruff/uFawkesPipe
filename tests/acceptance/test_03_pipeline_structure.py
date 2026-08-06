@@ -27,6 +27,8 @@ EXPECTED_STEPS = [
     "vuln-scan-fs",
     "vuln-scan-image",
     "build-image",
+    "generate-sbom",
+    "sign-image",
     "upload-defectdojo",
     "notify-obs",
 ]

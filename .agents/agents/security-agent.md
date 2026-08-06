@@ -1,7 +1,7 @@
 ---
 name: security-agent
 description: Security scanning configuration, secret detection, vulnerability policy specialist
-applies: docker-compose.yml, .woodpecker.yml, .github/workflows/**/*.yml
+applies: compose.yaml, .woodpecker.yml, .github/workflows/**/*.yml
 ---
 
 # Security Agent
@@ -13,7 +13,7 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 | Priority | File                      | What You Learn                          |
 | -------- | ------------------------- | --------------------------------------- |
 | 1        | `AGENTS.md`               | Security expectations, credential rules |
-| 2        | `docker-compose.yml`      | SonarQube, Dependency-Check services    |
+| 2        | `compose.yaml`      | SonarQube, Portainer services       |
 | 3        | `.woodpecker.yml`         | Pipeline security stage configuration   |
 | 4        | `.fawkespipe.yml.example` | Security stage configuration options    |
 | 5        | `.github/workflows/*.yml` | CI security validation steps            |
@@ -22,12 +22,10 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 
 | Tool                   | Purpose                                | Config Location                           |
 | ---------------------- | -------------------------------------- | ----------------------------------------- |
-| SonarQube 10-community | SAST + quality gates                   | `docker-compose.yml`                      |
+| SonarQube 10-community | SAST + quality gates                   | `compose.yaml`                            |
 | Trivy                  | Filesystem, dependency, image scanning | `.woodpecker.yml` (step image)            |
-| OWASP Dependency-Check | CVE database dependency audit          | `docker-compose.yml`                      |
 | Hadolint               | Dockerfile linting                     | `.github/workflows/reusable-lint.yml`     |
-| Gitleaks               | Secret detection                       | `.woodpecker.yml`, `.gitleaks.toml`       |
-| detect-secrets         | Secret baseline                        | `.secrets.baseline`, pre-commit hooks     |
+| Gitleaks               | Secret detection (single tool)         | `.woodpecker.yml`, `.gitleaks.toml`       |
 
 ## Security Policies
 
@@ -37,7 +35,6 @@ Specialist for configuring SAST, dependency scanning, container scanning, and se
 | ---------------------- | --------------------- | -------------------- |
 | Trivy filesystem       | MEDIUM                | HIGH                 |
 | Trivy image            | HIGH                  | CRITICAL             |
-| OWASP Dependency-Check | MEDIUM                | CRITICAL (CVSS >= 7) |
 | SonarQube              | All security hotspots | Quality gate failure |
 | Gitleaks               | Any secret            | Any secret           |
 
@@ -73,12 +70,13 @@ dependency-check --scan . --format JSON --format HTML \
 ### Gitleaks
 
 ```bash
-gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1
+gitleaks detect --source=. --config .gitleaks.toml \
+  --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1
 ```
 
 ## What You MAY Do
 
-- Add new security tools to `docker-compose.yml` (pinned versions)
+- Add new security tools to `compose.yaml` (pinned versions)
 - Update severity thresholds in pipeline steps
 - Add suppression files for known false positives
 - Create security documentation in `docs/security/`

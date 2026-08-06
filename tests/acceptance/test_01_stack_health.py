@@ -83,7 +83,7 @@ class TestStackHealth:
             f"{portainer_url}/api/users/admin/init",
             json={
                 "Username": "admin",
-                "Password": "probe-only",  # pragma: allowlist secret # ggshield-ignore
+                "Password": "probe-only",  # pragma: allowlist secret
             },
             timeout=10,
         )
@@ -102,7 +102,7 @@ class TestStackHealth:
 
     # ── Service count ──────────────────────────────────────────────────
 
-    def test_all_services_running(self, compose_running):
+    def test_all_services_running(self, ensure_stack_running, compose_running):
         """All 4 compose services must report 'running' status."""
         assert compose_running is True, (
             "Not all compose services are running. "

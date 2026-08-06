@@ -49,8 +49,8 @@ class TestSonarQubeAuthentication:
             f"{sonarqube_url}/api/authentication/login",
             data={
                 "login": "admin",
-                "password": "admin",  # pragma: allowlist secret # ggshield-ignore
-            },  # pragma: allowlist secret # ggshield-ignore
+                "password": "admin",  # pragma: allowlist secret
+            },  # pragma: allowlist secret
             timeout=10,
         )
         assert resp.status_code == 200, (
@@ -71,7 +71,7 @@ class TestSonarQubeAuthentication:
             f"{sonarqube_url}/api/authentication/login",
             data={
                 "login": "admin",
-                "password": "admin",  # pragma: allowlist secret # ggshield-ignore
+                "password": "admin",  # pragma: allowlist secret
             },
             timeout=10,
         )

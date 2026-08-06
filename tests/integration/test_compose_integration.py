@@ -40,10 +40,3 @@ class TestComposeIntegration:
             assert not vol_name.startswith("/") and not vol_name.startswith("."), (
                 f"Volume '{vol_name}' should be named, not a host path"
             )
-
-    def test_docker_compose_is_valid(self, docker_compose_config):
-        """Legacy docker-compose.yml must be valid YAML (deprecated but retained)."""
-        assert docker_compose_config is not None, "docker-compose.yml is empty"
-        assert "services" in docker_compose_config, (
-            "docker-compose.yml missing services"
-        )
