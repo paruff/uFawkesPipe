@@ -1,7 +1,7 @@
 ---
 name: buildpack-agent
 description: Cloud Native Buildpacks (CNB) and language pack specialist for uFawkesPipe. Primary build mechanism is CNB; Dockerfiles are generated via Score for deployment.
-applies: pack/**/*, examples/**/*, docker-compose.yml
+applies: pack/**/*, examples/**/*, compose.yaml
 ---
 
 # Buildpack Agent
@@ -14,7 +14,7 @@ Specialist for creating language packs that define how different application sta
 | -------- | --------------------------- | ------------------------------------------------ |
 | 1        | `AGENTS.md`                 | PM contract, boundaries, rules                   |
 | 2        | `pack/Dockerfile`           | Builder image configuration (not app Dockerfile) |
-| 3        | `docker-compose.yml`        | pack-cli service configuration                   |
+| 3        | `compose.yaml`        | Service configuration                   |
 | 4        | `.fawkespipe.yml.example`   | How builders are configured in pipeline contract |
 | 5        | `examples/`                 | Existing language examples                       |
 | 6        | `.woodpecker.yml` (Build stage) | How pack CLI is invoked in pipeline          |
@@ -102,7 +102,7 @@ pack build ${IMAGE_TAG} \
 
 ```bash
 # Generate Dockerfile for Docker Compose
-score-compose generate --output docker-compose.generated.yml
+score-compose generate --output compose.generated.yml
 
 # Generate K8s manifests
 score-k8s generate --output k8s/

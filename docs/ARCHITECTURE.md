@@ -237,14 +237,7 @@ Secrets are stored in **Woodpecker native secrets store** (encrypted in SQLite).
 
 uFawkesPipe can run on Kubernetes. See `docs/kubernetes-promotion.md` for the full migration guide.
 
-**Current K8s manifests** in `k8s/`:
-- `jenkins-deployment.yaml` — Jenkins StatefulSet
-- `jenkins-service.yaml` — Service
-- `jenkins-ingress.yaml` — Ingress
-- `jenkins-pvc.yaml` — PersistentVolumeClaim (for Jenkins home)
-- `jenkins-rbac.yaml` — ServiceAccount + RBAC
-
-**Note:** The K8s manifests still reference the Jenkins-based architecture. They need updating when the promotion path is revalidated against the Woodpecker-based stack.
+The legacy Jenkins-based K8s manifests (`k8s/`) were removed with the Jenkins stack. The Woodpecker-based K8s manifests are planned as part of the promotion path — see `docs/kubernetes-promotion.md`.
 
 ---
 
@@ -363,7 +356,7 @@ compose.yaml + compose.suite.yaml → make up-suite
 
 ## 9. Legacy Architecture (Jenkins-based)
 
-The current stack uses **Woodpecker CI** as its pipeline engine. The previous architecture used **Jenkins**. The deprecated `docker-compose.yml` and `k8s/` manifests still reference Jenkins.
+The current stack uses **Woodpecker CI** as its pipeline engine. The previous architecture used **Jenkins**. The legacy `docker-compose.yml` and `k8s/` manifests were removed in this migration.
 
 ### Deprecated Jenkins stack
 
@@ -387,8 +380,8 @@ docker-compose.yml (deprecated):
 | Buildpacks | Pack CLI (on-demand) | CNB via .fawkespipe.yml | ✅ Done |
 | Dependency scan | OWASP Dependency-Check | Trivy fs scan | ✅ Done |
 | Artifact repo | Nexus (commented out) | OCI registry | ✅ Done |
-| Shared lib | `shared/` (Jenkins vars/) | `.fawkespipe.yml` contract | 🔄 Partial |
-| K8s manifests | Jenkins-based | Needs update | ❌ Pending |
+| Shared lib | `shared/` (Jenkins vars/) | `.fawkespipe.yml` contract | ✅ Done (legacy removed) |
+| K8s manifests | Jenkins-based | Woodpecker-based (planned) | ✅ Removed |
 
 ### Why the migration happened
 
@@ -432,7 +425,4 @@ Tests validate:
 | `tests/` | Python | pytest suite for contract + pipeline validation |
 | `scripts/` | Bash | Git hooks (pre-commit, commit-msg) |
 | `examples/` | YAML | `.fawkespipe.yml` examples for Java, Python, Node.js, Go |
-| `k8s/` | YAML | K8s manifests (Jenkins-based, needs updating) |
 | `docs/` | Markdown | Documentation |
-| `docker-compose.yml` | YAML | **Deprecated** — legacy Jenkins stack, retained for reference |
-| `shared/` | — | Shared workspace for Jenkins pipeline artifacts (legacy) |

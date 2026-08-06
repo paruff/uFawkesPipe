@@ -1,58 +1,43 @@
-# CI Fix Report
+# CI Fix Report — PR #55 `feat/gitops-lifecycle-gates`
+
+## Summary
 
 | Field | Value |
 |-------|-------|
-| **PR** | #35 |
-| **Branch** | `feature/wp-007-quickstart-v02` |
-| **Failing commit** | `9407ffb` |
+| **Root Cause Category** | Code |
+| **Status** | FIXED |
 
----
+## Changed Files
 
-## Changed
+- `AGENTS.md` — 2 lines added (blank lines after `### Branch & PR Discipline` and `### Deployment Lifecycle Gates` headings in §8)
+- Commit: `fix(AGENTS.md): add blank lines after markdown headings to satisfy MD022 lint rule`
 
-### Deleted
+## What Changed
 
-- `tests/unit/test_k8s_validation.py` — entire file; tested K8s manifests that no longer exist
-- `docs/kubernetes-promotion.md` — Jenkins-on-K8s deployment guide, fully stale after Jenkins deprecation
+Two blank lines were inserted after two new h3 headings (`### Branch & PR Discipline` and `### Deployment Lifecycle Gates`) that were added in PR #55. These headings were followed immediately by list items without a blank line separator, which violates the `MD022/blanks-around-headings` markdownlint rule.
 
-### Modified
+```diff
+ ### Branch & PR Discipline
++
+ - Development happens on feature branches...
 
-- `tests/unit/conftest.py` — removed `jenkinsfile`, `jenkinsfile_content`, `jcasc_dir`, `k8s_dir` fixtures (no tests reference them)
-- `.github/workflows/ci-quality.yml` — removed Kubeconform step and kubectl validation loop (lines 57-67); updated `.env.example` secret scan to be generic (removed JENKINS_ADMIN_PASSWORD hardcoded check); removed CVE check that parsed `docs/history/jenkins/Dockerfile`
-- `validate.sh` — removed `k8s_files` array and the loop that validates multi-document YAML against it
-- `Makefile` — removed `validate-k8s` target and its dependency from `validate`/`validate-all` targets
-- `QUICKSTART.md` — removed `validate-k8s` from command table; removed "Plan [Kubernetes Promotion](docs/kubernetes-promotion.md)" from Next Steps
-- `ci-diagnosis.md` — updated to reflect the current failure (was from a prior CI issue)
-
-### Summary
-
+ ### Deployment Lifecycle Gates
++
+ - **Main CI must be green before any PR merges...**
 ```
- 8 files changed, 24 insertions(+), 317 deletions(-)
-```
-
----
 
 ## Validation
 
 | Check | Result |
 |-------|--------|
-| `pytest tests/unit/ -v --tb=short` | **93 passed** (was 102 before removing K8s tests) |
-| `pre-commit run --all-files` | **All 14 hooks passed** (detect-secrets baseline updated) |
-| `make validate` | N/A (requires Docker for `docker compose config`) |
-| `shellcheck validate.sh` | N/A (not run) |
-
-All unit tests pass. All pre-commit hooks pass (trim trailing whitespace, fix end of files, check YAML/JSON syntax, check large files, merge conflicts, mixed line endings, detect private keys, ruff lint, ruff format, yamllint, markdownlint, gitleaks, detect-secrets).
-
----
+| markdownlint (AGENTS.md, docs/PR_STANDARD.md) | ✅ 0 issues |
+| Pre-commit (all hooks) | ✅ All passed |
+| Local pre-commit validate | ✅ All passed |
 
 ## Remaining Risks
 
-- **None known.** All stale K8s and Jenkins references have been removed from CI workflows, tests, fixtures, Makefile, validate.sh, and QUICKSTART.md.
-- The legacy `docker-compose.yml` file still exists (deprecated but retained for reference). Tests for `TestDockerComposeValidation` still pass against it — these may be removed in a future cleanup but are not causing any failures.
-- `.secrets.baseline` was updated by the detect-secrets pre-commit hook (line number changes from conftest edits). This is auto-generated and expected.
+- None. The fix is purely a formatting change (2 blank lines) with no behavioral or semantic impact. No CI configuration, pipeline contract, or application code was modified.
 
----
+## Root Cause Details
 
-## Root Cause Category
-
-Code
+PR #55 added two new h3 sub-sections under the existing §8 heading. Both had Markdown list items directly after the heading without an intervening blank line. The `.markdownlint.json` configuration does not disable MD022, so the `markdownlint` pre-commit hook flagged both violations. Because the hook auto-fixes but exits non-zero when modifications are needed, all three CI workflows running pre-commit (CI, CI Quality, CI Pipeline) independently failed on the same issue.

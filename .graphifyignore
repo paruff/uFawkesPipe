@@ -1,0 +1,37 @@
+# Graphify ignore file — tells graphify which files/dirs to skip during
+# scanning. Prefers this over .gitignore (gitignore-style semantics, last
+# match wins per directory). https://github.com/.../graphify
+
+# Generated graph output (do not scan our own artifacts)
+graphify-out/
+.graphify_*.json
+.graphify_python
+.graphify_root
+manifest.json
+
+# Agent/tooling state (machine-local, not project source)
+.opencode/
+.serena/
+.agents/logs/
+.agents/memory/
+.agents/schema/
+.agents/assertions/
+.agents/skills/
+.agents/agents/
+
+# Build, test, and cache artifacts
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.headroom/
+artifacts/
+backups/
+*.log
+*.pyc
+
+# VCS and editors
+.git/
+.idea/
+.vscode/
+.DS_Store

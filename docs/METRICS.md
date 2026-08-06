@@ -14,7 +14,7 @@ This document describes how uFawkesPipe collects, emits, and reports the four DO
 ## Prerequisites
 
 - uFawkesPipe running in suite mode (connected to uFawkesObs)
-- OTEL Collector endpoint configured in `docker-compose.yml`
+- OTEL Collector endpoint configured in `compose.yaml`
 - uFawkesObs Loki/Prometheus/Grafana stack operational
 
 ## Metric Collection

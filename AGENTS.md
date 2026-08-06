@@ -2,7 +2,7 @@
 
 > Universal instructions for all agents: GitHub Copilot, VS Code agent mode, Claude.
 > uFawkesPipe is the **Integration & Delivery Plane of the Fawkes IDP family**.
-> It provides a Jenkins-based CI/CD platform via Docker Compose with a standardised
+> It provides a Woodpecker-based CI/CD platform via Docker Compose with a standardised
 > pipeline contract for polyglot applications.
 >
 > Shared template across all repos this harness operates on. Keep section numbers
@@ -17,20 +17,17 @@
 ## 1. Identity
 
 - **Repo:** `paruff/uFawkesPipe`
-- **What this is:** Integration & Delivery Plane of the Fawkes IDP family. Provides a Jenkins-based CI/CD platform via Docker Compose with a standardised pipeline contract for polyglot applications.
+- **What this is:** Integration & Delivery Plane of the Fawkes IDP family. Provides a Woodpecker-based CI/CD platform via Docker Compose with a standardised pipeline contract for polyglot applications.
 - **Suite membership:** uFawkesAI
 
 **Stack:**
 
 | Component | Role |
 | --- | --- |
-| Jenkins (via Docker Compose) | Pipeline orchestration |
+| Woodpecker (via Docker Compose) | Pipeline orchestration |
 | Docker Compose | Service orchestration for the platform itself |
-| `jenkins/` | Jenkins configuration as code (JCasC), plugin lists |
-| `k8s/` | Kubernetes deployment manifests for running uFawkesPipe on K8s |
+| `.woodpecker.yml` | Pipeline definition for uFawkesPipe's own CI |
 | `pack/` | Buildpack configuration for app builds |
-| `shared/` | Shared pipeline libraries and utilities |
-| `Jenkinsfile` | Pipeline definition for uFawkesPipe's own CI |
 | `Makefile` | Developer convenience targets |
 | `.fawkespipe.yml` | Pipeline contract — app teams configure this |
 
@@ -91,33 +88,25 @@ steps another agent calls directly.
 
 ## 4. Architecture Rules — Never Violate These
 
-### docker-compose.yml
+### compose.yaml
 
 - All image versions pinned — no `latest` tags
 - Secrets via `.env` (gitignored) — never inline
 - Every service has `healthcheck:`
-- Jenkins home volume is named and persistent
+- Woodpecker server/agent volumes are named and persistent
 
-### Jenkins Configuration (`jenkins/`)
+### Woodpecker Configuration (`.woodpecker.yml`)
 
-- **Configuration as Code (JCasC)** — all Jenkins config in YAML, never via UI clicks
-- Plugin versions pinned in plugin list — no auto-update in production
-- No credentials stored in JCasC YAML — use Jenkins credential store via environment variables
-- Seed jobs define all pipeline jobs — no manually created jobs
+- Pipeline config lives in `.woodpecker.yml` at the repo root — app teams configure it via `.fawkespipe.yml`
+- Steps run in pinned, pinned-version containers — no `latest` image tags
+- Secrets come from Woodpecker's secret store or `.env` — never inline in the pipeline YAML
+- Stages: Checkout → Build → Test → Security Scan → Publish → Deploy (in that order)
 
-### Shared Library (`shared/`)
+### Shared Workspace (`shared/`)
 
-- Pipeline steps are functions in `vars/` — one file per step
-- Steps must be idempotent — safe to re-run
+- `shared/` is a workspace mount shared across pipeline steps (e.g. buildpacks, caches)
 - No hardcoded registry URLs, cluster names, or environment names
 - All steps log: start time, what they're doing, finish time (DORA logging)
-
-### Jenkinsfile
-
-- DORA logging required: log start timestamp, commit SHA, finish timestamp per stage
-- Stages: Checkout → Build → Test → Security Scan → Publish → Deploy (in that order)
-- Failed stages must capture and archive artifacts before failing the build
-- No inline credentials — use `withCredentials()` block
 
 ### Pipeline Contract (`.fawkespipe.yml`)
 
@@ -125,21 +114,9 @@ steps another agent calls directly.
 - New fields must be optional with sensible defaults
 - Removed fields require a deprecation period and migration guide
 
-### Kubernetes Manifests (`k8s/`)
-
-- No `latest` image tags
-- Resource limits on all containers
-- Labels: `plane: ufawkespipe`, `managed-by: fawkes`
-
 ### Coding Standards
 
-**Groovy (Jenkinsfile, shared/):**
-- Functions over repeated blocks
-- `try/catch/finally` with artifact archival on failure
-- DORA timestamp logging on every stage
-- Conventional commits: `feat(pipeline):`, `fix(jenkins):`, `chore:`
-
-**YAML (docker-compose, JCasC, k8s):**
+**YAML (compose.yaml, .woodpecker.yml, .fawkespipe.yml):**
 - `yamllint` must pass
 - 2-space indentation
 - Quoted strings for values that could be misread
@@ -157,15 +134,15 @@ steps another agent calls directly.
 - Read any file
 - Edit code, tests, docs within the scope of an assigned task
 - Edit `docs/`, `examples/`, `Makefile` convenience targets
-- Add or update shared library steps in `shared/vars/`
+- Add or update shared pipeline steps in `shared/` or `scripts/`
 - Run: `make validate`, `yamllint`, `shellcheck`
 - Open draft PRs
 
 ### Agents MUST Ask Before
 
-- Changing Jenkins image version or plugin versions
+- Changing Woodpecker image version or plugin versions
 - Modifying `.fawkespipe.yml` pipeline contract fields
-- Changing `docker-compose.yml` service structure
+- Changing `compose.yaml` service structure
 - Adding new stages to the standard pipeline
 - Modifying `k8s/` manifests
 - Adding or removing dependencies
@@ -175,8 +152,8 @@ steps another agent calls directly.
 
 - Commit secrets, credentials, API keys, or `.env` files
 - Use `latest` image tags anywhere
-- Store credentials in JCasC YAML
-- Create Jenkins jobs via UI (use seed jobs)
+- Store credentials in pipeline YAML
+- Create CI jobs via the Woodpecker UI (declare them in `.woodpecker.yml`)
 - Push to trunk directly or merge their own PRs
 - Apply `large-pr-approved` (or equivalent override) label — humans only
 - Delete tests to make a build pass
@@ -238,7 +215,7 @@ For uFawkesPipe specifically, every PR must also cover:
 - CI runs on push and on PR. `feature-flow`'s local test-execution and CI are separate events — if CI fails after local tests passed, `repair-flow` handles it; that is not a feature-flow failure.
 - PR size > 400 changed lines → CI blocks. Override requires an explicit human-applied label — agents never apply it themselves.
 - Pipeline contract changes (`.fawkespipe.yml`) require a migration example in `examples/` before merging.
-- Jenkins plugin updates require a full pipeline test run on a branch before merging.
+- Woodpecker image/plugin updates require a full pipeline test run on a branch before merging.
 - Merge to trunk requires: green CI, review APPROVED, verification PASS, cross-validation PASS, and human approval. All five, every time.
 - Rework rate > 10% (PRs requiring `repair-flow` after merge attempt, or requiring more than one review/verification cycle): stop adding new scope, fix the instructions or gates that are letting bad output through before continuing.
 
@@ -254,7 +231,6 @@ For uFawkesPipe specifically, every PR must also cover:
 
 See `docs/KNOWN_LIMITATIONS.md` for the full list. Key items agents should be aware of:
 
-- The `k8s/` manifests still reference the legacy Jenkins stack (not the current Woodpecker stack).
 - `notify-obs` is a stub — no DORA deployment events are actually emitted yet.
 - No automated integration or E2E tests exist — only unit tests.
 - No Gitleaks secrets scan in CI (only pre-commit hook).
@@ -273,7 +249,7 @@ uFawkesPipe is part of the **uFawkesAI** suite of IDP planes. It supports two mo
 | **uFawkesRes** | Suite mode: shared PostgreSQL (fawkes-postgres:5432), Valkey cache, Traefik ingress, Authelia SSO. Connect via `fawkes-backbone-net`. |
 | **uFawkesObs** | Suite mode: OTEL Collector (otel-collector:4317 gRPC, :4318 HTTP) for traces, metrics, logs, and deployment events. Connect via `observability-lab`. Alloy scrapes Docker logs. |
 | **developerd** | Developer tooling triggered by uFawkesPipe pipeline events. Changes to `.fawkespipe.yml` contract or pipeline stage names may affect developer tooling. |
-| **fawkes** | Full IDP uses uFawkesPipe as its CI/CD engine. Jenkins webhook port changes affect GitHub webhook config. Check `docs/CHANGE_IMPACT_MAP.md` before modifying anything with cross-plane impact. |
+| **fawkes** | Full IDP uses uFawkesPipe as its CI/CD engine. Woodpecker webhook/port changes affect GitHub webhook config. Check `docs/CHANGE_IMPACT_MAP.md` before modifying anything with cross-plane impact. |
 
 ---
 
@@ -284,11 +260,8 @@ uFawkesPipe is part of the **uFawkesAI** suite of IDP planes. It supports two mo
 | `compose.yaml` | YAML | Woodpecker server + agent, SonarQube, Portainer | Hardcode credentials |
 | `.woodpecker.yml` | YAML | CI pipeline definition for uFawkesPipe itself | Store secrets here |
 | `.fawkespipe.yml` | YAML | Pipeline contract — configured by app teams (example in `.fawkespipe.yml.example`) | Modify without migration guide |
-| `docker-compose.yml` | YAML | **Deprecated** — legacy Jenkins stack, retained for reference | Use for new deployments |
-| `jenkins/` | YAML / Groovy | JCasC config, plugin lists, seed jobs (**legacy**) | Store secrets here |
-| `k8s/` | YAML | K8s manifests (**Jenkins-based, needs update**) | Use `latest` image tags |
 | `pack/` | TOML / YAML | Buildpack builder and extension configs | Hardcode language versions |
-| `shared/` | Groovy / — | Shared Jenkins pipeline library (**legacy**) / shared workspace | Put app logic here |
+| `shared/` | — | Shared workspace mounted into pipeline steps (buildpacks, caches) | Put app logic here |
 | `examples/` | YAML | Example `.fawkespipe.yml` for different stacks | Use as production config |
 | `docs/` | Markdown | Architecture, pipeline contract, runbooks | — |
 | `tests/` | Python | pytest unit tests (contract validation) | Skip before committing |

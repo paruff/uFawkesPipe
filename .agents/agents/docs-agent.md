@@ -16,7 +16,7 @@ Creates and maintains documentation for uFawkesPipe: architecture, pipeline cont
 | 2        | `Makefile`                  | Available developer commands      |
 | 3        | `validate.sh`               | Validation checks to document     |
 | 4        | `.fawkespipe.yml.example`   | Pipeline contract schema          |
-| 5        | `docker-compose.yml`        | Service architecture              |
+| 5        | `compose.yaml`        | Service architecture              |
 | 6        | `docs/CHANGE_IMPACT_MAP.md` | Cross-component dependencies      |
 
 ## Documentation Standards

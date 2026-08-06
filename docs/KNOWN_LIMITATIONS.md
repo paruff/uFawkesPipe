@@ -11,9 +11,9 @@
 
 | # | Limitation | Impact | Mitigation |
 | - | ---------- | ------ | ---------- |
-| L-001 | `docs/ARCHITECTURE.md` documents the Woodpecker-based stack, but `k8s/` manifests and `docker-compose.yml` still reference the legacy Jenkins architecture | Agents may infer inconsistent architecture depending on which files they read | Agents should treat `compose.yaml` and `.woodpecker.yml` as the source of truth for the current stack; treat `docker-compose.yml` as legacy reference only |
+| L-001 | ~~`docs/ARCHITECTURE.md` documents the Woodpecker-based stack, but `k8s/` manifests and `docker-compose.yml` still reference the legacy Jenkins architecture~~ | **RESOLVED:** Legacy Jenkins stack (`docker-compose.yml`, `k8s/`, `jenkins/`, `Jenkinsfile`) fully removed; only `compose.yaml` + `.woodpecker.yml` define the stack | `compose.yaml` and `.woodpecker.yml` are the source of truth; see `docs/history/jenkins-migration.md` |
 | L-002 | No `docs/GOLDEN_PATH.md` exists | Agents lack a documented "idea → deploy" workflow to stay on the golden path | Agents should infer workflow from AGENTS.md §8 (GitOps contract) and ARCHITECTURE.md |
-| L-003 | No `docs/MODEL_POLICY.md` exists | Agent model selection and cost tracking is ad-hoc | Currently using model routing from shared agent configuration |
+| L-003 | ~~No `docs/MODEL_POLICY.md` exists~~ | **RESOLVED:** `docs/MODEL_POLICY.md` exists | Read it for model selection and cost tracking |
 | L-004 | `.github/copilot-instructions.md` and `.github/instructions/` don't exist | No path-scoped instruction files for Copilot | Agents proceed with AGENTS.md as the primary instruction source |
 
 ### Pipeline & CI
@@ -34,7 +34,7 @@
 | L-011 | SonarQube uses embedded H2 database (no PostgreSQL container in `compose.yaml`) | Data loss on container restart; limited scaling | Acceptable for dev. Add PostgreSQL when promoting to prod. |
 | L-012 | Trivy image uses `latest` tag (intentional, documented exception) | Potential breaking changes on Trivy upgrades; no reproducibility | Accepted trade-off for up-to-date CVE data. Pin if breakage occurs. |
 | L-013 | No rate limiting on Woodpecker webhook receiver | Malicious or misconfigured webhooks could overload the server | Not a concern for single-node dev. Add reverse proxy with rate limiting for prod. |
-| L-014 | Jenkins-based `k8s/` manifests are stale | Can't use `kubectl apply -f k8s/` to deploy the current Woodpecker stack | Either update manifests or remove them. Documented in ARCHITECTURE.md §9. |
+| L-014 | ~~Jenkins-based `k8s/` manifests are stale~~ | **RESOLVED:** Legacy `k8s/` manifests removed with the Jenkins stack | `compose.yaml` + `.woodpecker.yml` define the current stack |
 
 ### Security
 
@@ -49,5 +49,5 @@
 
 | Item | Deprecated In | Replaced By | Removal Target |
 | ---- | ------------- | ----------- | -------------- |
-| `docker-compose.yml` | v0.2 (Woodpecker migration) | `compose.yaml` | When no references remain |
-| Jenkins `shared/` library (vars/) | v0.2 | `.fawkespipe.yml` contract | After full contract implementation |
+| ~~`docker-compose.yml`~~ | v0.2 (Woodpecker migration) | `compose.yaml` | **REMOVED** |
+| ~~Jenkins `shared/` library (vars/)~~ | v0.2 | `.fawkespipe.yml` contract | **REMOVED** |
