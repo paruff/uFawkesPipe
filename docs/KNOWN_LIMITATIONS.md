@@ -12,7 +12,7 @@
 | # | Limitation | Impact | Mitigation |
 | - | ---------- | ------ | ---------- |
 | L-001 | ~~`docs/ARCHITECTURE.md` documents the Woodpecker-based stack, but `k8s/` manifests and `docker-compose.yml` still reference the legacy Jenkins architecture~~ | **RESOLVED:** Legacy Jenkins stack (`docker-compose.yml`, `k8s/`, `jenkins/`, `Jenkinsfile`) fully removed; only `compose.yaml` + `.woodpecker.yml` define the stack | `compose.yaml` and `.woodpecker.yml` are the source of truth; see `docs/history/jenkins-migration.md` |
-| L-002 | No `docs/GOLDEN_PATH.md` exists | Agents lack a documented "idea → deploy" workflow to stay on the golden path | Agents should infer workflow from AGENTS.md §8 (GitOps contract) and ARCHITECTURE.md |
+| L-002 | ~~No `docs/GOLDEN_PATH.md` exists~~ | **RESOLVED:** `docs/GOLDEN_PATH.md` exists and documents the canonical "idea → deploy" workflow | Read it for the full sequence; deviations require documented justification per that doc |
 | L-003 | ~~No `docs/MODEL_POLICY.md` exists~~ | **RESOLVED:** `docs/MODEL_POLICY.md` exists | Read it for model selection and cost tracking |
 | L-004 | `.github/copilot-instructions.md` and `.github/instructions/` don't exist | No path-scoped instruction files for Copilot | Agents proceed with AGENTS.md as the primary instruction source |
 

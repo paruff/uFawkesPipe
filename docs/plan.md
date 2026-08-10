@@ -11,16 +11,16 @@
 
 ## Existing open issues — disposition
 
-| Issue | Action |
-| --- | --- |
-| DY-001 README value proposition | Label `v0.2` — update README after WP-008 |
-| DY-002 GitHub Actions CI | Label `v0.3` — superseded by Woodpecker self-CI; close with comment |
-| DY-003 Pipeline contract explainer | Becomes `docs/pipeline-contract.md` in WP-008 |
-| DY-004 QUICKSTART smoke test | Merged into WP-007 |
-| DY-005 Python language pack | Label `v0.3` — language pack work after core pipeline lands |
-| DY-006 Makefile targets | Merged into WP-002 |
-| DY-007 GitHub Sponsors | Label `later` — not a v0.2 concern |
-| GITOPS-001 GitOps standards | Label `v0.3` — depends on FluxCD work in fawkes |
+| Issue | Action | Resolution (2026-08-10) |
+| --- | --- | --- |
+| DY-001 README value proposition | Label `v0.2` — update README after WP-008 | **CLOSED** — WP-008 landed; README has value prop, no Jenkins references, CI badge |
+| DY-002 GitHub Actions CI | Label `v0.3` — superseded by Woodpecker self-CI; close with comment | **CLOSED** — `.github/workflows/` has 9 workflows including `ci.yml` |
+| DY-003 Pipeline contract explainer | Becomes `docs/pipeline-contract.md` in WP-008 | **CLOSED** — `docs/pipeline-contract.md` exists |
+| DY-004 QUICKSTART smoke test | Merged into WP-007 | **CLOSED** — `QUICKSTART.md` has a Smoke Test section; `scripts/quickstart-smoke-test.sh` exists |
+| DY-005 Python language pack | Label `v0.3` — language pack work after core pipeline lands | **STILL OPEN** — original scope (Jenkinsfile/pack/python) is obsolete post-migration; needs rescoping for the buildpacks-era pipeline (no bandit/safety step yet) |
+| DY-006 Makefile targets | Merged into WP-002 | **CLOSED** — `Makefile` has `up`, `down`, `logs`, `status`, `clean`, `validate`, and more |
+| DY-007 GitHub Sponsors | Label `later` — not a v0.2 concern | **STILL OPEN** — `.github/FUNDING.yml` exists; Sponsors profile/tiers and README section are a human/business decision |
+| GITOPS-001 GitOps standards | Label `v0.3` — depends on FluxCD work in fawkes | **STILL OPEN** — most repo-local criteria met (dependabot.yml, ISSUE_TEMPLATE/, FUNDING.yml, CHANGELOG.md, CONTRIBUTING.md, tags); `CODEOWNERS` + branch protection missing; issue is cross-repo scope |
 
 ---
 

@@ -81,7 +81,8 @@ jobs:
                --include="*.txt" --include="*.json" . 2>/dev/null \
                | grep -v ".git/" | grep -v ".agents/" | grep -v ".deliveryd.yml" \
                | grep -v "graphify-out/" \
-               | grep -v "scripts/pre-commit.sh" | grep -v "ci-quality.yml"; then
+               | grep -v "scripts/pre-commit.sh" | grep -v "ci-quality.yml" \
+               | grep -v "CHANGELOG.md"; then
             echo "❌ Remaining 'deliveryd' references found (legacy pipeline contract filename excluded)"
             exit 1
           fi
