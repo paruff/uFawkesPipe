@@ -175,3 +175,25 @@ class TestCheckMode:
         output_file = tmp_path / ".woodpecker.yml"
         assert gen.main(["--contract", str(missing), "--output", str(output_file)]) == 1
         assert "error" in capsys.readouterr().err.lower()
+
+
+@pytest.mark.unit
+class TestMigrationExample:
+    """examples/fawkespipe-contract-migration/ (PIPE-009 AC-01, AC-02)."""
+
+    EXAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples" / "fawkespipe-contract-migration"
+
+    def test_generated_output_matches_checked_in_woodpecker_yml(self):
+        contract = gen.load_contract(self.EXAMPLE_DIR / ".fawkespipe.yml")
+        rendered = gen.render(contract)
+        assert rendered == (self.EXAMPLE_DIR / ".woodpecker.yml").read_text()
+
+    def test_disabled_push_stage_is_absent(self):
+        pipeline = yaml.safe_load((self.EXAMPLE_DIR / ".woodpecker.yml").read_text())
+        names = [s["name"] for s in pipeline["steps"]]
+        assert "push" not in names
+
+    def test_python_language_command_is_used(self):
+        pipeline = yaml.safe_load((self.EXAMPLE_DIR / ".woodpecker.yml").read_text())
+        test_step = next(s for s in pipeline["steps"] if s["name"] == "test")
+        assert "pytest" in " ".join(test_step["commands"])

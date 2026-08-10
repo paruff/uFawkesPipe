@@ -1,0 +1,48 @@
+# PIPE-009 migration example: proves .fawkespipe.yml actually drives the
+# generated .woodpecker.yml (see design.md Option B). Regenerate the
+# paired .woodpecker.yml with:
+#   make generate-pipeline \
+#     FILE=examples/fawkespipe-contract-migration/.fawkespipe.yml \
+#     OUTPUT=examples/fawkespipe-contract-migration/.woodpecker.yml
+#
+# Demonstrates:
+#   - app.language: python (drives language-specific lint/test commands)
+#   - stages.push.enabled: false (this app is deployed by a separate
+#     promotion pipeline, so uFawkesPipe builds and scans it but never
+#     pushes the image) — the generated pipeline has no push step at all.
+
+app:
+  name: example-internal-tool
+  type: cli
+  language: python
+  version: 1.0.0
+
+build:
+  builder: cnb
+  cnb:
+    builder: paketobuildpacks/builder:base
+
+stages:
+  lint:
+    enabled: true
+    commands:
+      - language: python
+        cmd: pylint src/ && black --check src/
+  test:
+    enabled: true
+    commands:
+      - language: python
+        cmd: pytest tests/ --cov=src --cov-report=xml
+  sast:
+    enabled: true
+  dependency_scan:
+    enabled: true
+  build:
+    enabled: true
+  image_scan:
+    enabled: true
+  push:
+    enabled: false
+
+advanced:
+  timeout: 20
