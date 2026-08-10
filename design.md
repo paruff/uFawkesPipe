@@ -51,8 +51,8 @@ behavior) gets a line.
 The existing `[Unreleased]` section content is real work that already
 happened (traced to commit `1ad503c`, the Jenkins-legacy-removal commit)
 — it is *not* deleted, just re-headed as `[1.3.0-beta.1]` and merged with
-the other post-`v1.2.0` commits (GitOps lifecycle gates #55, preflight fix
-#59, beta release plan #63, PIPE-009 #64).
+the other post-`v1.2.0` commits (GitOps lifecycle gates PR #55, preflight
+fix PR #59, beta release plan PR #63, PIPE-009 PR #64).
 
 ## 4. Release Sequencing Constraint
 
