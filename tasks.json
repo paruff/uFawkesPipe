@@ -2,154 +2,52 @@
   "skill": "plan",
   "status": "pass",
   "summary": {
-    "ticket": "PIPE-009",
-    "total_tasks": 7,
-    "total_estimated_lines": 330,
-    "critical_path": ["TASK-001", "TASK-002", "TASK-003", "TASK-005", "TASK-006"],
-    "parallel_groups": [["TASK-004", "TASK-007"]]
+    "ticket": "BETA-CLEANUP",
+    "total_tasks": 5,
+    "total_estimated_lines": 120,
+    "critical_path": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-005"],
+    "parallel_groups": [["TASK-002", "TASK-003"]]
   },
   "tasks": [
     {
-      "task_id": "TASK-001",
-      "title": "Write failing unit tests for the generator (RED)",
-      "description": "Create tests/unit/test_generate_woodpecker_yml.py with tests for every row in design.md §5's field->step mapping, run against the not-yet-implemented scripts/generate_woodpecker_yml.py so they fail first (TDD RED per AGENTS.md §6 — committed separately before the implementation).",
-      "test_type": "unit",
-      "acceptance_criteria": [
-        "Test: stages.lint.enabled=false -> generated YAML has no lint step",
-        "Test: app.language=python -> generated test step uses the documented Python test command",
-        "Test: build.builder=cnb vs docker -> correct build step body selected",
-        "Test: advanced.timeout -> reflected in generated YAML",
-        "Test: missing .fawkespipe.yml -> generator raises/exits non-zero with actionable message",
-        "Test: malformed YAML in .fawkespipe.yml -> generator raises/exits non-zero identifying the parse error",
-        "All tests fail (ImportError or AssertionError) before TASK-002 lands"
-      ],
-      "context_files": [
-        "design.md §5 — field to step mapping this test suite must cover",
-        "specification.md AC-01..AC-04 — acceptance criteria these tests encode",
-        "tests/unit/test_woodpecker_yml.py — existing YAML-parsing pytest pattern to follow",
-        ".fawkespipe.yml.example — canonical example input fixture"
-      ],
-      "estimated_lines": 90,
-      "assigned_agent": "build",
-      "depends_on": [],
-      "dora_capability": "Cap 5 — Small Batches (TDD)"
+      "id": "TASK-001",
+      "title": "Verify each disposition-table issue against live repo evidence",
+      "description": "For each of DY-001..DY-007 and GITOPS-001, gather evidence (file existence, grep, gh issue view) confirming or refuting docs/plan.md's original disposition, per design.md §2.",
+      "acceptance_criteria": ["AC-01"],
+      "test_type": "live-system",
+      "depends_on": []
     },
     {
-      "task_id": "TASK-002",
-      "title": "Implement scripts/generate_woodpecker_yml.py (GREEN)",
-      "description": "Implement the generator to make TASK-001's tests pass: parse .fawkespipe.yml, validate required fields, emit .woodpecker.yml content per the field mapping in design.md §5. Fail fast (R2) on missing/malformed input. Committed separately from TASK-001 per AGENTS.md §6 TDD commit order.",
-      "test_type": "unit",
-      "acceptance_criteria": [
-        "pytest tests/unit/test_generate_woodpecker_yml.py passes",
-        "pytest tests/unit passes unmodified (AC-05)",
-        "No changes to this repo's own .woodpecker.yml (R3)",
-        "No changes to .fawkespipe.yml field names/types/defaults (out of scope)"
-      ],
-      "context_files": [
-        "design.md §4-5 — impacted components and field mapping",
-        "docs/pipeline-contract.md — field reference and documented default commands per language",
-        "tests/unit/test_generate_woodpecker_yml.py — tests to satisfy"
-      ],
-      "estimated_lines": 120,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-001"],
-      "dora_capability": "Cap 5 — Small Batches (TDD)"
+      "id": "TASK-002",
+      "title": "Close/comment on GitHub issues per verified disposition",
+      "description": "gh issue close with an evidence comment for DY-001, DY-002, DY-003, DY-004, DY-006; gh issue comment (stay open) for DY-005, DY-007, GITOPS-001.",
+      "acceptance_criteria": ["AC-01"],
+      "test_type": "live-system",
+      "depends_on": ["TASK-001"]
     },
     {
-      "task_id": "TASK-003",
-      "title": "Add --check drift mode to the generator",
-      "description": "Add a --check flag: regenerate in memory, diff against the committed .woodpecker.yml in the target repo, exit 1 with a clear diff-based message if they differ. This is the mechanism app repos use in their own generated pipeline to keep .woodpecker.yml from silently drifting from .fawkespipe.yml.",
+      "id": "TASK-003",
+      "title": "Mark KNOWN_LIMITATIONS.md L-002 resolved",
+      "description": "Update the L-002 row to the strikethrough+RESOLVED pattern used elsewhere in the table, citing docs/GOLDEN_PATH.md's existence.",
+      "acceptance_criteria": ["AC-02"],
       "test_type": "unit",
-      "acceptance_criteria": [
-        "generate_woodpecker_yml.py --check exits 0 when committed file matches fresh generation",
-        "generate_woodpecker_yml.py --check exits 1 with a diff when they differ",
-        "Unit test covers both branches"
-      ],
-      "context_files": [
-        "scripts/generate_woodpecker_yml.py — from TASK-002",
-        "design.md §4 — drift check row"
-      ],
-      "estimated_lines": 40,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-002"],
-      "dora_capability": "Cap 5 — Small Batches"
+      "depends_on": []
     },
     {
-      "task_id": "TASK-004",
-      "title": "Add Makefile generate-pipeline target",
-      "description": "Add a `generate-pipeline` target to Makefile that runs scripts/generate_woodpecker_yml.py against a .fawkespipe.yml passed via FILE= (or default ./.fawkespipe.yml), matching this repo's existing make target conventions.",
+      "id": "TASK-004",
+      "title": "Backfill CHANGELOG.md v1.0.0-v1.2.0 and re-head [Unreleased] as [1.3.0-beta.1]",
+      "description": "Curate git log per tag range into Keep a Changelog sections; preserve every existing [Unreleased] bullet under the new [1.3.0-beta.1] heading; add entries for work landed since v1.2.0.",
+      "acceptance_criteria": ["AC-03", "AC-04"],
       "test_type": "unit",
-      "acceptance_criteria": [
-        "make generate-pipeline runs the generator",
-        "make help lists the new target",
-        "Target documented consistently with existing test-* targets"
-      ],
-      "context_files": [
-        "Makefile — existing target conventions (test-unit, test-integration, etc.)",
-        "scripts/generate_woodpecker_yml.py — from TASK-002"
-      ],
-      "estimated_lines": 15,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-002"],
-      "dora_capability": "Cap 3 — AI-Accessible Internal Data"
+      "depends_on": []
     },
     {
-      "task_id": "TASK-005",
-      "title": "Create migration example in examples/",
-      "description": "Add examples/.fawkespipe-python-flask.yml plus its generated .woodpecker.yml counterpart, proving the contract-to-pipeline translation end to end (AGENTS.md §8 requirement; specification.md R5).",
-      "test_type": "integration",
-      "acceptance_criteria": [
-        "examples/.fawkespipe-python-flask.yml is a realistic, valid contract file",
-        "Running the generator against it reproduces the checked-in generated .woodpecker.yml exactly (used as a regression fixture in tests/unit)",
-        "Example demonstrates at least one disabled stage (proves AC-01) and a non-default app.language (proves AC-02)"
-      ],
-      "context_files": [
-        ".fawkespipe.yml.example — style/structure reference",
-        "scripts/generate_woodpecker_yml.py — from TASK-002",
-        "specification.md R5, AC-01, AC-02"
-      ],
-      "estimated_lines": 40,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-002"],
-      "dora_capability": "Cap 6 — User-Centric Focus"
-    },
-    {
-      "task_id": "TASK-006",
-      "title": "Update docs (pipeline-contract.md, KNOWN_LIMITATIONS.md L-005)",
-      "description": "Document the generate/--check workflow in docs/pipeline-contract.md (how app teams actually get a pipeline from .fawkespipe.yml now). Update docs/KNOWN_LIMITATIONS.md L-005 to reflect the resolved state (or narrow it if kubernetes:/notifications: remain unimplemented, per design.md §5's closing note). Satisfies AC-06.",
+      "id": "TASK-005",
+      "title": "Draft v1.3.0-beta.1 release notes for post-merge use",
+      "description": "Write release notes (PR description + CHANGELOG [1.3.0-beta.1] section double as the source) ready for `gh release create` once this PR merges.",
+      "acceptance_criteria": ["AC-05"],
       "test_type": "unit",
-      "acceptance_criteria": [
-        "docs/pipeline-contract.md documents `make generate-pipeline` / the --check gate",
-        "docs/KNOWN_LIMITATIONS.md L-005 marked resolved or narrowed to name only kubernetes:/notifications: as remaining gap",
-        "No change to documented .fawkespipe.yml field names/types (out of scope)"
-      ],
-      "context_files": [
-        "docs/pipeline-contract.md — full field reference to extend, not rewrite",
-        "docs/KNOWN_LIMITATIONS.md — L-005 row",
-        "specification.md AC-06"
-      ],
-      "estimated_lines": 25,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-003", "TASK-005"],
-      "dora_capability": "Cap 3 — AI-Accessible Internal Data"
-    },
-    {
-      "task_id": "TASK-007",
-      "title": "Check off specification.md acceptance criteria",
-      "description": "Once TASK-001..006 land and pass, tick each AC-0x checkbox in specification.md with a one-line pointer to the test/file proving it, per feature-flow's Verification phase.",
-      "test_type": "unit",
-      "acceptance_criteria": [
-        "All AC-01..AC-06 checkboxes in specification.md are checked",
-        "Each checked box references the test file/line proving it"
-      ],
-      "context_files": [
-        "specification.md — AC-01..AC-06",
-        "tests/unit/test_generate_woodpecker_yml.py — evidence source"
-      ],
-      "estimated_lines": 10,
-      "assigned_agent": "build",
-      "depends_on": ["TASK-002", "TASK-003"],
-      "dora_capability": "Cap 5 — Small Batches"
+      "depends_on": ["TASK-004"]
     }
   ]
 }

@@ -1,120 +1,74 @@
-# PIPE-009 — Design: `.fawkespipe.yml` Contract Consumption
+# Design — BETA-CLEANUP (beta release plan items 4-7)
 
 ## 1. Constraint Check
 
-Woodpecker CE (self-hosted, as deployed here) reads pipeline config one of
-two ways:
-1. **Repo-local file** — `.woodpecker.yml` (or `.woodpecker/*.yml`) committed
-   in the repo being built. This is what `.woodpecker.yml` in *this* repo
-   already does for uFawkesPipe's own CI.
-2. **External config extension** — the Woodpecker server calls an HTTP
-   endpoint at pipeline-start time; the endpoint returns pipeline YAML
-   dynamically. Requires a new always-on service, GitHub API credentials to
-   fetch the requesting repo's files, and server-side config
-   (`WOODPECKER_CONFIG_SERVICE_ENDPOINT` or equivalent per Woodpecker
-   version).
+This is a docs/process chore, not a code change — there is no architecture
+decision to make. The only real judgment call is: **trust
+`docs/plan.md`'s disposition table verbatim, or re-verify each issue
+against current repo state first?**
 
-There is no third native mechanism — Woodpecker does not support
-"include another file's YAML fields at runtime" inside a static
-`.woodpecker.yml`.
+`docs/plan.md` was written 2026-06-23, before WP-002 through WP-009 and
+PIPE-009 landed. Several of its dispositions ("Label v0.2 — update README
+after WP-008") describe a *future* state that is now the *past*. Trusting
+it verbatim would under-close issues that are actually done, and the
+"v0.2"/"v0.3"/"later" label scheme it invents doesn't exist as real GitHub
+labels in this repo (`gh label list` shows only the GitHub-default set —
+no custom milestone labels were ever created). Inventing that label
+taxonomy now, for 3 issues, isn't worth it (YAGNI) — a status comment
+carries the same information without a label nobody else will maintain.
 
-## 2. Options
+**Decision: re-verify each issue against live repo evidence, then close or
+comment accordingly. No new labels created.**
 
-### Option A — External Config Service
+## 2. Evidence Gathered (per issue)
 
-A new long-running HTTP service, added to `compose.yaml`, that Woodpecker
-calls instead of reading `.woodpecker.yml` from the app repo. The service
-fetches the app repo's `.fawkespipe.yml` via the GitHub API and translates
-it into pipeline YAML on the fly.
+| Issue | Plan.md said | Live evidence | Disposition |
+| --- | --- | --- | --- |
+| DY-001 (#2) README value prop | Label v0.2, update after WP-008 | README.md has one-sentence value prop, no Jenkins mention, CI badge present | **Close** |
+| DY-002 (#3) GitHub Actions CI | Close, superseded by Woodpecker | `.github/workflows/ci.yml` + 8 other workflows exist and run | **Close** |
+| DY-003 (#4) pipeline contract explainer | Becomes docs/pipeline-contract.md in WP-008 | `docs/pipeline-contract.md` exists, covers stages + FAQ | **Close** |
+| DY-004 (#5) QUICKSTART smoke test | Merged into WP-007 | `QUICKSTART.md` has a Smoke Test section; `scripts/quickstart-smoke-test.sh` exists | **Close** |
+| DY-005 (#6) Python security scanning language pack | Label v0.3 | Issue asks for `pack/python/Dockerfile` + `Jenkinsfile.template` — both obsolete post-Jenkins-removal. `examples/.fawkespipe-python-flask.yml` exists but has no bandit/safety step; SAST/dependency-scan are generic, not per-language | **Stay open, comment** — architecture moved on, needs rescoping for buildpacks-era pipeline, not closed as done |
+| DY-006 (#7) Makefile targets | Merged into WP-002 | `Makefile` has `up`, `down`, `logs`, `status`, `clean`, `validate` and more | **Close** |
+| DY-007 (#8) GitHub Sponsors | Label later | `.github/FUNDING.yml` exists (partial), but Sponsors profile/tiers and README "Support" section are human/business actions, not verifiable or agent-doable | **Stay open, comment** — partial progress noted |
+| GITOPS-001 (#9) GitOps standards | Label v0.3 | Most repo-local criteria met (dependabot.yml, ISSUE_TEMPLATE/, FUNDING.yml, CHANGELOG.md, CONTRIBUTING.md, semantic tags, `good first issue` label exists) but `CODEOWNERS` missing, branch protection not enabled, and issue is explicitly cross-repo scope | **Stay open, comment** — most local gaps closed, remaining gaps + cross-repo scope noted |
 
-- **Pros:** Matches the README's promise most literally — app repos never
-  need a `.woodpecker.yml` at all, just `.fawkespipe.yml`. Also the
-  architecture GitOps work (GITOPS-001) will eventually want.
-- **Cons:** New always-on service with GitHub API credentials (new attack
-  surface, new secret to manage). New `compose.yaml` service — per
-  `AGENTS.md` §5 this **requires asking before doing**, not just building.
-  Meaningful effort: HTTP server, GitHub API client, translation logic,
-  auth, deployment, tests. Disproportionate to what's needed to unblock
-  beta.
+Net: 5 close, 3 stay-open-with-status-comment. This differs from
+`docs/plan.md`'s literal text (which said close DY-002/DY-004/DY-006 only)
+by *also* closing DY-001 and DY-003, because the WP-008 work their
+dispositions were conditioned on has since landed.
 
-### Option B — Generator Script (recommended)
+## 3. CHANGELOG Backfill Approach
 
-A script (`scripts/generate_woodpecker_yml.py`) that reads an app repo's
-`.fawkespipe.yml` and emits a `.woodpecker.yml` for that repo. App teams
-run it (via `make generate-pipeline` or directly) after editing
-`.fawkespipe.yml`, commit the generated file, and a CI step in *their*
-generated pipeline verifies the committed `.woodpecker.yml` isn't stale
-relative to their `.fawkespipe.yml` (same idea as a `gofmt -l` or
-`terraform fmt -check` drift gate).
+Source of truth: `git log --oneline <tag1>..<tag2>` per tag boundary,
+curated into Keep a Changelog `Added`/`Changed`/`Fixed`/`Removed` buckets.
+Routine `chore(deps): bump ...` commits are **not** itemized individually
+— Dependabot bumps are high-volume and low-signal for a changelog reader;
+they're already visible in git history if needed. Everything else (feat/
+fix/docs commits that describe user-visible or contributor-visible
+behavior) gets a line.
 
-- **Pros:** Zero new services, zero new secrets, no `compose.yaml` change
-  (clears the AGENTS.md ask-before gate entirely — this only touches
-  `scripts/`, which agents may add to without asking). Fully unit-testable
-  with plain pytest (input `.fawkespipe.yml` → assert generated YAML).
-  Matches this repo's existing testing style
-  (`tests/unit/test_woodpecker_yml.py` already parses/asserts YAML
-  structure the same way).
-- **Cons:** Not fully "zero-config" — app teams take one explicit step
-  (`make generate-pipeline`) instead of the pipeline discovering
-  `.fawkespipe.yml` automatically. Requires a drift-check gate to avoid the
-  generated file silently diverging from the contract source of truth.
+The existing `[Unreleased]` section content is real work that already
+happened (traced to commit `1ad503c`, the Jenkins-legacy-removal commit)
+— it is *not* deleted, just re-headed as `[1.3.0-beta.1]` and merged with
+the other post-`v1.2.0` commits (GitOps lifecycle gates #55, preflight fix
+#59, beta release plan #63, PIPE-009 #64).
 
-### Option C — Runtime Shell Translation in a Shared Template
+## 4. Release Sequencing Constraint
 
-Ship one generic `.woodpecker.yml` template (in `examples/`) that app repos
-copy verbatim. Its steps are static (Woodpecker's DAG can't change at
-runtime), but each step's first command sources a shared
-`scripts/load-contract.sh`, parses `.fawkespipe.yml` with `yq`, and exits 0
-immediately (no-op) if that stage is disabled — so disabled stages "run"
-but do nothing.
+`docs/BETA_RELEASE_PLAN.md`'s gate criteria requires `CHANGELOG.md`
+reflects reality *before* tagging beta. This PR is what makes that true —
+so the tag/release must happen **after a human merges this PR**, not
+before. feature-flow never self-merges, so Phase 5 of this run prepares
+the release notes but does not execute `git tag` / `gh release create`
+against unmerged content.
 
-- **Pros:** No new services, no generation step, single template file.
-- **Cons:** Doesn't satisfy R1 as written — a "disabled" stage still shows
-  up as an executed (skipped) step, not an absent one; harder to keep the
-  template in sync across every app repo that copied it (no single source
-  of truth); `app.language`-driven command selection has to be duplicated
-  in shell inside the template rather than expressed once in Python/tests.
+## 5. Impacted Components
 
-## 3. Recommendation
-
-**Option B.** It is the only option that fits beta scope: no new
-`compose.yaml` service (avoids the AGENTS.md ask-before gate on service
-structure changes), fully testable offline, and directly reusable — this
-repo already has the YAML-parsing pytest infrastructure
-(`tests/unit/test_woodpecker_yml.py`) to test it the same way. Option A is
-the better long-term architecture and should be tracked as a follow-up once
-GitOps work (GITOPS-001) lands, not built now.
-
-## 4. Impacted Components (Option B)
-
-| Component | File | Change |
-|---|---|---|
-| Generator | `scripts/generate_woodpecker_yml.py` (new) | Reads `.fawkespipe.yml`, emits `.woodpecker.yml` content |
-| Generator tests | `tests/unit/test_generate_woodpecker_yml.py` (new) | Unit tests: each `.fawkespipe.yml` field → expected generated step/absence |
-| Makefile | `Makefile` | New `generate-pipeline` target |
-| Drift check | `scripts/generate_woodpecker_yml.py` (`--check` mode) | Exits 1 if committed `.woodpecker.yml` differs from freshly generated output — used as a stage in the *generated* pipeline, not in uFawkesPipe's own `.woodpecker.yml` |
-| Docs | `docs/pipeline-contract.md`, `docs/KNOWN_LIMITATIONS.md` (L-005) | Document the generate step; mark L-005 resolved |
-| Migration example | `examples/.fawkespipe-python-flask.yml` + generated counterpart | Proves the contract → pipeline translation end-to-end (AGENTS.md §8 requirement) |
-
-`uFawkesPipe`'s own `.woodpecker.yml` (this repo's self-CI) is **not**
-changed — it has no `.fawkespipe.yml` and isn't an app repo (R3).
-
-## 5. Field → Step Mapping (v1, Option B scope)
-
-| `.fawkespipe.yml` field | Generated `.woodpecker.yml` effect |
-|---|---|
-| `app.language` | Selects the language-specific `lint`/`test` command from the table already documented in `docs/pipeline-contract.md` |
-| `build.builder` (`cnb`\|`docker`) | Selects CNB vs. Dockerfile build step body |
-| `stages.lint.enabled: false` | Lint step omitted from generated file entirely (not present, not a no-op) |
-| `stages.test.enabled: false` | Test step omitted |
-| `stages.sast.enabled: false` | SAST step omitted |
-| `stages.dependency_scan.enabled: false` | Dependency-scan step omitted |
-| `stages.image_scan.enabled: false` | Image-scan step omitted |
-| `stages.push.enabled: false` | Push step omitted |
-| `advanced.timeout` | Sets pipeline-level (or per-step) timeout in generated file |
-| Missing/malformed `.fawkespipe.yml` | Generator exits non-zero with an actionable message (R2) |
-
-`kubernetes:` and `notifications:` are parsed (so malformed values still
-fail validation) but do not yet produce pipeline effects — logged as a
-narrowed remaining gap in `docs/KNOWN_LIMITATIONS.md`, not silently
-dropped.
+| Component | Change |
+| --- | --- |
+| GitHub Issues #2-#9 | Closed with evidence comment, or commented with status (no code) |
+| `docs/KNOWN_LIMITATIONS.md` | L-002 row marked resolved |
+| `CHANGELOG.md` | Backfilled `v1.0.0`-`v1.2.0`, `[Unreleased]` re-headed `[1.3.0-beta.1]` |
+| `docs/plan.md` | Disposition table annotated with actual resolution (so it stops being read as a live TODO) |
+| PR description | Draft `v1.3.0-beta.1` release notes included for post-merge use |
