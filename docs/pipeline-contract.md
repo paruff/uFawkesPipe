@@ -11,6 +11,7 @@ The `.fawkespipe.yml` file defines the contract between your application reposit
 ## Table of Contents
 
 - [Overview](#overview)
+- [How Your Pipeline Gets Generated](#how-your-pipeline-gets-generated)
 - [app — Application Metadata](#app--application-metadata)
 - [build — Build Configuration](#build--build-configuration)
   - [CNB Builder](#cnb-builder)
@@ -61,6 +62,32 @@ kubernetes:
 advanced:
   ...
 ```
+
+---
+
+## How Your Pipeline Gets Generated
+
+`.fawkespipe.yml` is not read by Woodpecker directly — Woodpecker only ever
+executes a `.woodpecker.yml` file. `scripts/generate_woodpecker_yml.py`
+translates your `.fawkespipe.yml` into that `.woodpecker.yml`:
+
+```bash
+# After creating or editing .fawkespipe.yml, generate/update .woodpecker.yml
+make generate-pipeline
+
+# In your app repo's own CI, gate on drift between the two files
+make check-pipeline
+```
+
+`stages.*.enabled: false` removes that step from the generated pipeline
+entirely (not a no-op skip); `app.language` selects the matching
+`stages.<name>.commands` entry; `build.builder` (`cnb` or `docker`) selects
+the build step body. See
+[`examples/fawkespipe-contract-migration/`](../examples/fawkespipe-contract-migration/)
+for a worked `.fawkespipe.yml` → `.woodpecker.yml` pair.
+
+`kubernetes:` and `notifications:` are validated but do not yet produce
+pipeline steps — see `docs/KNOWN_LIMITATIONS.md` L-005.
 
 ---
 

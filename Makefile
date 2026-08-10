@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-suite validate-agents pre-commit-setup pre-commit-run fix-and-commit network up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit network up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -48,6 +48,19 @@ validate-all: validate-docker validate-suite validate-agents ## Validate all (Do
 validate-agents: ## Validate agent and skill definitions
 	@echo "Validating agent and skill definitions..."
 	bash scripts/validate-agents.sh
+
+# ============================================================================
+# Pipeline Contract Commands
+# ============================================================================
+
+FILE ?= .fawkespipe.yml
+OUTPUT ?= .woodpecker.yml
+
+generate-pipeline: ## Generate .woodpecker.yml from .fawkespipe.yml (FILE=path OUTPUT=path to override)
+	python3 scripts/generate_woodpecker_yml.py --contract "$(FILE)" --output "$(OUTPUT)"
+
+check-pipeline: ## Check .woodpecker.yml isn't stale relative to .fawkespipe.yml (FILE=path OUTPUT=path to override)
+	python3 scripts/generate_woodpecker_yml.py --contract "$(FILE)" --output "$(OUTPUT)" --check
 
 # ============================================================================
 # Pre-commit Commands
