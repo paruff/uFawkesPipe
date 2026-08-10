@@ -19,7 +19,10 @@ def _contract(**overrides):
     """Build a minimal valid .fawkespipe.yml contract dict, with overrides merged in."""
     base = {
         "app": {"name": "my-app", "type": "service", "language": "python"},
-        "build": {"builder": "cnb", "cnb": {"builder": "paketobuildpacks/builder:base"}},
+        "build": {
+            "builder": "cnb",
+            "cnb": {"builder": "paketobuildpacks/builder:base"},
+        },
         "stages": {
             "lint": {
                 "enabled": True,
@@ -102,7 +105,10 @@ class TestBuilderSelection:
 
     def test_docker_builder_uses_docker_build(self):
         contract = _contract()
-        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile", "context": "."}}
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile", "context": "."},
+        }
         pipeline = yaml.safe_load(gen.render(contract))
         build_step = next(s for s in pipeline["steps"] if s["name"] == "build")
         assert "docker build" in " ".join(build_step["commands"])
@@ -154,21 +160,57 @@ class TestCheckMode:
         contract_file = tmp_path / ".fawkespipe.yml"
         contract_file.write_text(yaml.safe_dump(_contract()))
         output_file = tmp_path / ".woodpecker.yml"
-        assert gen.main(["--contract", str(contract_file), "--output", str(output_file)]) == 0
-        assert gen.main(["--contract", str(contract_file), "--output", str(output_file), "--check"]) == 0
+        assert (
+            gen.main(["--contract", str(contract_file), "--output", str(output_file)])
+            == 0
+        )
+        assert (
+            gen.main(
+                [
+                    "--contract",
+                    str(contract_file),
+                    "--output",
+                    str(output_file),
+                    "--check",
+                ]
+            )
+            == 0
+        )
 
     def test_check_fails_when_output_is_stale(self, tmp_path):
         contract_file = tmp_path / ".fawkespipe.yml"
         contract_file.write_text(yaml.safe_dump(_contract()))
         output_file = tmp_path / ".woodpecker.yml"
         output_file.write_text("steps: []\n")
-        assert gen.main(["--contract", str(contract_file), "--output", str(output_file), "--check"]) == 1
+        assert (
+            gen.main(
+                [
+                    "--contract",
+                    str(contract_file),
+                    "--output",
+                    str(output_file),
+                    "--check",
+                ]
+            )
+            == 1
+        )
 
     def test_check_fails_when_output_missing(self, tmp_path):
         contract_file = tmp_path / ".fawkespipe.yml"
         contract_file.write_text(yaml.safe_dump(_contract()))
         output_file = tmp_path / ".woodpecker.yml"
-        assert gen.main(["--contract", str(contract_file), "--output", str(output_file), "--check"]) == 1
+        assert (
+            gen.main(
+                [
+                    "--contract",
+                    str(contract_file),
+                    "--output",
+                    str(output_file),
+                    "--check",
+                ]
+            )
+            == 1
+        )
 
     def test_main_exits_nonzero_on_missing_contract(self, tmp_path, capsys):
         missing = tmp_path / ".fawkespipe.yml"
@@ -181,7 +223,11 @@ class TestCheckMode:
 class TestMigrationExample:
     """examples/fawkespipe-contract-migration/ (PIPE-009 AC-01, AC-02)."""
 
-    EXAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples" / "fawkespipe-contract-migration"
+    EXAMPLE_DIR = (
+        Path(__file__).resolve().parents[2]
+        / "examples"
+        / "fawkespipe-contract-migration"
+    )
 
     def test_generated_output_matches_checked_in_woodpecker_yml(self):
         contract = gen.load_contract(self.EXAMPLE_DIR / ".fawkespipe.yml")
