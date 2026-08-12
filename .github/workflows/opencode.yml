@@ -1,0 +1,224 @@
+# OpenCode AI assistant workflow
+# Triggered by issue/PR comments containing /opencode or /oc
+# Provider chain: NVIDIA NIM (via nim-proxy) → Google Gemini → OpenCode Zen
+#
+# Required secrets:
+#   NVIDIA_API_KEY  — single NVIDIA NIM key, OR
+#   NVIDIA_API_KEYS — comma-separated list for load-balanced multi-key proxy
+#   GEMINI_API_KEY  — Google Gemini API key
+#   OPENCODE_API_KEY — OpenCode Zen API key
+
+name: OpenCode AI
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  opencode:
+    name: Run OpenCode
+    # Only run when the comment contains /opencode or /oc
+    if: |
+      contains(github.event.comment.body, '/opencode') ||
+      contains(github.event.comment.body, '/oc')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: "job-start"
+        run: echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      # ── Checkout ─────────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # For PR comments, check out the PR branch so OpenCode sees the diff
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      # ── Determine active provider ─────────────────────────────────────────
+      # Sets OPENCODE_PROVIDER=nvidia|gemini|zen and configures the env vars
+      # that opencode reads: OPENCODE_MODEL, OPENCODE_BASE_URL, OPENCODE_API_KEY.
+      - name: Determine AI provider
+        id: provider
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          NVIDIA_API_KEYS: ${{ secrets.NVIDIA_API_KEYS }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          # Primary: NVIDIA NIM (proxy will be started below)
+          if [ -n "${NVIDIA_API_KEY}" ] || [ -n "${NVIDIA_API_KEYS}" ]; then
+            echo "provider=nvidia" >> "$GITHUB_OUTPUT"
+          # Fallback 1: Google Gemini
+          elif [ -n "${GEMINI_API_KEY}" ]; then
+            echo "provider=gemini" >> "$GITHUB_OUTPUT"
+          # Fallback 2: OpenCode Zen
+          elif [ -n "${OPENCODE_API_KEY}" ]; then
+            echo "provider=zen" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: No AI provider secrets are configured." >&2
+            exit 1
+          fi
+
+      # ── NVIDIA NIM proxy (nim-proxy) ──────────────────────────────────────
+      # nim-proxy paces requests to stay within the ~40 RPM free-tier limit and
+      # performs round-robin load balancing when multiple API keys are supplied.
+      # It exposes an OpenAI-compatible endpoint on localhost:8000.
+      - name: Start nim-proxy
+        if: steps.provider.outputs.provider == 'nvidia'
+        id: nim_proxy
+        env:
+          # Prefer multi-key list; fall back to single key
+          NVIDIA_API_KEYS: ${{ secrets.NVIDIA_API_KEYS || secrets.NVIDIA_API_KEY }}
+        run: |
+          # Write the key list to a temp file so it is not visible in logs
+          echo "${NVIDIA_API_KEYS}" > /tmp/nim-keys.txt
+
+          docker run -d \
+            --name nim-proxy \
+            --network host \
+            -e NIM_API_KEYS="$(cat /tmp/nim-keys.txt)" \
+            -e NIM_RATE_LIMIT_RPM=38 \
+            -e NIM_LISTEN_PORT=8000 \
+            ghcr.io/skarlatidis/nim-proxy:0.3.0
+
+          rm -f /tmp/nim-keys.txt
+
+          # Wait up to 30 seconds for the proxy to become healthy
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "nim-proxy is healthy after ${i}s"
+              echo "started=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "WARNING: nim-proxy did not become healthy; will use fallback provider"
+          docker logs nim-proxy || true
+          echo "started=false" >> "$GITHUB_OUTPUT"
+
+      # If the proxy failed to start, demote to Gemini or Zen
+      - name: Select fallback provider (proxy failed)
+        if: |
+          steps.provider.outputs.provider == 'nvidia' &&
+          steps.nim_proxy.outputs.started == 'false'
+        id: fallback_provider
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          if [ -n "${GEMINI_API_KEY}" ]; then
+            echo "provider=gemini" >> "$GITHUB_OUTPUT"
+          elif [ -n "${OPENCODE_API_KEY}" ]; then
+            echo "provider=zen" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: nim-proxy failed and no fallback provider is configured." >&2
+            exit 1
+          fi
+
+      # ── Resolved provider ────────────────────────────────────────────────
+      # Merge initial and fallback provider into a single output.
+      - name: Resolve final provider
+        id: final_provider
+        run: |
+          PROVIDER="${{ steps.fallback_provider.outputs.provider || steps.provider.outputs.provider }}"
+          echo "provider=${PROVIDER}" >> "$GITHUB_OUTPUT"
+          echo "Resolved provider: ${PROVIDER}"
+
+      # ── Set model + endpoint env vars ────────────────────────────────────
+      - name: Configure OpenCode environment
+        id: oc_env
+        env:
+          PROVIDER: ${{ steps.final_provider.outputs.provider }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          case "${PROVIDER}" in
+            nvidia)
+              # Point OpenCode at the local proxy; proxy holds the real keys.
+              echo "OPENCODE_MODEL=nvidia/qwen3-coder-480b-a35b-instruct" >> "$GITHUB_ENV"
+              echo "OPENCODE_BASE_URL=http://localhost:8000/v1" >> "$GITHUB_ENV"
+              # nim-proxy validates using a passthrough bearer token
+              echo "OPENCODE_API_KEY=nim-proxy-local" >> "$GITHUB_ENV"
+              ;;
+            gemini)
+              echo "OPENCODE_MODEL=google/gemini-2.5-flash" >> "$GITHUB_ENV"
+              echo "OPENCODE_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai" >> "$GITHUB_ENV"
+              echo "OPENCODE_API_KEY=${GEMINI_API_KEY}" >> "$GITHUB_ENV"
+              ;;
+            zen)
+              echo "OPENCODE_MODEL=opencode-zen/deepseek-v4-flash-free" >> "$GITHUB_ENV"
+              echo "OPENCODE_BASE_URL=https://api.opencode.ai/v1" >> "$GITHUB_ENV"
+              echo "OPENCODE_API_KEY=${OPENCODE_API_KEY}" >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      # ── Install Node.js (needed by OpenCode) ─────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # ── Install OpenCode ──────────────────────────────────────────────────
+      - name: Install OpenCode
+        run: npm install -g opencode-ai@latest
+
+      # ── Install optional agent skills ─────────────────────────────────────
+      # Skills extend OpenCode with extra tool capabilities (e.g. web search).
+      # Remove entries you don't need.
+      - name: Install agent skills (optional)
+        run: |
+          # Web search skill — enables OpenCode to search the web
+          # npm install -g @opencode-ai/skill-web-search || true
+
+          # File diff skill — surfaces structured diffs
+          # npm install -g @opencode-ai/skill-diff || true
+
+          echo "Skipping optional skills (uncomment above lines to enable)"
+
+      # ── Extract the prompt from the comment body ──────────────────────────
+      - name: Extract prompt
+        id: prompt
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          # Strip the /opencode or /oc trigger prefix, trim whitespace
+          PROMPT="$(echo "${COMMENT_BODY}" | sed -E 's|^.*/(opencode|oc)[[:space:]]*||')"
+          if [ -z "${PROMPT}" ]; then
+            PROMPT="Please review the current state of this issue/PR and suggest next steps."
+          fi
+          # Write to a file to avoid shell-quoting issues
+          echo "${PROMPT}" > /tmp/oc-prompt.txt
+          echo "Prompt: ${PROMPT}"
+
+      # ── Run OpenCode ──────────────────────────────────────────────────────
+      - name: Run OpenCode
+        env:
+          OPENCODE_MODEL: ${{ env.OPENCODE_MODEL }}
+          OPENCODE_BASE_URL: ${{ env.OPENCODE_BASE_URL }}
+          OPENCODE_API_KEY: ${{ env.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          opencode run \
+            --config .opencode/opencode.json \
+            --model "${OPENCODE_MODEL}" \
+            --provider-base-url "${OPENCODE_BASE_URL}" \
+            --provider-api-key "${OPENCODE_API_KEY}" \
+            "$(cat /tmp/oc-prompt.txt)"
+
+      # ── Cleanup ───────────────────────────────────────────────────────────
+      - name: Stop nim-proxy
+        if: always() && steps.nim_proxy.outputs.started == 'true'
+        run: docker stop nim-proxy && docker rm nim-proxy || true
+
+      - name: "job-finish"
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
