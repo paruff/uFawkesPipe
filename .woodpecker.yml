@@ -169,6 +169,17 @@ steps:
       - event: push
         branch: main
 
+  # Policy-as-code checks (uFawkesSec) — compose/pipeline config against local Rego policies
+  - name: policy-check
+    image: openpolicyagent/conftest:v0.57.0
+    depends_on: [vuln-scan-fs]
+    commands:
+      - source /drone/src/scripts/dora-log.sh
+      - dora_start "policy-check"
+      - conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Policy check completed" ",\"exit_code\":$rc"
+      - exit $rc
+
 # ============================================================================
 # Stage 4: build — Container image build
 # ============================================================================
@@ -176,7 +187,7 @@ steps:
   # Container image build via CNB
   - name: build-image
     image: alpine:3.20
-    depends_on: [vuln-scan-fs, vuln-scan-image]
+    depends_on: [vuln-scan-fs, vuln-scan-image, policy-check]
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "build-image"
