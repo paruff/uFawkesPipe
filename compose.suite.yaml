@@ -53,6 +53,51 @@ services:
       - observability-lab
       - fawkes-net
 
+  # --- Security plane (uFawkesSec) — suite mode: shared uFawkesRes postgres/valkey ---
+  defectdojo:
+    environment:
+      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
+      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
+    networks:
+      - fawkes-backbone-net
+      - fawkes-net
+
+  defectdojo-nginx:
+    networks:
+      - fawkes-net
+
+  defectdojo-celery-beat:
+    environment:
+      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
+      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
+    networks:
+      - fawkes-backbone-net
+      - fawkes-net
+
+  defectdojo-celery-worker:
+    environment:
+      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
+      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
+    networks:
+      - fawkes-backbone-net
+      - fawkes-net
+
+  infisical:
+    environment:
+      DB_CONNECTION_URI: postgresql://infisical:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/infisical
+      REDIS_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/1
+    networks:
+      - fawkes-backbone-net
+      - fawkes-net
+
+  trivy-server:
+    networks:
+      - fawkes-net
+
+  falco:
+    networks:
+      - fawkes-net
+
 # ==============================================================================
 # External networks from other planes
 # ==============================================================================
@@ -63,6 +108,8 @@ networks:
   observability-lab:
     name: observability-lab
     external: true
+  # fawkes-net previously bridged two independently-deployed repos
+  # (uFawkesPipe <-> uFawkesSec); now that both live in this repo, it's a
+  # plain internal network shared by the pipeline agent and security services.
   fawkes-net:
     name: fawkes-net
-    external: true
