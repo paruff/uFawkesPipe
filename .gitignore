@@ -1,9 +1,21 @@
 .DS_Store
 .env
+.env.local
+.env.*.local
 *.log
 *.swp
 *.bak
 *~
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+
+# Python
+*.py[cod]
+*.egg-info/
 
 # Shared workspace (used by pipelines)
 shared/*
