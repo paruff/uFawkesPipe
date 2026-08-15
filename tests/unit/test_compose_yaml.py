@@ -5,7 +5,7 @@ Parses the YAML files with pyyaml and validates:
   - fawkes-net is an internal (non-external) network in compose.suite.yaml
   - defectdojo and infisical have healthcheck blocks
   - falco is the only service with privileged: true
-  - No image tag is :latest except trivy-server
+  - No image tag is :latest
   - All secrets referenced in services are declared in top-level secrets
 """
 
@@ -179,27 +179,16 @@ class TestPrivileged:
 
 
 class TestImageTags:
-    """No :latest tags except trivy-server."""
+    """No :latest tags on any service."""
 
-    def test_trivy_server_is_latest(self, compose_data):
-        trivy = compose_data["services"].get("trivy-server", {})
-        image = trivy.get("image", "")
-        assert "latest" in image, (
-            f"trivy-server image must contain ':latest', got '{image}'"
-        )
-
-    def test_no_other_latest_tags(self, compose_data):
+    def test_no_latest_tags(self, compose_data):
         services = compose_data.get("services", {})
-        latest_services = []
-        for name, config in services.items():
-            if name == "trivy-server":
-                continue
-            image = config.get("image", "")
-            if ":latest" in image:
-                latest_services.append(name)
-        assert not latest_services, (
-            f"Services with :latest tag (excluding trivy-server): {latest_services}"
-        )
+        latest_services = [
+            name
+            for name, config in services.items()
+            if ":latest" in config.get("image", "")
+        ]
+        assert not latest_services, f"Services with :latest tag: {latest_services}"
 
 
 # ── Secret Assertions ─────────────────────────────────────────────────────

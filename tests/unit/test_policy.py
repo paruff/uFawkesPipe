@@ -164,19 +164,6 @@ class TestAllowLists:
             f"Falco privileged allow-list broken; got {privileged_failures} privileged violations: {failures}"
         )
 
-    def test_trivy_allowed_latest_tag(self):
-        """aquasec/trivy:latest is allowed (allow-list in no-latest-tag.rego)."""
-        failures = run_conftest("compose-clean-suite.yaml")
-        latest_trivy_failures = [
-            f
-            for f in failures
-            if "latest" in f.get("msg", "").lower()
-            and "trivy" in f.get("msg", "").lower()
-        ]
-        assert len(latest_trivy_failures) == 0, (
-            f"Trivy latest-tag allow-list broken; got violations: {latest_trivy_failures}"
-        )
-
 
 # ── Suite Test (run all fixtures at once) ────────────────────────────────────
 
