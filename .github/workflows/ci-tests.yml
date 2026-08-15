@@ -65,13 +65,6 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Start Docker Compose stack
-        env:
-          DOJO_DB_PASSWORD: smoke-test-only
-          INFISICAL_DB_PASSWORD: smoke-test-only
-          DEFECTDOJO_SECRET_KEY: smoke-test-only
-          DEFECTDOJO_AES_KEY: smoke-test-only
-          INFISICAL_ENCRYPTION_KEY: smoke-test-only
-          INFISICAL_AUTH_SECRET: smoke-test-only
         run: |
           docker compose up -d
           echo "Waiting for services to be healthy..."

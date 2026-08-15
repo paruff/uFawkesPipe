@@ -53,8 +53,9 @@ uFawkesPipe is a **CI/CD platform** for polyglot application development. It pro
 | **sonarqube** | `sonarqube:lts-community` | `9001→:9000` | SAST code quality analysis |
 | **portainer** | `portainer/portainer-ce:2.39.3` | `9443` (HTTPS), `9002` (edge) | Container management, CD via webhook stacks |
 
-Security-plane services (DefectDojo, Infisical, Trivy server, Falco, plus their
-embedded `postgres`/`valkey`) also run in `compose.yaml` — see §13.
+Security-plane services (DefectDojo, Infisical, Falco, plus their embedded
+`postgres`/`valkey`) also live in `compose.yaml`, gated behind the `security`
+Compose profile — see §13.
 
 ### Labels
 
@@ -360,9 +361,11 @@ compose.yaml + compose.suite.yaml → make up-suite
 ## 13. Security Plane (merged from uFawkesSec)
 
 uFawkesSec was merged into this repo as a security plane addition. DefectDojo,
-Infisical, Trivy server, and Falco run as `compose.yaml` services alongside
-the CI/CD stack, and Rego policies gate the pipeline via the `policy-check`
-step in `.woodpecker.yml` (see §3.2).
+Infisical, Trivy server, and Falco run as `compose.yaml` services, gated behind
+the `security` Compose profile — not started by a plain `docker compose up -d`.
+`trivy-server` alone stays in the default profile since the pipeline uses it
+for scanning. Rego policies gate the pipeline via the `policy-check` step in
+`.woodpecker.yml` (see §3.2).
 
 ### 13.1 Services
 

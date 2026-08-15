@@ -91,7 +91,13 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 ## 🔐 Security Plane
 
 The security plane (formerly the standalone uFawkesSec repo) is merged into this
-repo's `compose.yaml` / `compose.suite.yaml` and runs alongside the CI/CD stack:
+repo's `compose.yaml` / `compose.suite.yaml`, gated behind the `security` Compose
+profile — it does **not** start with a plain `make up` / `docker compose up -d`.
+Run `docker compose --profile security up -d` (or `make up-security`) to bring it
+up. uFawkesPipe stays a lightweight CI/CD plane by default; the full DefectDojo/
+Infisical/Falco suite is for users who want it here rather than in Fawkes proper.
+`trivy-server` is the exception — it stays in the default profile since the
+pipeline itself uses it for image/fs scanning.
 
 | Service                    | Image                                  | Role                                    |
 | --------------------------- | --------------------------------------- | ---------------------------------------- |

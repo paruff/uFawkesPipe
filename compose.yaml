@@ -78,6 +78,7 @@ services:
   postgres:
     image: postgres:18-alpine
     container_name: ufawkessec-postgres
+    profiles: [security]
     environment:
       POSTGRES_DB: dojo
       POSTGRES_USER: dojo
@@ -97,6 +98,7 @@ services:
   valkey:
     image: valkey/valkey:9.0-alpine
     container_name: ufawkessec-valkey
+    profiles: [security]
     volumes:
       - valkey-data:/data
     healthcheck:
@@ -112,6 +114,7 @@ services:
   defectdojo:
     image: defectdojo/defectdojo-django:2.38.0
     container_name: defectdojo
+    profiles: [security]
     environment:
       DD_DATABASE_URL: postgresql://dojo:${DOJO_DB_PASSWORD}@postgres:5432/dojo
       DD_CELERY_BROKER_URL: redis://valkey:6379/0
@@ -143,6 +146,7 @@ services:
   defectdojo-nginx:
     image: defectdojo/defectdojo-nginx:2.38.0
     container_name: defectdojo-nginx
+    profiles: [security]
     ports:
       - "8080:8080"
     depends_on:
@@ -160,6 +164,7 @@ services:
   defectdojo-celery-beat:
     image: defectdojo/defectdojo-django:2.38.0
     container_name: defectdojo-celery-beat
+    profiles: [security]
     command: /entrypoint-celery-beat.sh
     environment:
       DD_DATABASE_URL: postgresql://dojo:${DOJO_DB_PASSWORD}@postgres:5432/dojo
@@ -182,6 +187,7 @@ services:
   defectdojo-celery-worker:
     image: defectdojo/defectdojo-django:2.38.0
     container_name: defectdojo-celery-worker
+    profiles: [security]
     command: /entrypoint-celery-worker.sh
     environment:
       DD_DATABASE_URL: postgresql://dojo:${DOJO_DB_PASSWORD}@postgres:5432/dojo
@@ -209,6 +215,7 @@ services:
   infisical:
     image: infisical/infisical:v0.93.1-postgres
     container_name: infisical
+    profiles: [security]
     environment:
       ENCRYPTION_KEY_FILE: /run/secrets/infisical_encryption_key
       AUTH_SECRET_FILE: /run/secrets/infisical_auth_secret
@@ -255,6 +262,7 @@ services:
   falco:
     image: falcosecurity/falco-no-driver:0.39.2
     container_name: falco
+    profiles: [security]
     privileged: true
     volumes:
       - /proc:/host/proc:ro

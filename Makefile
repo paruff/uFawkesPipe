@@ -87,6 +87,9 @@ fix-and-commit: ## Run pre-commit, stage fixes, commit with conventional message
 up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
+up-security: ## Start uFawkesPipe stack + security plane (DefectDojo/Infisical/Falco)
+	docker compose -f compose.yaml --profile security up -d
+
 down: ## Stop uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml down -v
 
