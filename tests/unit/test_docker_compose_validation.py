@@ -26,8 +26,15 @@ class TestComposeYamlValidation:
             )
 
     def test_no_latest_tags(self, compose_config):
-        """No service should use ':latest' image tags."""
+        """No service should use ':latest' image tags.
+
+        trivy-server is a documented exception (needs current CVE database),
+        allow-listed the same way in scripts/pre-commit.sh and
+        policy/no-latest-tag.rego.
+        """
         for service_name, service_config in compose_config["services"].items():
+            if service_name == "trivy-server":
+                continue
             if "image" in service_config:
                 image = service_config["image"]
                 assert not image.endswith(":latest"), (

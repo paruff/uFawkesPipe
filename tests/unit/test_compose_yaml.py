@@ -1,15 +1,13 @@
-"""Unit tests for compose.yaml and compose-standalone.yaml structure.
+"""Unit tests for compose.yaml and compose.suite.yaml structure.
 
-Parses each YAML file with pyyaml and validates:
-  - All 7 expected service names present
-  - fawkes-net declared as external network
+Parses the YAML files with pyyaml and validates:
+  - All core security-plane services present, plus embedded postgres/valkey
+  - fawkes-net is an internal (non-external) network in compose.suite.yaml
   - defectdojo and infisical have healthcheck blocks
   - falco is the only service with privileged: true
   - No image tag is :latest except trivy-server
   - All secrets referenced in services are declared in top-level secrets
 """
-
-from pathlib import Path
 
 import pytest
 import yaml
@@ -26,78 +24,70 @@ CORE_SERVICES = {
 
 STANDALONE_EXTRA = {"postgres", "valkey"}
 
-COMPOSE_FILES = [
-    "compose.yaml",
-    "compose-standalone.yaml",
-]
-
-
-@pytest.fixture(params=COMPOSE_FILES)
-def compose_path(request, project_root):
-    """Yield each compose file path, parameterized."""
-    return project_root / request.param
-
 
 @pytest.fixture
-def compose_data(compose_path):
-    """Parse compose.yaml / compose-standalone.yaml and return the dict."""
-    assert compose_path.exists(), f"Missing compose file: {compose_path}"
-    with open(compose_path) as f:
+def compose_data(project_root):
+    """Parse compose.yaml and return the dict."""
+    path = project_root / "compose.yaml"
+    assert path.exists(), f"Missing compose file: {path}"
+    with open(path) as f:
         return yaml.safe_load(f)
 
 
 @pytest.fixture
-def compose_filename(compose_path):
-    """Return just the filename of the compose file."""
-    return compose_path.name
+def suite_compose_data(project_root):
+    """Parse compose.suite.yaml and return the dict."""
+    path = project_root / "compose.suite.yaml"
+    assert path.exists(), f"Missing compose file: {path}"
+    with open(path) as f:
+        return yaml.safe_load(f)
 
 
 # ── Service Name Coverage ─────────────────────────────────────────────────
 
 
 class TestServiceNames:
-    """All 7 core services must be present."""
+    """All core security-plane services must be present in compose.yaml."""
 
     def test_all_core_services_present(self, compose_data):
         services = set(compose_data.get("services", {}).keys())
         missing = CORE_SERVICES - services
         assert not missing, f"Missing expected core services: {missing}"
 
-    def test_no_unexpected_services(self, compose_data, compose_filename):
-        """compose.yaml must only contain core services (standalone adds postgres+valkey)."""
+    def test_standalone_extra_services_present(self, compose_data):
+        """compose.yaml embeds postgres and valkey directly (standalone mode)."""
         services = set(compose_data.get("services", {}).keys())
-        if compose_filename == "compose-standalone.yaml":
-            expected = CORE_SERVICES | STANDALONE_EXTRA
-        else:
-            expected = CORE_SERVICES
-        extra = services - expected
-        assert not extra, f"Unexpected services found: {extra}"
+        missing = STANDALONE_EXTRA - services
+        assert not missing, f"Missing embedded services: {missing}"
+        vol_names = set(compose_data.get("volumes", {}).keys())
+        assert "postgres-data" in vol_names, "Missing postgres-data volume"
+        assert "valkey-data" in vol_names, "Missing valkey-data volume"
 
 
 # ── Network Assertions ────────────────────────────────────────────────────
 
 
 class TestNetwork:
-    """fawkes-net must be declared as external."""
+    """fawkes-net is now an internal network owned by this repo's compose.suite.yaml."""
 
-    def test_fawkes_net_is_external(self, compose_data):
-        networks = compose_data.get("networks", {})
+    def test_fawkes_net_is_internal(self, suite_compose_data):
+        networks = suite_compose_data.get("networks", {})
         assert "fawkes-net" in networks, "fawkes-net not declared in networks"
         fawkes = networks["fawkes-net"]
-        assert fawkes.get("external") is True or fawkes.get("external") is True, (
-            "fawkes-net must be declared as external: true"
+        assert fawkes.get("external") is not True, (
+            "fawkes-net must be internal now that uFawkesSec is merged into this repo"
         )
 
-    def test_fawkes_net_has_name(self, compose_data):
-        networks = compose_data.get("networks", {})
+    def test_fawkes_net_has_name(self, suite_compose_data):
+        networks = suite_compose_data.get("networks", {})
         fawkes = networks.get("fawkes-net", {})
         assert fawkes.get("name") == "fawkes-net", (
             "fawkes-net must have explicit name: fawkes-net"
         )
 
-    def test_all_services_on_fawkes_net(self, compose_data):
-        """Every service must be on the fawkes-net network."""
-        services = compose_data.get("services", {})
+    def test_all_services_on_fawkes_net(self, suite_compose_data):
+        """Every service declared in compose.suite.yaml must be on fawkes-net."""
+        services = suite_compose_data.get("services", {})
         for svc_name, svc_config in services.items():
             svc_networks = svc_config.get("networks", [])
             if isinstance(svc_networks, list):
@@ -144,6 +134,22 @@ class TestHealthchecks:
         svc = compose_data["services"].get("defectdojo-celery-worker", {})
         assert "healthcheck" in svc, (
             "defectdojo-celery-worker is missing a healthcheck block"
+        )
+
+    def test_postgres_and_valkey_have_healthcheck(self, compose_data):
+        for svc_name in ("postgres", "valkey"):
+            svc = compose_data["services"].get(svc_name, {})
+            assert "healthcheck" in svc, f"{svc_name} is missing a healthcheck block"
+
+    def test_defectdojo_depends_on_postgres_and_valkey(self, compose_data):
+        """defectdojo must wait for postgres and valkey to be healthy."""
+        svc = compose_data["services"].get("defectdojo", {})
+        depends = svc.get("depends_on", {})
+        assert depends.get("postgres", {}).get("condition") == "service_healthy", (
+            "defectdojo must wait for postgres healthy"
+        )
+        assert depends.get("valkey", {}).get("condition") == "service_healthy", (
+            "defectdojo must wait for valkey healthy"
         )
 
 
@@ -232,58 +238,6 @@ class TestSecrets:
             assert "environment" in config, (
                 f"Secret '{name}' should use environment: source, got: {list(config.keys())}"
             )
-
-
-# ── Standalone-Specific Assertions ────────────────────────────────────────
-
-
-class TestExtraServicesStandalone:
-    """compose-standalone.yaml includes postgres and valkey services."""
-
-    def test_postgres_present_in_standalone(self):
-        path = Path(__file__).parent.parent.parent / "compose-standalone.yaml"
-        assert path.exists(), "compose-standalone.yaml not found"
-        with open(path) as f:
-            data = yaml.safe_load(f)
-        services = data.get("services", {})
-        assert "postgres" in services, "standalone compose must include postgres"
-        assert "valkey" in services, "standalone compose must include valkey"
-        assert "volumes" in data, "standalone compose must have volumes"
-        vol_names = set(data["volumes"].keys())
-        assert "postgres-data" in vol_names, (
-            "standalone compose needs postgres-data volume"
-        )
-        assert "valkey-data" in vol_names, "standalone compose needs valkey-data volume"
-
-    def test_postgres_healthcheck_in_standalone(self):
-        path = Path(__file__).parent.parent.parent / "compose-standalone.yaml"
-        with open(path) as f:
-            data = yaml.safe_load(f)
-        for svc_name in ("postgres", "valkey"):
-            svc = data["services"].get(svc_name, {})
-            assert "healthcheck" in svc, (
-                f"{svc_name} in standalone must have healthcheck"
-            )
-
-    def test_defectdojo_depends_in_standalone(self):
-        """In standalone, defectdojo depends on postgres and valkey health."""
-        path = Path(__file__).parent.parent.parent / "compose-standalone.yaml"
-        with open(path) as f:
-            data = yaml.safe_load(f)
-        svc = data["services"].get("defectdojo", {})
-        depends = svc.get("depends_on", {})
-        assert "postgres" in depends, (
-            "standalone defectdojo must depend on postgres condition"
-        )
-        assert "valkey" in depends, (
-            "standalone defectdojo must depend on valkey condition"
-        )
-        assert depends.get("postgres", {}).get("condition") == "service_healthy", (
-            "standalone defectdojo must wait for postgres healthy"
-        )
-        assert depends.get("valkey", {}).get("condition") == "service_healthy", (
-            "standalone defectdojo must wait for valkey healthy"
-        )
 
 
 if __name__ == "__main__":

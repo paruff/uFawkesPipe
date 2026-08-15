@@ -1,10 +1,11 @@
 """
-Automated acceptance test for WP-002: fawkes-net external network
+Automated acceptance test for WP-002: fawkes-net network
 
 Validates the standalone/suite split:
-- Standalone (compose.yaml): no external network, uses default compose network
-- Suite (compose.yaml + compose.suite.yaml): fawkes-net external network for
-  platform service discovery
+- Standalone (compose.yaml): no fawkes-net, uses default compose network
+- Suite (compose.yaml + compose.suite.yaml): fawkes-net internal network for
+  platform service discovery (previously external, now owned by this repo
+  since uFawkesSec was merged in)
 """
 
 import yaml
@@ -28,13 +29,6 @@ def suite_config():
     """Load and parse suite overlay compose.suite.yaml."""
     with open("compose.suite.yaml", "r") as f:
         return yaml.safe_load(f)
-
-
-@pytest.fixture
-def makefile_content():
-    """Load Makefile content."""
-    with open("Makefile", "r") as f:
-        return f.read()
 
 
 # ---------------------------------------------------------------------------
@@ -97,12 +91,13 @@ class TestComposeSuiteMode:
             "compose.suite.yaml must declare 'fawkes-net' in networks section"
         )
 
-    def test_suite_fawkes_net_is_external(self, suite_config):
-        """Acceptance: suite fawkes-net has external: true."""
+    def test_suite_fawkes_net_is_internal(self, suite_config):
+        """Acceptance: suite fawkes-net is internal (owned by this repo, not external)."""
         networks = suite_config.get("networks", {})
         fawkes_net = networks.get("fawkes-net", {})
-        assert fawkes_net.get("external") is True, (
-            f"Suite fawkes-net must have external: true, got {fawkes_net}"
+        assert fawkes_net.get("external") is not True, (
+            f"Suite fawkes-net must be internal now that uFawkesSec is merged "
+            f"into this repo, got {fawkes_net}"
         )
 
     def test_suite_fawkes_net_has_correct_name(self, suite_config):
@@ -142,56 +137,3 @@ class TestComposeSuiteMode:
             f"Suite woodpecker-agent must have "
             f"WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net, got: {env_str}"
         )
-
-
-# ---------------------------------------------------------------------------
-# Makefile targets
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-class TestMakefileNetworkTarget:
-    """Validate Makefile network target and suite dependency."""
-
-    def test_makefile_has_network_target(self, makefile_content):
-        """Acceptance: Makefile has a 'network' target:
-        docker network create fawkes-net || true."""
-        assert "network:" in makefile_content, "Makefile must have a 'network' target"
-        assert "docker network create fawkes-net" in makefile_content, (
-            "network target must contain 'docker network create fawkes-net'"
-        )
-        assert "|| true" in makefile_content, (
-            "network target must be idempotent with '|| true'"
-        )
-
-    def test_makefile_up_standalone_no_network(self, makefile_content):
-        """Acceptance: standalone 'up' target does NOT depend on 'network'."""
-        lines = makefile_content.split("\n")
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("up:"):
-                # Extract prerequisite list (before comment)
-                target_line = stripped.split("#")[0]
-                # Remove "up:" to get prerequisites
-                prereqs = (
-                    target_line.split(":", 1)[1].strip() if ":" in target_line else ""
-                )
-                assert "network" not in prereqs, (
-                    f"Standalone 'up' target must not depend on 'network', "
-                    f"got prerequisites: '{prereqs}'"
-                )
-                return
-
-    def test_makefile_up_suite_depends_on_network(self, makefile_content):
-        """Acceptance: 'up-suite' target has 'network' as a prerequisite."""
-        lines = makefile_content.split("\n")
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("up-suite:"):
-                prereqs = stripped.split(":", 1)[1].strip() if ":" in stripped else ""
-                assert "network" in prereqs, (
-                    f"'up-suite' target must have 'network' as a prerequisite, "
-                    f"got: '{prereqs}'"
-                )
-                return
-        pytest.fail("Makefile has no 'up-suite' target")
