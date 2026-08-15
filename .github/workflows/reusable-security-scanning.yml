@@ -67,6 +67,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_SUMMARY: true
+          # gitleaks-action's pull_request path derives its scan range from
+          # commits.data[0]/commits.data[last] of an unpaginated (30-item)
+          # GET .../pulls/{n}/commits call — wrong for any PR with >30 commits,
+          # and it crashes outright if that first commit has no parent (e.g.
+          # history imported via `git subtree add`). There's no override for
+          # the head side, so force the workflow_dispatch/schedule code path
+          # instead, which skips range detection and scans full history.
+          GITHUB_EVENT_NAME: workflow_dispatch
 
       - name: Check gitleaks results
         if: steps.gitleaks.outcome == 'failure'
