@@ -169,10 +169,9 @@ deny contains msg if {
 
 ### Common Allow-Lists in Current Policies
 
-| Policy               | Allowed Items            | Rationale                                             |
-| -------------------- | ------------------------ | ----------------------------------------------------- |
-| `no-privileged.rego` | `"falco"`                | Required for eBPF security monitoring                 |
-| `no-latest-tag.rego` | `"aquasec/trivy:latest"` | Trivy needs the latest image for current CVE database |
+| Policy               | Allowed Items | Rationale                              |
+| -------------------- | ------------- | --------------------------------------- |
+| `no-privileged.rego` | `"falco"`     | Required for eBPF security monitoring   |
 
 ### Best Practices for Allow-Lists
 
@@ -223,12 +222,10 @@ Below are the descriptions, enforcement details, and exceptions for each policy:
 
 **Enforcement:**
 
-1. Denies services with `:latest` tags that aren't in the allow-list
+1. Denies services with `:latest` tags
 2. Denies services without any tag (defaults to `:latest`)
 
-**Allow-list:**
-
-- `"aquasec/trivy:latest"` — Trivy needs the latest image for current CVE database
+**Allow-list:** None
 
 **Examples:**
 

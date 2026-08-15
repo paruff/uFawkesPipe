@@ -143,7 +143,7 @@ steps:
 
   # Trivy filesystem vulnerability scan (entire working tree)
   - name: vuln-scan-fs
-    image: aquasec/trivy:latest
+    image: aquasec/trivy:0.74.0
     depends_on: [secrets-scan]
     commands:
       - source /drone/src/scripts/dora-log.sh
@@ -154,7 +154,7 @@ steps:
 
   # Trivy container image vulnerability scan (main branch only)
   - name: vuln-scan-image
-    image: aquasec/trivy:latest
+    image: aquasec/trivy:0.74.0
     depends_on: [secrets-scan]
     environment:
       REGISTRY_USERNAME:
@@ -204,7 +204,7 @@ steps:
 
   # Generate SBOM in CycloneDX format using Trivy (main only)
   - name: generate-sbom
-    image: aquasec/trivy:latest
+    image: aquasec/trivy:0.74.0
     depends_on: [build-image]
     environment:
       REGISTRY_USERNAME:

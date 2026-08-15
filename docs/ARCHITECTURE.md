@@ -130,13 +130,13 @@ validate (init → lint-yaml + lint-shell)
 | 2 | test | `integration-tests` | `python:3.12-slim` | always | Yes |
 | 2 | test | `contract-tests` | `python:3.12-slim` | always | Yes |
 | 3 | security | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | always | **Yes** (`--exit-code 1`) |
-| 3 | security | `vuln-scan-fs` | `aquasec/trivy:latest` | always | No (non-blocking, to DefectDojo) |
-| 3 | security | `vuln-scan-image` | `aquasec/trivy:latest` | push → main only | No (non-blocking) |
+| 3 | security | `vuln-scan-fs` | `aquasec/trivy:0.74.0` | always | No (non-blocking, to DefectDojo) |
+| 3 | security | `vuln-scan-image` | `aquasec/trivy:0.74.0` | push → main only | No (non-blocking) |
 | 4 | build | `build-image` | `alpine:3.20` | push → main only | No (placeholder) |
 | 5 | publish | `upload-defectdojo` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 | 6 | deploy | `notify-obs` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 
-**Image pinning policy:** All non-scanner images pinned to a specific tag. Trivy (`aquasec/trivy:latest`) is the documented exception — scanner images need current CVE databases.
+**Image pinning policy:** All images, including Trivy, are pinned to a specific tag.
 
 **DORA logging:** All steps use `scripts/dora-log.sh` for structured JSON logging compatible with uFawkesObs/Loki ingestion.
 
@@ -373,13 +373,12 @@ step in `.woodpecker.yml` (see §3.2).
 | **defectdojo** + **defectdojo-nginx** | `defectdojo/defectdojo-django:2.38.0` / `-nginx:2.38.0` | `8080` | Vulnerability findings aggregation |
 | **defectdojo-celery-beat** / **-worker** | `defectdojo/defectdojo-django:2.38.0` | — | Scheduled + async DefectDojo tasks |
 | **infisical** | `infisical/infisical:v0.93.1` | `8082` | Secrets management |
-| **trivy-server** | `aquasec/trivy:latest` | `4954` (internal) | Shared CVE cache for image/fs scans |
+| **trivy-server** | `aquasec/trivy:0.74.0` | `4954` (internal) | Shared CVE cache for image/fs scans |
 | **falco** | `falcosecurity/falco-no-driver:0.39.2` | — | Runtime container security monitoring |
 
-**Documented policy exceptions:** `trivy-server`'s `:latest` tag (needs current
-CVE data) and `falco`'s `privileged: true` (needed for eBPF probe loading) are
-intentional, allow-listed in `scripts/pre-commit.sh` and the relevant
-`policy/*.rego` file — do not "fix" these away in tests or docs.
+**Documented policy exceptions:** `falco`'s `privileged: true` (needed for eBPF
+probe loading) is intentional, allow-listed in the relevant `policy/*.rego`
+file — do not "fix" this away in tests or docs.
 
 ### 13.2 Deployment Modes
 

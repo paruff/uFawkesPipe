@@ -39,9 +39,8 @@ services:
       timeout: 5s
       retries: 2
 
-  # Trivy is allowed to use :latest tag (explicit allow-list in no-latest-tag.rego)
   trivy:
-    image: aquasec/trivy:latest
+    image: aquasec/trivy:0.74.0
     user: "1000:1000"
     healthcheck:
       test: ["CMD", "trivy", "--version"]

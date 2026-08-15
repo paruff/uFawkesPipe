@@ -234,10 +234,8 @@ services:
       - "component=secrets-mgmt"
       - "managed-by=fawkes"
 
-  # aquasec/trivy:latest intentionally unpinned — needs current CVE database.
-  # Documented exception to pinned-image policy; allow-listed in no-latest-tag.rego.
   trivy-server:
-    image: aquasec/trivy:latest
+    image: aquasec/trivy:0.74.0
     container_name: trivy-server
     command: server --listen 0.0.0.0:4954
     volumes:

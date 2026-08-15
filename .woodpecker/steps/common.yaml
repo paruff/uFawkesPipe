@@ -81,9 +81,7 @@ x-gitleaks-scan: &gitleaks-scan
     - exit $rc
 
 x-trivy-fs: &trivy-fs
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
-  image: aquasec/trivy:latest
+  image: aquasec/trivy:0.74.0
   commands:
     - source /drone/src/scripts/dora-log.sh
     - dora_start "vuln-scan-fs"
@@ -92,9 +90,7 @@ x-trivy-fs: &trivy-fs
     - exit $rc
 
 x-trivy-image: &trivy-image
-  # aquasec/trivy:latest is intentionally unpinned — scanner images need
-  # current CVE databases. This is a documented exception to pinned-image policy.
-  image: aquasec/trivy:latest
+  image: aquasec/trivy:0.74.0
   environment:
     REGISTRY_USERNAME:
       from_secret: registry_username  # pragma: allowlist secret

@@ -261,10 +261,9 @@ services alongside the CI/CD stack, and Rego policies gate the pipeline via
 the `policy-check` step in `.woodpecker.yml`.
 
 - `policy/*.rego` — Conftest policies checked against `compose.yaml`,
-  `compose.suite.yaml`, `.woodpecker.yml`. Exceptions (e.g. `trivy-server`'s
-  `:latest` tag, `falco`'s `privileged: true`) are allow-listed inline in the
-  relevant `.rego` file — do not weaken a policy to work around a legitimate
-  violation elsewhere.
+  `compose.suite.yaml`, `.woodpecker.yml`. Exceptions (e.g. `falco`'s
+  `privileged: true`) are allow-listed inline in the relevant `.rego` file —
+  do not weaken a policy to work around a legitimate violation elsewhere.
 - `config/{defectdojo,infisical,falco}/` — service configuration, no secrets
   (secrets come from Woodpecker's secret store / `.env`, same rule as
   Section 4).
