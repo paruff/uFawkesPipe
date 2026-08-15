@@ -22,10 +22,14 @@ permissions:
 jobs:
   opencode:
     name: Run OpenCode
-    # Only run when the comment contains /opencode or /oc
+    # Only run when the comment contains /opencode or /oc, AND the commenter
+    # is a repo owner/member/collaborator. This is a public repo, so without
+    # this gate any GitHub user's comment on any issue or PR would trigger a
+    # job with `contents: write` + provider API keys + GITHUB_TOKEN.
     if: |
-      contains(github.event.comment.body, '/opencode') ||
-      contains(github.event.comment.body, '/oc')
+      (contains(github.event.comment.body, '/opencode') ||
+       contains(github.event.comment.body, '/oc')) &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -34,12 +38,17 @@ jobs:
         run: echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
       # ── Checkout ─────────────────────────────────────────────────────────────
+      # Always checks out the default branch — never a PR head. This job runs
+      # with `contents: write` and provider secrets on `issue_comment`, which
+      # (unlike `pull_request`) gets full permissions regardless of who or
+      # which fork triggered it. Checking out and then executing an untrusted
+      # PR's tree (e.g. its .opencode/opencode.json) in that context is the
+      # classic "pwn request" pattern, so this step intentionally does not
+      # accept a caller-influenced ref.
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # For PR comments, check out the PR branch so OpenCode sees the diff
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       # ── Determine active provider ─────────────────────────────────────────
       # Sets OPENCODE_PROVIDER=nvidia|gemini|zen and configures the env vars
