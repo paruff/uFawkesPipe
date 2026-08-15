@@ -372,7 +372,7 @@ step in `.woodpecker.yml` (see §3.2).
 | **valkey** | `valkey/valkey:9.0-alpine` | — | Cache/broker for DefectDojo + Infisical (standalone mode) |
 | **defectdojo** + **defectdojo-nginx** | `defectdojo/defectdojo-django:2.38.0` / `-nginx:2.38.0` | `8080` | Vulnerability findings aggregation |
 | **defectdojo-celery-beat** / **-worker** | `defectdojo/defectdojo-django:2.38.0` | — | Scheduled + async DefectDojo tasks |
-| **infisical** | `infisical/infisical:v0.93.1` | `8082` | Secrets management |
+| **infisical** | `infisical/infisical:v0.93.1-postgres` | `8082` | Secrets management |
 | **trivy-server** | `aquasec/trivy:0.74.0` | `4954` (internal) | Shared CVE cache for image/fs scans |
 | **falco** | `falcosecurity/falco-no-driver:0.39.2` | — | Runtime container security monitoring |
 

@@ -99,7 +99,7 @@ repo's `compose.yaml` / `compose.suite.yaml` and runs alongside the CI/CD stack:
 | `defectdojo-nginx`          | `defectdojo/defectdojo-nginx:2.38.0`    | Reverse proxy for DefectDojo             |
 | `defectdojo-celery-beat`    | `defectdojo/defectdojo-django:2.38.0`   | Periodic task scheduler                  |
 | `defectdojo-celery-worker`  | `defectdojo/defectdojo-django:2.38.0`   | Async task worker                        |
-| `infisical`                 | `infisical/infisical:v0.93.1`           | Zero-trust secrets store                 |
+| `infisical`                 | `infisical/infisical:v0.93.1-postgres`  | Zero-trust secrets store                 |
 | `trivy-server`               | `aquasec/trivy:0.74.0`                  | Shared Trivy CVE cache server            |
 | `falco`                      | `falcosecurity/falco-no-driver:0.39.2`  | Runtime container security monitoring    |
 

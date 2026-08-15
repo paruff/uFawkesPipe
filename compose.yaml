@@ -207,7 +207,7 @@ services:
       - "managed-by=fawkes"
 
   infisical:
-    image: infisical/infisical:v0.93.1
+    image: infisical/infisical:v0.93.1-postgres
     container_name: infisical
     environment:
       ENCRYPTION_KEY_FILE: /run/secrets/infisical_encryption_key
