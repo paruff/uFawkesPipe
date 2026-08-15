@@ -253,11 +253,40 @@ uFawkesPipe is part of the **uFawkesAI** suite of IDP planes. It supports two mo
 
 ---
 
+## 11. Security Plane (merged from uFawkesSec)
+
+uFawkesSec was merged into this repo as a "security plane" addition — DefectDojo,
+Infisical, Trivy server, and Falco run as `compose.yaml`/`compose.suite.yaml`
+services alongside the CI/CD stack, and Rego policies gate the pipeline via
+the `policy-check` step in `.woodpecker.yml`.
+
+- `policy/*.rego` — Conftest policies checked against `compose.yaml`,
+  `compose.suite.yaml`, `.woodpecker.yml`. Exceptions (e.g. `trivy-server`'s
+  `:latest` tag, `falco`'s `privileged: true`) are allow-listed inline in the
+  relevant `.rego` file — do not weaken a policy to work around a legitimate
+  violation elsewhere.
+- `config/{defectdojo,infisical,falco}/` — service configuration, no secrets
+  (secrets come from Woodpecker's secret store / `.env`, same rule as
+  Section 4).
+- Standalone mode (`compose.yaml`) embeds its own `postgres`/`valkey` for the
+  security services; suite mode (`compose.suite.yaml`) redirects them to
+  uFawkesRes's shared `fawkes-postgres`/`fawkes-cache` instead.
+- `fawkes-net` in `compose.suite.yaml` is an internal Compose network owned by
+  this repo (not external) — both sides of what used to be a cross-repo
+  network now live in one compose deployment.
+- See [docs/policy-guide.md](docs/policy-guide.md) and
+  [docs/quickstart.md](docs/quickstart.md) for policy authoring and the
+  security-plane startup sequence.
+
+---
+
 ## Appendix — Directory & File Map
 
 | Path | Language | What Lives Here | Do Not |
 | ---- | -------- | --------------- | ------ |
-| `compose.yaml` | YAML | Woodpecker server + agent, SonarQube, Portainer | Hardcode credentials |
+| `compose.yaml` | YAML | Woodpecker server + agent, SonarQube, Portainer, security plane (DefectDojo, Infisical, Trivy, Falco) | Hardcode credentials |
+| `policy/` | Rego | Conftest policies enforced by the `policy-check` pipeline step | Weaken a policy to dodge a real violation |
+| `config/` | YAML | DefectDojo/Infisical/Falco service configuration | Store secrets here |
 | `.woodpecker.yml` | YAML | CI pipeline definition for uFawkesPipe itself | Store secrets here |
 | `.fawkespipe.yml` | YAML | Pipeline contract — configured by app teams (example in `.fawkespipe.yml.example`) | Modify without migration guide |
 | `pack/` | TOML / YAML | Buildpack builder and extension configs | Hardcode language versions |

@@ -16,6 +16,7 @@ uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQ
 - **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration with GitHub OAuth
 - **DORA Observability** - Structured JSON logging, OTEL deployment event emission, Prometheus metrics
 - **Standalone + Suite Mode** - Run independently or connect to uFawkesRes (PostgreSQL/Traefik) and uFawkesObs (OTEL/Loki)
+- **Security Plane (merged from uFawkesSec)** - DefectDojo, Infisical, Trivy server, and Falco run alongside the CI/CD stack, plus a Conftest/Rego `policy-check` pipeline step — see [Security Plane](#-security-plane) below
 
 ## 📋 Pipeline Stages
 
@@ -86,6 +87,26 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 
 - **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
 - **Suite mode** (`make up-suite`): Adds uFawkesRes PostgreSQL, Valkey, Traefik ingress and uFawkesObs OTEL Collector, Alloy, Loki, Prometheus
+
+## 🔐 Security Plane
+
+The security plane (formerly the standalone uFawkesSec repo) is merged into this
+repo's `compose.yaml` / `compose.suite.yaml` and runs alongside the CI/CD stack:
+
+| Service                    | Image                                  | Role                                    |
+| --------------------------- | --------------------------------------- | ---------------------------------------- |
+| `defectdojo`                | `defectdojo/defectdojo-django:2.38.0`   | Security findings aggregation (Django)   |
+| `defectdojo-nginx`          | `defectdojo/defectdojo-nginx:2.38.0`    | Reverse proxy for DefectDojo             |
+| `defectdojo-celery-beat`    | `defectdojo/defectdojo-django:2.38.0`   | Periodic task scheduler                  |
+| `defectdojo-celery-worker`  | `defectdojo/defectdojo-django:2.38.0`   | Async task worker                        |
+| `infisical`                 | `infisical/infisical:v0.93.1`           | Zero-trust secrets store                 |
+| `trivy-server`               | `aquasec/trivy:latest`                  | Shared Trivy CVE cache server            |
+| `falco`                      | `falcosecurity/falco-no-driver:0.39.2`  | Runtime container security monitoring    |
+
+Standalone mode embeds its own `postgres`/`valkey`; suite mode (`compose.suite.yaml`)
+redirects these services to uFawkesRes's shared `fawkes-postgres`/`fawkes-cache`
+instead. Rego policies live in `policy/` and run as the `policy-check` pipeline
+step (see [docs/policy-guide.md](docs/policy-guide.md)).
 
 ## 🛠️ Quick Start
 
@@ -419,7 +440,7 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 | **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
 | **uFawkesObs**  | Observability — Prometheus, Grafana, Loki, OTEL      | [GitHub](https://github.com/paruff/uFawkesObs)  |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
-| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/uFawkesSec)  |
+| **uFawkesSec**  | Security — merged into uFawkesPipe (DefectDojo, Infisical, Trivy, Falco) | _merged_ |
 | **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |
 | **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/uFawkesAI)   |
 
