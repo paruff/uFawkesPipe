@@ -16,6 +16,7 @@ uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQ
 - **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration with GitHub OAuth
 - **DORA Observability** - Structured JSON logging, OTEL deployment event emission, Prometheus metrics
 - **Standalone + Suite Mode** - Run independently or connect to uFawkesRes (PostgreSQL/Traefik) and uFawkesObs (OTEL/Loki)
+- **Security Plane (merged from uFawkesSec)** - DefectDojo, Infisical, Trivy server, and Falco run alongside the CI/CD stack, plus a Conftest/Rego `policy-check` pipeline step — see [Security Plane](#-security-plane) below
 
 ## 📋 Pipeline Stages
 
@@ -86,6 +87,32 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 
 - **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
 - **Suite mode** (`make up-suite`): Adds uFawkesRes PostgreSQL, Valkey, Traefik ingress and uFawkesObs OTEL Collector, Alloy, Loki, Prometheus
+
+## 🔐 Security Plane
+
+The security plane (formerly the standalone uFawkesSec repo) is merged into this
+repo's `compose.yaml` / `compose.suite.yaml`, gated behind the `security` Compose
+profile — it does **not** start with a plain `make up` / `docker compose up -d`.
+Run `docker compose --profile security up -d` (or `make up-security`) to bring it
+up. uFawkesPipe stays a lightweight CI/CD plane by default; the full DefectDojo/
+Infisical/Falco suite is for users who want it here rather than in Fawkes proper.
+`trivy-server` is the exception — it stays in the default profile since the
+pipeline itself uses it for image/fs scanning.
+
+| Service                    | Image                                  | Role                                    |
+| --------------------------- | --------------------------------------- | ---------------------------------------- |
+| `defectdojo`                | `defectdojo/defectdojo-django:2.38.0`   | Security findings aggregation (Django)   |
+| `defectdojo-nginx`          | `defectdojo/defectdojo-nginx:2.38.0`    | Reverse proxy for DefectDojo             |
+| `defectdojo-celery-beat`    | `defectdojo/defectdojo-django:2.38.0`   | Periodic task scheduler                  |
+| `defectdojo-celery-worker`  | `defectdojo/defectdojo-django:2.38.0`   | Async task worker                        |
+| `infisical`                 | `infisical/infisical:v0.93.1-postgres`  | Zero-trust secrets store                 |
+| `trivy-server`               | `aquasec/trivy:0.74.0`                  | Shared Trivy CVE cache server            |
+| `falco`                      | `falcosecurity/falco-no-driver:0.39.2`  | Runtime container security monitoring    |
+
+Standalone mode embeds its own `postgres`/`valkey`; suite mode (`compose.suite.yaml`)
+redirects these services to uFawkesRes's shared `fawkes-postgres`/`fawkes-cache`
+instead. Rego policies live in `policy/` and run as the `policy-check` pipeline
+step (see [docs/policy-guide.md](docs/policy-guide.md)).
 
 ## 🛠️ Quick Start
 
@@ -237,7 +264,7 @@ The `tests/unit/` suite validates the `.woodpecker.yml` pipeline definition stat
 
 | Test Module | Coverage |
 |-------------|----------|
-| `test_woodpecker_yml.py` | **Pipeline structure**: Valid YAML, `steps` list exists, `when` section present. **Step ordering**: `init` first, lint before security, test before security. **Step configuration** (per step): correct image & version pinning (e.g., `alpine:3.20`, `zricethezav/gitleaks:v8.18.2`, `curlimages/curl:8.6.0`), required commands/flags (`--format json`, `--no-progress`, `--exit-code=1` for secrets), output paths (`artifacts/security/*.json`), secret wiring (`from_secret`), branch conditions (`when: branch: main`), DORA logging (`source dora-log.sh`, `dora_start`, `dora_emit`), non-blocking behavior (`dora_warn` on failure). **Trivy exception**: Explicitly asserts `aquasec/trivy:latest` for scanner images with documented justification. **Artifact directories**: `init` creates `artifacts/security`, `artifacts/coverage`, `artifacts/tests` via `mkdir -p`. |
+| `test_woodpecker_yml.py` | **Pipeline structure**: Valid YAML, `steps` list exists, `when` section present. **Step ordering**: `init` first, lint before security, test before security. **Step configuration** (per step): correct image & version pinning (e.g., `alpine:3.20`, `zricethezav/gitleaks:v8.18.2`, `curlimages/curl:8.6.0`), required commands/flags (`--format json`, `--no-progress`, `--exit-code=1` for secrets), output paths (`artifacts/security/*.json`), secret wiring (`from_secret`), branch conditions (`when: branch: main`), DORA logging (`source dora-log.sh`, `dora_start`, `dora_emit`), non-blocking behavior (`dora_warn` on failure). **Artifact directories**: `init` creates `artifacts/security`, `artifacts/coverage`, `artifacts/tests` via `mkdir -p`. |
 | `test_docker_compose_validation.py` | **Compose structure**: Valid YAML, `services` section, all services have `image`, no `:latest` tags, all services have `labels`, volume declarations exist, named volumes (no host paths), no secrets in compose. **Healthchecks**: Services declare `healthcheck` (except `dependency-check`, `pack-cli`). |
 | `test_compose_network.py` | **Standalone mode**: `compose.yaml` declares NO `fawkes-net`, no services attach to it, `woodpecker-agent` has no `WOODPECKER_BACKEND_DOCKER_NETWORK`. **Suite mode**: `compose.suite.yaml` declares `fawkes-net` as `external: true` with `name: fawkes-net`, all 4 services attach, agent has `WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net`. **Makefile**: `network` target creates `fawkes-net` idempotently (double-pipe true); `up` has NO `network` dep; `up-suite` HAS `network` dep. |
 | `test_artifact_dirs.py` | **Init step**: First step is `init` with `alpine:3.20`; commands include `mkdir -p artifacts/security`, `artifacts/coverage`, `artifacts/tests` using `mkdir -p`. |
@@ -419,7 +446,7 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 | **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
 | **uFawkesObs**  | Observability — Prometheus, Grafana, Loki, OTEL      | [GitHub](https://github.com/paruff/uFawkesObs)  |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
-| **uFawkesSec**  | Security — policy-as-code, supply chain, guardrails  | [GitHub](https://github.com/paruff/uFawkesSec)  |
+| **uFawkesSec**  | Security — merged into uFawkesPipe (DefectDojo, Infisical, Trivy, Falco) | _merged_ |
 | **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |
 | **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/uFawkesAI)   |
 

@@ -284,19 +284,12 @@ class TestVulnScanFsStep:
             "Step named 'vuln-scan-fs' must exist in .woodpecker.yml"
         )
 
-    def test_uses_trivy_latest(self, woodpecker_config):
-        """Acceptance: vuln-scan-fs uses 'aquasec/trivy:latest'.
-
-        Trivy uses :latest intentionally — scanner images require the most
-        current CVE databases, which are bundled inside the container image.
-        This is a documented exception, not a policy violation. See
-        CONTRIBUTING.md §"Exception: Vulnerability Scanner Images" and
-        docs/ARCHITECTURE.md §"Image pinning policy".
-        """
+    def test_uses_pinned_trivy_image(self, woodpecker_config):
+        """Acceptance: vuln-scan-fs uses a pinned aquasec/trivy version."""
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'vuln-scan-fs' not found"
-        assert step["image"] == "aquasec/trivy:latest", (
-            f"vuln-scan-fs must use 'aquasec/trivy:latest', got '{step.get('image')}'"
+        assert step["image"] == "aquasec/trivy:0.74.0", (
+            f"vuln-scan-fs must use 'aquasec/trivy:0.74.0', got '{step.get('image')}'"
         )
 
     def test_has_json_format_output(self, woodpecker_config):
@@ -407,19 +400,12 @@ class TestVulnScanImageStep:
             "Step named 'vuln-scan-image' must exist in .woodpecker.yml"
         )
 
-    def test_uses_trivy_latest(self, woodpecker_config):
-        """Acceptance: vuln-scan-image uses 'aquasec/trivy:latest'.
-
-        Trivy uses :latest intentionally — scanner images require the most
-        current CVE databases, which are bundled inside the container image.
-        This is a documented exception, not a policy violation. See
-        CONTRIBUTING.md §"Exception: Vulnerability Scanner Images" and
-        docs/ARCHITECTURE.md §"Image pinning policy".
-        """
+    def test_uses_pinned_trivy_image(self, woodpecker_config):
+        """Acceptance: vuln-scan-image uses a pinned aquasec/trivy version."""
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'vuln-scan-image' not found"
-        assert step["image"] == "aquasec/trivy:latest", (
-            f"vuln-scan-image must use 'aquasec/trivy:latest', "
+        assert step["image"] == "aquasec/trivy:0.74.0", (
+            f"vuln-scan-image must use 'aquasec/trivy:0.74.0', "
             f"got '{step.get('image')}'"
         )
 
@@ -852,11 +838,11 @@ class TestGenerateSbomStep:
         )
 
     def test_uses_correct_image(self, woodpecker_config):
-        """Acceptance: generate-sbom uses 'aquasec/trivy:latest'."""
+        """Acceptance: generate-sbom uses a pinned aquasec/trivy version."""
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'generate-sbom' not found"
-        assert step["image"] == "aquasec/trivy:latest", (
-            f"generate-sbom must use 'aquasec/trivy:latest', got '{step.get('image')}'"
+        assert step["image"] == "aquasec/trivy:0.74.0", (
+            f"generate-sbom must use 'aquasec/trivy:0.74.0', got '{step.get('image')}'"
         )
 
     def test_has_registry_username_secret(self, woodpecker_config):

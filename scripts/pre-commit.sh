@@ -120,7 +120,9 @@ fi
 echo ""
 echo "🔍 Checking for 'latest' image tags..."
 if [ -f "compose.yaml" ]; then
-    latest_tags=$(grep -n "image:.*:latest" compose.yaml | grep -v "^\s*#" | grep -v "^.*#" || true)
+    # aquasec/trivy:latest is a documented exception (needs current CVE database),
+    # allow-listed the same way in policy/no-latest-tag.rego.
+    latest_tags=$(grep -n "image:.*:latest" compose.yaml | grep -v "^\s*#" | grep -v "^.*#" | grep -v "aquasec/trivy:latest" || true)
     if [ -n "$latest_tags" ]; then
         echo -e "${RED}❌ Found 'latest' image tags in compose.yaml:${NC}"
         echo "$latest_tags"

@@ -1,84 +1,67 @@
-# BETA-CLEANUP — Beta Release Plan Items 4-7
+# Specification — CONSOLIDATE-SEC (merge uFawkesSec into uFawkesPipe)
 
-**Type:** chore
-**Branch:** `chore/beta-release-cleanup`
-**Source:** `docs/BETA_RELEASE_PLAN.md` action checklist items 4-7
+## Problem Statement
 
----
+uFawkesPipe (CI/CD delivery plane) and uFawkesSec (security plane) are
+separate repos that already run on the same `fawkes-net` Docker network and
+integrate over one hardcoded REST call (`upload-defectdojo` → `http://
+defectdojo:8080`). The user has decided to consolidate them into a single
+repo/product to remove that cross-repo runtime coupling and manage them as
+one deployable unit going forward. Full audit and decision context: see the
+audit delivered in the prior conversation turn (repo sizes, port/volume
+collision check, license mismatch, stale/unshipped `policy-check` cross-repo
+git-clone step).
 
-## 1. Problem
+## Requirements
 
-`docs/BETA_RELEASE_PLAN.md` lists 4 remaining action-checklist items before
-uFawkesPipe can be tagged beta: stale backlog issues are undispositioned
-against live GitHub state, a resolved known-limitation is still marked open,
-`CHANGELOG.md` has no entries for any `v1.x` tag, and no GitHub Release has
-ever been published.
+- Import uFawkesSec's git history into uFawkesPipe (not a flat file copy)
+  so `git blame`/`git log` on the security code survives the merge.
+- Fold uFawkesSec's compose services (defectdojo, defectdojo-nginx,
+  defectdojo-celery-beat, defectdojo-celery-worker, infisical,
+  trivy-server, falco) into uFawkesPipe's compose files with no port/
+  volume/network-name collisions.
+- Wire a real `policy-check` pipeline step in `.woodpecker.yml` against the
+  now-local `policy/*.rego` files, replacing the never-shipped git-clone-at-
+  runtime design that CHANGELOG.md #49 claimed but `.woodpecker.yml` never
+  actually contained.
+- Merge uFawkesSec's test suite into `tests/unit/`, updating any assertions
+  that assumed uFawkesSec was a standalone repo (e.g. `fawkes-net` as an
+  *external* network — it becomes internal once merged).
+- Merge docs (`policy-guide.md`, `quickstart.md`), `AGENTS.md`, and
+  `.pre-commit-config.yaml` (adopt uFawkesPipe's gitleaks-only convention;
+  drop uFawkesSec's duplicate `detect-secrets`/`.secrets.baseline`).
+- Resolve the license mismatch: uFawkesPipe has a real Apache-2.0 LICENSE
+  file; uFawkesSec's README claims MIT but has no LICENSE file at all.
+  Keep Apache-2.0 (the one that actually exists) and correct the README
+  claim during the docs merge.
+- Update uFawkesPipe's own README ecosystem table entry for uFawkesSec to
+  reflect that it's now merged in, not a separate link.
 
-## 2. Scope
+## Out of Scope (this PR)
 
-**In scope:**
-- Reconcile `docs/plan.md`'s disposition table against the *current* state
-  of each live GitHub issue (not the state assumed when the table was
-  written) and close/comment/relabel accordingly.
-- Mark `docs/KNOWN_LIMITATIONS.md` L-002 resolved (`docs/GOLDEN_PATH.md`
-  exists).
-- Backfill `CHANGELOG.md` with entries for `v1.0.0` through `v1.2.0` from
-  git tag/commit history, and roll the stale `[Unreleased]` section into a
-  `v1.3.0-beta.1` section.
-- Prepare (not execute pre-merge) the `v1.3.0-beta.1` tag + GitHub Release.
+- Any change to the `fawkes` meta-repo (`ROADMAP.md`, top-level `README.md`
+  ecosystem table) — that's a separate repo, needs its own PR, flagged as a
+  follow-up for the human.
+- Archiving/deleting the `ufawkessec` GitHub repo — a GitHub admin action,
+  human-gated, not performed by this flow.
+- Live boot of the merged 11-service stack (`make up-suite`) — **no Docker
+  daemon is available in this environment** (`docker ps` fails: no
+  `docker.sock`). This is documented as a required manual pre-merge check
+  for the human reviewer (exact command given in the PR), not silently
+  skipped.
+- `tests/unit/test_policy.py` (uFawkesSec's Conftest-via-Docker policy
+  tests) — same Docker-unavailable constraint. Moved into the repo as-is;
+  not executed this session; flagged for the human to run before merging.
 
-**Out of scope:**
-- Actually cutting the git tag / publishing the GitHub Release before this
-  PR is merged — `docs/BETA_RELEASE_PLAN.md`'s own gate criteria requires
-  "`CHANGELOG.md` reflects reality" *before* tagging, and feature-flow
-  never self-merges. Tag + release happen as a follow-up once a human
-  merges this PR.
-- Items 1-3 of the checklist (Dependabot PRs, CodeQL fix, B-1) — already
-  done in prior sessions (PIPE-009, PR #64).
-- GITOPS-001's cross-repo criteria (uFawkesObs, uFawkesDORA, ufawkes.dev)
-  — this repo can only speak to its own state.
-- Setting up an actual GitHub Sponsors profile/tiers (DY-007) — human/
-  business decision, not something to fabricate.
+## Acceptance Criteria
 
-## 3. Requirements
-
-- R1: Every open issue in `docs/plan.md`'s disposition table (DY-001
-  through DY-007, GITOPS-001) gets a disposition action taken against the
-  live repo, backed by evidence (grep/gh output), not by trusting the
-  table's original assumption blindly.
-- R2: `docs/KNOWN_LIMITATIONS.md` L-002 row updated to resolved state,
-  matching the existing strikethrough+RESOLVED convention used elsewhere
-  in that table.
-- R3: `CHANGELOG.md` has one entry per existing tag (`v1.0.0`, `v1.1.0`,
-  `v1.1.1`, `v1.2.0`) summarizing real merged work (curated from `git log`,
-  not a raw commit dump — routine dependency bumps grouped, not itemized).
-- R4: `CHANGELOG.md`'s `[Unreleased]` content is preserved (not deleted)
-  but re-headed as `[1.3.0-beta.1]` with today's date and merged with the
-  work landed since `v1.2.0` (GitOps lifecycle gates, PIPE-009, etc.).
-- R5: A draft GitHub Release title/body for `v1.3.0-beta.1` is prepared
-  and ready to publish once this PR merges.
-
-## 4. Acceptance Criteria
-
-- [ ] AC-01: Each of DY-001..DY-007 and GITOPS-001 has a recorded
-      disposition (closed-with-comment, or left-open-with-status-comment)
-      backed by a specific piece of evidence from the live repo (file
-      existence, workflow existence, README content, etc.), not a blind
-      copy of `docs/plan.md`'s original guess.
-- [ ] AC-02: `docs/KNOWN_LIMITATIONS.md` L-002 row shows the resolved
-      pattern (strikethrough limitation + **RESOLVED** + mitigation note).
-- [ ] AC-03: `CHANGELOG.md` contains non-empty `Added`/`Changed`/`Fixed`
-      sections for `v1.0.0`, `v1.1.0`, `v1.1.1`, and `v1.2.0`, each with a
-      real date matching `git log -1 --format=%ai <tag>`.
-- [ ] AC-04: `CHANGELOG.md`'s former `[Unreleased]` entries are not lost —
-      every bullet that was there before this change still exists somewhere
-      in the new `[1.3.0-beta.1]` section.
-- [ ] AC-05: A release-notes draft exists (in the PR description or a
-      scratch file) for `v1.3.0-beta.1`, ready to paste into
-      `gh release create` once the PR merges.
-
-## 5. Out of Scope
-
-- Rewriting `docs/plan.md`'s WP-001..WP-009 issue bodies — only the
-  disposition table's *live-issue actions* are executed.
-- Any code change — this is a docs/process chore.
+| ID | Criterion | test_type |
+| --- | --- | --- |
+| AC-01 | uFawkesSec's git history is present in uFawkesPipe via `git subtree`, then reorganized to flat homes (`config/`, `policy/`, `docs/`, `tests/unit/`) with no leftover wrapper directory | unit |
+| AC-02 | `compose.yaml`/`compose.suite.yaml` contain uFawkesSec's 7 services with no port/volume/network-name collisions against existing services | unit |
+| AC-03 | `.woodpecker.yml` has a `policy-check` step running Conftest against local `policy/*.rego`, positioned before `build-image` | unit |
+| AC-04 | Merged `tests/unit/test_compose_yaml.py` and `tests/unit/test_workflow_validation.py` pass via `pytest` (no Docker required) | unit |
+| AC-05 | `AGENTS.md`, `README.md`, `docs/ARCHITECTURE.md` reflect the merged security-plane scope; LICENSE mismatch resolved (Apache-2.0 kept, README corrected) | unit |
+| AC-06 | `.pre-commit-config.yaml` has one secret scanner (gitleaks), not two | unit |
+| AC-07 | Full pytest suite (`tests/unit/`) passes except the Docker-dependent `test_policy.py`, which is explicitly flagged, not silently skipped | unit |
+| AC-08 | Live-system boot of the merged stack is explicitly documented as a deferred manual pre-merge step (not executed), with the exact command | live-system (deferred — see Out of Scope) |

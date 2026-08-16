@@ -53,6 +53,10 @@ uFawkesPipe is a **CI/CD platform** for polyglot application development. It pro
 | **sonarqube** | `sonarqube:lts-community` | `9001→:9000` | SAST code quality analysis |
 | **portainer** | `portainer/portainer-ce:2.39.3` | `9443` (HTTPS), `9002` (edge) | Container management, CD via webhook stacks |
 
+Security-plane services (DefectDojo, Infisical, Falco, plus their embedded
+`postgres`/`valkey`) also live in `compose.yaml`, gated behind the `security`
+Compose profile — see §13.
+
 ### Labels
 
 Every service carries standard Fawkes labels:
@@ -60,7 +64,7 @@ Every service carries standard Fawkes labels:
 ```yaml
 labels:
   - "plane=ufawkespipe"
-  - "component=<ci-server|ci-agent|sast|cd-engine>"
+  - "component=<ci-server|ci-agent|sast|cd-engine|security-db|security-cache|vuln-mgmt|secrets-mgmt|vuln-scan|runtime-security>"
   - "managed-by=fawkes"
 ```
 
@@ -127,13 +131,13 @@ validate (init → lint-yaml + lint-shell)
 | 2 | test | `integration-tests` | `python:3.12-slim` | always | Yes |
 | 2 | test | `contract-tests` | `python:3.12-slim` | always | Yes |
 | 3 | security | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | always | **Yes** (`--exit-code 1`) |
-| 3 | security | `vuln-scan-fs` | `aquasec/trivy:latest` | always | No (non-blocking, to DefectDojo) |
-| 3 | security | `vuln-scan-image` | `aquasec/trivy:latest` | push → main only | No (non-blocking) |
+| 3 | security | `vuln-scan-fs` | `aquasec/trivy:0.74.0` | always | No (non-blocking, to DefectDojo) |
+| 3 | security | `vuln-scan-image` | `aquasec/trivy:0.74.0` | push → main only | No (non-blocking) |
 | 4 | build | `build-image` | `alpine:3.20` | push → main only | No (placeholder) |
 | 5 | publish | `upload-defectdojo` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 | 6 | deploy | `notify-obs` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 
-**Image pinning policy:** All non-scanner images pinned to a specific tag. Trivy (`aquasec/trivy:latest`) is the documented exception — scanner images need current CVE databases.
+**Image pinning policy:** All images, including Trivy, are pinned to a specific tag.
 
 **DORA logging:** All steps use `scripts/dora-log.sh` for structured JSON logging compatible with uFawkesObs/Loki ingestion.
 
@@ -354,6 +358,49 @@ compose.yaml + compose.suite.yaml → make up-suite
 
 ---
 
+## 13. Security Plane (merged from uFawkesSec)
+
+uFawkesSec was merged into this repo as a security plane addition. DefectDojo,
+Infisical, Trivy server, and Falco run as `compose.yaml` services, gated behind
+the `security` Compose profile — not started by a plain `docker compose up -d`.
+`trivy-server` alone stays in the default profile since the pipeline uses it
+for scanning. Rego policies gate the pipeline via the `policy-check` step in
+`.woodpecker.yml` (see §3.2).
+
+### 13.1 Services
+
+| Service | Image | Port(s) | Role |
+| ------- | ----- | ------- | ---- |
+| **postgres** | `postgres:18-alpine` | — | DB for DefectDojo + Infisical (standalone mode) |
+| **valkey** | `valkey/valkey:9.0-alpine` | — | Cache/broker for DefectDojo + Infisical (standalone mode) |
+| **defectdojo** + **defectdojo-nginx** | `defectdojo/defectdojo-django:2.38.0` / `-nginx:2.38.0` | `8080` | Vulnerability findings aggregation |
+| **defectdojo-celery-beat** / **-worker** | `defectdojo/defectdojo-django:2.38.0` | — | Scheduled + async DefectDojo tasks |
+| **infisical** | `infisical/infisical:v0.93.1-postgres` | `8082` | Secrets management |
+| **trivy-server** | `aquasec/trivy:0.74.0` | `4954` (internal) | Shared CVE cache for image/fs scans |
+| **falco** | `falcosecurity/falco-no-driver:0.39.2` | — | Runtime container security monitoring |
+
+**Documented policy exceptions:** `falco`'s `privileged: true` (needed for eBPF
+probe loading) is intentional, allow-listed in the relevant `policy/*.rego`
+file — do not "fix" this away in tests or docs.
+
+### 13.2 Deployment Modes
+
+- **Standalone** (`compose.yaml`): security services use their own embedded
+  `postgres`/`valkey`.
+- **Suite** (`compose.suite.yaml`): security services redirect to uFawkesRes's
+  shared `fawkes-postgres`/`fawkes-cache` instead; `fawkes-net` is an internal
+  Compose network owned by this repo (not external — see §12).
+
+### 13.3 Policy Gate
+
+`policy-check` (in `.woodpecker.yml`, §3.2) runs Conftest against `compose.yaml`,
+`compose.suite.yaml`, and `.woodpecker.yml` using the Rego policies in `policy/`.
+See [docs/policy-guide.md](policy-guide.md) and
+[docs/quickstart.md](quickstart.md) for authoring policies and the
+security-plane startup sequence.
+
+---
+
 ## 9. Legacy Architecture (Jenkins-based)
 
 The current stack uses **Woodpecker CI** as its pipeline engine. The previous architecture used **Jenkins**. The legacy `docker-compose.yml` and `k8s/` manifests were removed in this migration.
@@ -426,3 +473,5 @@ Tests validate:
 | `scripts/` | Bash | Git hooks (pre-commit, commit-msg) |
 | `examples/` | YAML | `.fawkespipe.yml` examples for Java, Python, Node.js, Go |
 | `docs/` | Markdown | Documentation |
+| `policy/` | Rego | Conftest policies enforced by `policy-check` (§3.2, §13.3) |
+| `config/{defectdojo,infisical,falco}/` | YAML | Security-plane service configuration (no secrets) |
