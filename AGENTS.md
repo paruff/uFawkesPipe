@@ -125,6 +125,9 @@ steps another agent calls directly.
 - `set -euo pipefail` at top
 - `shellcheck` must pass
 
+**Error handling in checks/validators/tests:**
+- Never swallow an exception in a check without logging what broke. A bare `except: pass` around a validation step makes "the check failed to run" indistinguishable from "the check ran and found nothing wrong" — both report clean, and a real failure hides indefinitely.
+
 ---
 
 ## 5. The PM–Agent Contract
