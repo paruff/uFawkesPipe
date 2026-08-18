@@ -171,6 +171,14 @@ steps another agent calls directly.
 
 Never combine a failing test commit with an implementation commit.
 
+Commit message format: `feat(scope):`, `fix(scope):`, `test(scope):`,
+`docs:`, `chore:` — reference issue number where relevant:
+`fix(pipeline): correct notify-obs secret name (#8)`. Enforced by
+`reusable-preflight.yml`'s `commit-format: conventional` check on every PR
+(regex: `^(feat|fix|docs|style|refactor|test|chore|ci|perf|build|revert)(\(.+\))?: .{1,72}$`)
+— this section exists so agents follow the format proactively instead of
+only discovering it from a failed CI check.
+
 ---
 
 ## 7. AI-Assisted Review Block
