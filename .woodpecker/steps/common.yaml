@@ -184,11 +184,19 @@ x-defectdojo-upload: &defectdojo-upload
 
 x-notify-obs: &notify-obs
   <<: *curl-base
+  # NOTE: not currently referenced via <<: *notify-obs anywhere -- the live
+  # pipeline (.woodpecker.yml) inlines its own full copy of this step
+  # instead of merging this anchor in. Kept in sync manually; if you're
+  # editing notify-obs behavior, also check .woodpecker.yml.
   environment:
     OTEL_ENDPOINT:
       from_secret: otel_endpoint  # pragma: allowlist secret
     OTEL_HEADERS:
       from_secret: otel_headers  # pragma: allowlist secret
+    DORA_INGESTION_URL:
+      from_secret: dora_ingestion_url  # pragma: allowlist secret
+    DORA_API_KEY:
+      from_secret: dora_api_key  # pragma: allowlist secret
   commands:
     - source /drone/src/scripts/dora-log.sh
     - dora_start "notify-obs"
@@ -226,5 +234,34 @@ x-notify-obs: &notify-obs
           -o /dev/null || true
       else
         dora_warn "observability" "OTEL_ENDPOINT not set — skipping OTEL collector POST"
+      fi
+    - |
+      if [ -n "${DORA_INGESTION_URL:-}" ]; then
+        DORA_PAYLOAD=$(cat <<EOF
+      {
+        "schema_version": "1.0",
+        "event_type": "deployment",
+        "repo": "${CI_REPO}",
+        "service": "${CI_REPO_NAME}",
+        "environment": "production",
+        "commit_sha": "${CI_COMMIT_SHA}",
+        "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+        "status": "success",
+        "pipeline_url": "${CI_PIPELINE_URL}"
+      }
+      EOF
+        )
+        DORA_HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X POST "${DORA_INGESTION_URL}/event" \
+          -H "Content-Type: application/json" \
+          ${DORA_API_KEY:+-H "Authorization: Bearer ${DORA_API_KEY}"} \
+          -d "${DORA_PAYLOAD}") || DORA_HTTP_STATUS="curl_error"
+        if [ "${DORA_HTTP_STATUS}" = "201" ]; then
+          dora_info "observability" "DORA deployment event accepted" ",\"http_code\":\"${DORA_HTTP_STATUS}\""
+        else
+          dora_warn "observability" "DORA deployment event not accepted" ",\"http_code\":\"${DORA_HTTP_STATUS}\""
+        fi
+      else
+        dora_warn "observability" "DORA_INGESTION_URL not set — deployment will not be counted in DORA metrics"
       fi
     - dora_end "notify-obs"

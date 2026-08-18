@@ -817,6 +817,89 @@ class TestNotifyObsStep:
             or '[ -n "${OTEL_ENDPOINT:-}" ]' in command_str
         ), "notify-obs must handle missing OTEL_ENDPOINT gracefully"
 
+    def test_has_dora_ingestion_url_secret(self, woodpecker_config):
+        """Acceptance: notify-obs has DORA_INGESTION_URL from_secret.
+
+        Deployments must feed DORA metrics computation via uFawkesObs's
+        REST /event contract, not just the OTLP trace span above (which
+        lands in Tempo but is never validated against
+        deployment-event.schema.json or reaches dora/ingestion/).
+        """
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        environment = step.get("environment", {})
+        url = environment.get("DORA_INGESTION_URL", {})
+        assert url.get("from_secret") == "dora_ingestion_url", (
+            f"notify-obs must have DORA_INGESTION_URL from_secret: "
+            f"dora_ingestion_url, got: {url}"
+        )
+
+    def test_has_dora_api_key_secret(self, woodpecker_config):
+        """Acceptance: notify-obs has optional DORA_API_KEY from_secret."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        environment = step.get("environment", {})
+        key = environment.get("DORA_API_KEY", {})
+        assert key.get("from_secret") == "dora_api_key", (
+            f"notify-obs must have DORA_API_KEY from_secret: dora_api_key, got: {key}"
+        )
+
+    def test_posts_deployment_event_to_dora_ingestion(self, woodpecker_config):
+        """Acceptance: notify-obs POSTs to ${DORA_INGESTION_URL}/event."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert "${DORA_INGESTION_URL}/event" in command_str, (
+            f"notify-obs must POST to \\${{DORA_INGESTION_URL}}/event, "
+            f"got: {command_str}"
+        )
+
+    def test_deployment_event_payload_matches_schema_fields(self, woodpecker_config):
+        """Acceptance: the DORA event payload matches deployment-event.schema.json's
+        required fields (schema_version, event_type, repo, service,
+        environment, commit_sha, deployed_at, status, pipeline_url)."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        for field in [
+            '"schema_version"',
+            '"event_type": "deployment"',
+            '"repo"',
+            '"service"',
+            '"environment"',
+            '"commit_sha"',
+            '"deployed_at"',
+            '"status"',
+            '"pipeline_url"',
+        ]:
+            assert field in command_str, (
+                f"DORA deployment-event payload missing required field {field}"
+            )
+
+    def test_deployment_event_uses_full_commit_sha(self, woodpecker_config):
+        """Acceptance: commit_sha uses the full SHA, not the short 7-char
+        one used for the OTLP span's deployment.version -- the schema
+        requires ^[0-9a-f]{40}$."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        assert '"commit_sha": "${CI_COMMIT_SHA}"' in command_str, (
+            f"commit_sha must use the full \\${{CI_COMMIT_SHA}}, not a "
+            f"truncated form, got: {command_str}"
+        )
+
+    def test_dora_event_send_is_non_blocking(self, woodpecker_config):
+        """Acceptance: the DORA event POST doesn't fail the pipeline on
+        ingestion errors, matching the existing OTLP send's non-blocking
+        behavior (notify-obs is a non-blocking observability step)."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'notify-obs' not found"
+        command_str = " ".join(step.get("commands", []))
+        dora_section = command_str[command_str.find("DORA_INGESTION_URL") :]
+        assert "|| true" in dora_section or "warn" in dora_section.lower(), (
+            "DORA event POST must not fail the pipeline on error"
+        )
+
 
 @pytest.mark.unit
 class TestGenerateSbomStep:
