@@ -46,7 +46,7 @@ jobs:
       # classic "pwn request" pattern, so this step intentionally does not
       # accept a caller-influenced ref.
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

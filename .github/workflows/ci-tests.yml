@@ -27,7 +27,7 @@ jobs:
           echo "job:${{ github.job }}"
 
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -62,7 +62,7 @@ jobs:
           echo "job:${{ github.job }}"
 
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v7
 
       - name: Start Docker Compose stack
         run: |
