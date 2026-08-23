@@ -18,7 +18,7 @@ jobs:
     name: Lint & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Run pre-commit hooks (shellcheck, yamllint, ruff, gitleaks, markdownlint)
         uses: actions/setup-python@v7
@@ -49,7 +49,7 @@ jobs:
     name: Validate Configs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
 
       - name: Validate compose.yaml (current active stack)
         run: docker compose config
@@ -92,7 +92,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
