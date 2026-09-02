@@ -177,8 +177,15 @@ jobs:
           node-version: "22"
 
       # ── Install OpenCode ──────────────────────────────────────────────────
+      # Pinned, not @latest: this step installs code that then runs with
+      # contents: write and every provider API key in this job. `@latest`
+      # means a different, unreviewed version on every run, and it is
+      # invisible to Dependabot -- an unpinned npm install inside a `run:`
+      # block is not a manifest it can track. 1.18.26 matches the action
+      # version pinned across paruff/fawkes, uFawkesDevX, prei and
+      # uFawkesObs, so the family stays on one opencode version.
       - name: Install OpenCode
-        run: npm install -g opencode-ai@latest
+        run: npm install -g opencode-ai@1.18.26
 
       # ── Install optional agent skills ─────────────────────────────────────
       # Skills extend OpenCode with extra tool capabilities (e.g. web search).
