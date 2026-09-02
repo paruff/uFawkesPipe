@@ -5,6 +5,34 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.3.0-beta.1...v1.4.0-beta.1) (2026-09-02)
+
+
+### Added
+
+* **ci:** add release-please, pin opencode-ai off [@latest](https://github.com/latest) ([#78](https://github.com/paruff/uFawkesPipe/issues/78)) ([b3c504f](https://github.com/paruff/uFawkesPipe/commit/b3c504fd90454821e02138242deaeeb5425ba12e))
+* **docs:** host shared DORA event contracts, sourced from uFawkesObs ([#69](https://github.com/paruff/uFawkesPipe/issues/69)) ([d399061](https://github.com/paruff/uFawkesPipe/commit/d39906149a9971c89e6da4b083c2ca827d7c9051))
+
+
+### Fixed
+
+* **ci:** allow external_directory writes for opencode ([#73](https://github.com/paruff/uFawkesPipe/issues/73)) ([32326eb](https://github.com/paruff/uFawkesPipe/commit/32326eb059dac2c0431853cb8cc0619986082037))
+* **dora:** send deployment events to uFawkesObs REST /event endpoint ([#70](https://github.com/paruff/uFawkesPipe/issues/70)) ([9a9b8b8](https://github.com/paruff/uFawkesPipe/commit/9a9b8b8e2fdb3423ecb8fc1dd1b8e9c9465e2298))
+
+
+### Docs
+
+* document never-swallow-exceptions principle in coding standards ([#72](https://github.com/paruff/uFawkesPipe/issues/72)) ([6fc8ab0](https://github.com/paruff/uFawkesPipe/commit/6fc8ab0109663f55b21ecbf849902a0e6ca427dc))
+* **dora:** document OTLP telemetry contract, add commit-format guidance ([#71](https://github.com/paruff/uFawkesPipe/issues/71)) ([7f5a090](https://github.com/paruff/uFawkesPipe/commit/7f5a09052360b0579646dbc63d5aca59aefe386e))
+
+
+### Chores
+
+* **deps:** bump actions/checkout from 4 to 7 ([#74](https://github.com/paruff/uFawkesPipe/issues/74)) ([4c9e618](https://github.com/paruff/uFawkesPipe/commit/4c9e618ded73c57fbe4d7e3c4fa0c71ffacb59b9))
+* **deps:** bump actions/setup-node from 4 to 7 ([#75](https://github.com/paruff/uFawkesPipe/issues/75)) ([62fcf53](https://github.com/paruff/uFawkesPipe/commit/62fcf531a21a22c91d9bc68244d52fcdaad59a37))
+* **deps:** bump hadolint/hadolint-action from 3.4.0 to 3.5.0 ([#77](https://github.com/paruff/uFawkesPipe/issues/77)) ([2a2e153](https://github.com/paruff/uFawkesPipe/commit/2a2e1534d1136cc13c0573657e484b9ba08a0dbf))
+* **deps:** bump trufflesecurity/trufflehog from 3.97.0 to 3.97.1 ([#76](https://github.com/paruff/uFawkesPipe/issues/76)) ([fe0fcad](https://github.com/paruff/uFawkesPipe/commit/fe0fcad085ad19c1e50f3bacd2f3cddccb33169e))
+
 ## [1.3.0-beta.1] - 2026-08-10
 
 ### Added
