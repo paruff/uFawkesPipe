@@ -77,6 +77,7 @@ class TestWorkflowValidation:
             "actions/",
             "./",
             "github/",
+            "googleapis/",
             "gitleaks/",
             "trivy/",
             "codecov/",
