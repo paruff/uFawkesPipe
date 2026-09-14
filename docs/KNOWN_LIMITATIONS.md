@@ -43,6 +43,12 @@
 | L-015 | Woodpecker agent mounts `/var/run/docker.sock` | **RESOLVED:** Required for CNB builds; acceptable in dev; restrict in production via agent isolation or K8s pod security policies | Document production restrictions before scaling |
 | L-016 | No Vault / Infisical integration | **RESOLVED:** Secrets managed via Woodpecker's SQLite store and `.env` file; Infisical runs in security plane but not wired to pipeline | Acceptable for single-node dev; wire Infisical to pipeline in future |
 
+### CI/CD & Release
+
+| # | Limitation | Impact | Mitigation |
+| - | ---------- | ------ | ---------- |
+| L-017 | Release Please workflow fails when `RELEASE_PLEASE_TOKEN` secret is not configured and repository default workflow permissions are `read` | Release PRs cannot be created automatically; manual changelog updates required | Create a Personal Access Token (PAT) with `repo` and `pull_requests` scopes, add it as `RELEASE_PLEASE_TOKEN` secret; see workflow comments for details |
+
 ---
 
 ## Deprecations
