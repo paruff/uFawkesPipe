@@ -1,5 +1,4 @@
 import pytest
-import yaml
 from pathlib import Path
 
 
@@ -23,7 +22,10 @@ class TestTrivySeverityAlignment:
         with open(fawkespipe_example, encoding="utf-8") as f:
             content = f.read()
 
-        assert "severity: HIGH,CRITICAL" in content or "severity: HIGH, CRITICAL" in content
+        assert (
+            "severity: HIGH,CRITICAL" in content
+            or "severity: HIGH, CRITICAL" in content
+        )
 
     def test_woodpecker_trivy_fs_scan_severity(self, woodpecker_yml):
         """vuln-scan-fs step must filter HIGH,CRITICAL severity."""

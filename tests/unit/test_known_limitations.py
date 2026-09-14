@@ -30,12 +30,16 @@ class TestKnownLimitations:
                 impact = row.get("Impact", "").strip()
                 mitigation = row.get("Mitigation", "").strip()
 
-                is_resolved = impact.startswith("**RESOLVED:**") or mitigation.startswith("**RESOLVED:**")
+                is_resolved = impact.startswith(
+                    "**RESOLVED:**"
+                ) or mitigation.startswith("**RESOLVED:**")
 
                 if not is_resolved:
                     unresolved.append(limitation_id)
 
-        assert not unresolved, f"Unresolved limitations (missing **RESOLVED:** in Impact or Mitigation): {unresolved}"
+        assert not unresolved, (
+            f"Unresolved limitations (missing **RESOLVED:** in Impact or Mitigation): {unresolved}"
+        )
 
     def test_no_strikethrough_without_resolved(self, limitations_content):
         """Strikethrough (~~) items should be marked RESOLVED in the Impact or Mitigation column."""
@@ -51,8 +55,12 @@ class TestKnownLimitations:
                 mitigation = row.get("Mitigation", "").strip()
 
                 if limitation_text.startswith("~~"):
-                    if not impact.startswith("**RESOLVED:**") and not mitigation.startswith("**RESOLVED:**"):
-                        issues.append(f"Strikethrough without RESOLVED: {limitation_text[:50]}")
+                    if not impact.startswith(
+                        "**RESOLVED:**"
+                    ) and not mitigation.startswith("**RESOLVED:**"):
+                        issues.append(
+                            f"Strikethrough without RESOLVED: {limitation_text[:50]}"
+                        )
 
         assert not issues, f"Strikethrough items missing RESOLVED: {issues}"
 
@@ -104,4 +112,7 @@ class TestKnownLimitations:
 
     def _is_limitation_table(self, table):
         """Check if table is a limitation table (has #, Limitation, Impact, Mitigation columns)."""
-        return all(col in table["headers"] for col in ["#", "Limitation", "Impact", "Mitigation"])
+        return all(
+            col in table["headers"]
+            for col in ["#", "Limitation", "Impact", "Mitigation"]
+        )
