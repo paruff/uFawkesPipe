@@ -52,22 +52,27 @@ For **each task above**, execute in this exact order:
 
 ### What Took Longer Than Expected
 
--
+- Pre-commit hook formatting fixes (EOF, trailing whitespace, Ruff) needed multiple commit attempts before the push hook passed cleanly
+- Cherry-picking onto a fresh branch after PR #82 merged required care to avoid mixing unrelated `.opencode/` deletions into the TDD commit
 
 ### What Broke That Wasn't in the Queue
 
--
+- `.opencode/` directory was deleted by an opencode tool update mid-session; unrelated to our work but showed up in `git status` as unstaged deletions
+- `test_no_strikethrough_without_resolved` initially failed because it only checked the Mitigation column for `**RESOLVED:**` but the actual marker is in the Impact column — had to fix the test to check both columns
 
 ### Non-Goal Pressure That Appeared
 
--
+- None — all three tasks (P0-1, P1-1, P1-4) stayed within scope
 
 ### Queue Deltas (Add/Remove/Reprioritize)
 
 | Action | Task | Reason |
 |--------|------|--------|
-| | | |
+| DONE | P0-1 KNOWN_LIMITATIONS resolution audit | Completed — all 16 items marked RESOLVED |
+| DONE | P1-1 Trivy severity threshold alignment | Completed — `--severity HIGH,CRITICAL` added to vuln-scan-fs |
+| DONE | P1-4 `make test-policy` target | Completed — runs conftest on policy/*.rego files |
 
 ### Learnings for VISION/MILESTONES/EXECUTION_QUEUE
 
--
+- The Trivy severity alignment (P1-1) only covers the `vuln-scan-fs` step — the `image-scan` step uses a different severity config and may need alignment in a future sprint
+- The `test_policy.py` and `test_woodpecker_yml.py` failures are pre-existing and NOT caused by our changes — those need separate investigation

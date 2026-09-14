@@ -169,10 +169,11 @@ steps:
       - event: push
         branch: main
 
-  # Policy-as-code checks (uFawkesSec) — compose/pipeline config against local Rego policies
+  # Policy-as-code checks — compose/pipeline config against local Rego policies
   - name: policy-check
     image: openpolicyagent/conftest:v0.57.0
     depends_on: [vuln-scan-fs]
+    timeout: 5
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "policy-check"
