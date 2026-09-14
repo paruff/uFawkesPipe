@@ -1,16 +1,16 @@
 # Graph Report - uFawkesPipe  (2026-09-14)
 
 ## Corpus Check
-- 86 files · ~72,902 words
+- 86 files · ~73,607 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1647 nodes · 1767 edges · 134 communities (121 shown, 13 thin omitted)
+- 1654 nodes · 1774 edges · 139 communities (126 shown, 13 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b3c504fd`
+- Built from commit: `6a1816b4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -149,6 +149,11 @@
 - [[_COMMUNITY_Community 131|Community 131]]
 - [[_COMMUNITY_Community 132|Community 132]]
 - [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 134|Community 134]]
+- [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
+- [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `TestNotifyObsStep` - 23 edges
@@ -159,20 +164,20 @@
 6. `run_conftest()` - 15 edges
 7. `uFawkesPipe — Architecture` - 14 edges
 8. `DORA Logging Anchor` - 14 edges
-9. `TestVulnScanFsStep` - 13 edges
-10. `AGENTS.md — uFawkesPipe` - 13 edges
+9. `AGENTS.md — uFawkesPipe` - 13 edges
+10. `TestVulnScanFsStep` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Pre-flight Checks Job` --semantically_similar_to--> `Gitleaks Scan Anchor`  [INFERRED] [semantically similar]
   .github/workflows/reusable-preflight.yml → .woodpecker/steps/common.yaml
+- `Reusable Main CI Guard Workflow` --conceptually_related_to--> `DORA Logging Anchor`  [INFERRED]
+  .github/workflows/reusable-main-ci-guard.yml → .woodpecker/steps/common.yaml
 - `Reusable Rollback Workflow` --conceptually_related_to--> `DORA Logging Anchor`  [INFERRED]
   .github/workflows/reusable-rollback.yml → .woodpecker/steps/common.yaml
 - `CI Workflow` --references--> `DORA Log Format Spec`  [INFERRED]
   .github/workflows/ci.yml → .agents/specs/dora-log-format.md
 - `CI Tests Workflow` --references--> `DORA Log Format Spec`  [INFERRED]
   .github/workflows/ci-tests.yml → .agents/specs/dora-log-format.md
-- `Reusable Build Workflow` --references--> `DORA Log Format Spec`  [INFERRED]
-  .github/workflows/reusable-build.yml → .agents/specs/dora-log-format.md
 
 ## Import Cycles
 - None detected.
@@ -189,11 +194,11 @@
 - **Jenkins to Woodpecker Migration** — history_jenkins_migration, docs_architecture_legacy_jenkins, docs_architecture_woodpecker_stack, docs_webhook_api [EXTRACTED 1.00]
 - **Polyglot Pipeline Contract Examples** — examples_fawkespipe_go_contract, examples_fawkespipe_java_maven_contract, examples_fawkespipe_nodejs_express_contract, examples_fawkespipe_python_flask_contract [INFERRED 0.95]
 
-## Communities (134 total, 13 thin omitted)
+## Communities (139 total, 13 thin omitted)
 
 ### Community 0 - "Platform Architecture"
-Cohesion: 0.06
-Nodes (47): Change Impact Map — uFawkesPipe, Compose (standalone mode — compose.yaml), Compose (suite mode — compose.suite.yaml), Cross-Plane Impact, Pipeline Contract (.fawkespipe.yml), Pipeline Definition (.woodpecker.yml), Architecture & Documentation, Current Limitations (+39 more)
+Cohesion: 0.26
+Nodes (12): .fawkespipe.yml Contract, DefectDojo Upload Anchor, DORA Logging Anchor, Gitleaks Scan Anchor, Notify-Obs Anchor, Pytest Contract Anchor, Pytest Integration Anchor, Pytest Unit Anchor (+4 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.29
@@ -224,8 +229,8 @@ Cohesion: 0.25
 Nodes (6): 1. Purpose and Scope, 2. Personas and JTBD, 4. Non-Functional Requirements, 5. Acceptance Criteria, 6. Open Questions (block implementation if unresolved), uFawkesPipe — Specification v0.3
 
 ### Community 8 - "Community 8"
-Cohesion: 0.09
-Nodes (12): Basic structural validation of .woodpecker.yml., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: .woodpecker.yml has a steps list., Acceptance: .woodpecker.yml has a when section., Acceptance: Pipeline steps are in the correct order per v0.2 spec., Acceptance: First step (index 0) is 'init'., Acceptance: lint steps come before security steps., Acceptance: test steps come before security steps. (+4 more)
+Cohesion: 0.17
+Nodes (7): Acceptance: Pipeline steps are in the correct order per v0.2 spec., Acceptance: First step (index 0) is 'init'., Acceptance: lint steps come before security steps., Acceptance: test steps come before security steps., Acceptance: generate-sbom step comes after build-image step., Acceptance: sign-image step comes after generate-sbom step., TestStepOrdering
 
 ### Community 9 - "SonarQube Fixtures"
 Cohesion: 0.08
@@ -360,8 +365,8 @@ Cohesion: 0.08
 Nodes (24): advanced — Advanced Configuration, app — Application Metadata, build — Build Configuration, build (stage), CNB Builder, Complete Example, dependency_scan, Docker Builder (+16 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.25
-Nodes (8): 1. Architecture Overview, 2. Component Map, 5. Data Flow, 7. Impacted Files, 8. Constraints, 9. Architecture Decisions Record, Dependency Order, Design — uFawkesPipe Acceptance Test Suite v0.3
+Cohesion: 0.17
+Nodes (12): 1. Architecture Overview, 2. Component Map, 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Skip Contract, 4. Interface Definitions, 5. Data Flow, 7. Impacted Files (+4 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.10
@@ -416,8 +421,8 @@ Cohesion: 0.09
 Nodes (22): 1. Set Required Environment Variables, 2. Create the Network, 3. Start the Stack, 4. Run Database Migration (First Run Only), 5. Verify Services, DefectDojo, DefectDojo Migration Errors, Falco (+14 more)
 
 ### Community 67 - "Community 67"
-Cohesion: 0.33
-Nodes (5): Cost Tracking, Current Model Assignment, Mode Selection, Model Policy — uFawkesPipe, When to Change Model
+Cohesion: 0.15
+Nodes (12): Benchmark References, Current Model Mapping, Escalation Log, Escalation Rule, Fallback Chain, Grade Definitions, Grade Update Process, Model Policy Enforcement (+4 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.17
@@ -672,11 +677,31 @@ Cohesion: 0.29
 Nodes (6): Core Principles (4–8, specific to this product), How This Connects, Non-Goals (Explicit for Pre-Alpha Stage), North Star, Single Riskiest Assumption, VISION.md — uFawkesPipe
 
 ### Community 133 - "Community 133"
-Cohesion: 0.50
-Nodes (4): 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Skip Contract, 4. Interface Definitions
+Cohesion: 0.20
+Nodes (9): Branch Naming, CI Requirements, Pipeline Contract Changes, PR Body, PR Standards — uFawkesPipe, Title Format, Reusable Main CI Guard Workflow, Reusable Pre-flight Workflow (+1 more)
+
+### Community 134 - "Community 134"
+Cohesion: 0.40
+Nodes (10): Reusable Tests Workflow, Compose Smoke Job, E2E Tests Job, Integration Tests Job, Link Check Job, Markdown Lint Job, Required Files Job, Smoke Tests Job (+2 more)
+
+### Community 135 - "Community 135"
+Cohesion: 0.25
+Nodes (6): Change Impact Map — uFawkesPipe, Compose (standalone mode — compose.yaml), Compose (suite mode — compose.suite.yaml), Cross-Plane Impact, Pipeline Contract (.fawkespipe.yml), Pipeline Definition (.woodpecker.yml)
+
+### Community 136 - "Community 136"
+Cohesion: 0.25
+Nodes (5): Basic structural validation of .woodpecker.yml., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: .woodpecker.yml has a steps list., Acceptance: .woodpecker.yml has a when section., TestWoodpeckerYamlValid
+
+### Community 137 - "Community 137"
+Cohesion: 0.29
+Nodes (7): Architecture & Documentation, Current Limitations, Deprecations, Known Limitations — uFawkesPipe, Pipeline & CI, Security, Stack & Infrastructure
+
+### Community 138 - "Community 138"
+Cohesion: 1.00
+Nodes (3): Reusable Lint Workflow, Detect Languages Job, Lint Summary Job
 
 ## Knowledge Gaps
-- **664 isolated node(s):** `$schema`, `$id`, `title`, `description`, `type` (+659 more)
+- **668 isolated node(s):** `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything`, `compose.yaml`, `Woodpecker Configuration (`.woodpecker.yml`)` (+663 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -684,16 +709,16 @@ Nodes (4): 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Sk
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `uFawkesPipe — Implementation Plan v0.2` connect `Community 47` to `Platform Architecture`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `DORA Logging Anchor` connect `Platform Architecture` to `Community 46`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Platform Architecture`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `.fawkespipe.yml Contract` connect `Platform Architecture` to `Community 51`?**
   _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **What connects `$schema`, `$id`, `title` to the rest of the system?**
-  _974 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Platform Architecture` be split into smaller, more focused modules?**
-  _Cohesion score 0.05723905723905724 - nodes in this community are weakly interconnected._
+- **What connects `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything` to the rest of the system?**
+  _978 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Pipeline Structure Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
 - **Should `Compose Validation Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
+- **Should `Compose Network Tests` be split into smaller, more focused modules?**
+  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
