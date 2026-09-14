@@ -95,10 +95,34 @@ def _test_step(contract: dict) -> dict:
 
 
 def _sast_step(contract: dict) -> dict:
+    sast_cfg = contract.get("stages", {}).get("sast", {})
+    sonarqube_cfg = sast_cfg.get("sonarqube", {})
+    quality_gate = sonarqube_cfg.get("qualityGate", True)
+
+    commands = ["sonar-scanner"]
+
+    if quality_gate:
+        # Wait for SonarQube quality gate to complete
+        # Polls the /api/qualitygates/project endpoint until status is not PENDING
+        commands.append(
+            'STATUS="PENDING"; '
+            'while [ "$STATUS" = "PENDING" ]; do '
+            '  sleep 5; '
+            '  STATUS=$(curl -s -u "$SONARQUBE_TOKEN:" '
+            '    "$SONARQUBE_URL/api/qualitygates/project?projectKey=$SONARQUBE_PROJECT_KEY" '
+            '    | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'status\',\'PENDING\'))"); '
+            '  echo "Quality gate status: $STATUS"; '
+            'done; '
+            'if [ "$STATUS" != "OK" ]; then '
+            '  echo "Quality gate failed with status: $STATUS"; '
+            '  exit 1; '
+            'fi'
+        )
+
     return {
         "name": "sast",
         "image": "sonarsource/sonar-scanner-cli:latest",
-        "commands": ["sonar-scanner"],
+        "commands": commands,
     }
 
 

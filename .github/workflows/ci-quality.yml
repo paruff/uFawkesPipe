@@ -54,10 +54,10 @@ jobs:
       - name: Validate compose.yaml (current active stack)
         run: docker compose config
 
-      - name: Run validation script
+      - name: Run make validate-agents
         run: |
           pip3 install pyyaml || true
-          ./validate.sh || true
+          make validate-agents
 
       - name: Check required files exist
         run: |

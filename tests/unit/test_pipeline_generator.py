@@ -257,6 +257,125 @@ class TestRenderEdgeCases:
 
 
 @pytest.mark.unit
+class TestSonarQubeQualityGate:
+    """Test SonarQube quality gate wait in generated pipeline."""
+
+    def test_quality_gate_enabled_adds_wait_command(self):
+        """Acceptance: sonarqube.qualityGate: true adds quality gate wait command."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                    "sonarqube": {"qualityGate": True},
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        commands_str = " ".join(sast_step["commands"])
+        assert "qualitygates/project" in commands_str, (
+            "SAST step must include quality gate wait when sonarqube.qualityGate: true"
+        )
+
+    def test_quality_gate_disabled_no_wait_command(self):
+        """Acceptance: sonarqube.qualityGate: false omits quality gate wait command."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                    "sonarqube": {"qualityGate": False},
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        commands_str = " ".join(sast_step["commands"])
+        assert "sonarqube-quality-gate" not in commands_str, (
+            "SAST step must NOT include quality gate wait when sonarqube.qualityGate: false"
+        )
+
+    def test_quality_gate_default_is_true(self):
+        """Acceptance: Default qualityGate is true when not specified."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        commands_str = " ".join(sast_step["commands"])
+        assert "qualitygates/project" in commands_str, (
+            "SAST step must include quality gate wait by default (qualityGate defaults to true)"
+        )
+
+    def test_quality_gate_uses_sonarqube_token(self):
+        """Acceptance: Quality gate wait uses SONARQUBE_TOKEN from environment."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                    "sonarqube": {"qualityGate": True},
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        commands_str = " ".join(sast_step["commands"])
+        assert "SONARQUBE_TOKEN" in commands_str, (
+            "Quality gate wait must use SONARQUBE_TOKEN environment variable"
+        )
+
+    def test_quality_gate_polls_until_complete(self):
+        """Acceptance: Quality gate wait polls until status is not 'PENDING'."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                    "sonarqube": {"qualityGate": True},
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        commands_str = " ".join(sast_step["commands"])
+        assert "PENDING" in commands_str, (
+            "Quality gate wait must poll until status is not 'PENDING'"
+        )
+
+
+@pytest.mark.unit
 class TestRenderOutputFormat:
     """Test output format of rendered pipeline."""
 
