@@ -1,29 +1,29 @@
-# Graph Report - uFawkesPipe  (2026-08-06)
+# Graph Report - uFawkesPipe  (2026-09-14)
 
 ## Corpus Check
-- 63 files · ~53,691 words
+- 86 files · ~72,902 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1128 nodes · 1212 edges · 78 communities (64 shown, 14 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 36 edges (avg confidence: 0.82)
+- 1647 nodes · 1767 edges · 134 communities (121 shown, 13 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.82)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `246a5819`
+- Built from commit: `b3c504fd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - [[_COMMUNITY_Platform Architecture|Platform Architecture]]
-- [[_COMMUNITY_Agent Stack & DORA|Agent Stack & DORA]]
+- [[_COMMUNITY_Community 1|Community 1]]
 - [[_COMMUNITY_Pipeline Structure Tests|Pipeline Structure Tests]]
 - [[_COMMUNITY_Compose Validation Tests|Compose Validation Tests]]
 - [[_COMMUNITY_Compose Network Tests|Compose Network Tests]]
 - [[_COMMUNITY_DefectDojo Upload Tests|DefectDojo Upload Tests]]
 - [[_COMMUNITY_Notify-OBS Telemetry|Notify-OBS Telemetry]]
-- [[_COMMUNITY_Legacy Jenkins Library|Legacy Jenkins Library]]
-- [[_COMMUNITY_Woodpecker Config Tests|Woodpecker Config Tests]]
+- [[_COMMUNITY_Community 7|Community 7]]
+- [[_COMMUNITY_Community 8|Community 8]]
 - [[_COMMUNITY_SonarQube Fixtures|SonarQube Fixtures]]
 - [[_COMMUNITY_Test Fixtures Config|Test Fixtures Config]]
 - [[_COMMUNITY_Trivy FS Scan Tests|Trivy FS Scan Tests]]
@@ -37,7 +37,7 @@
 - [[_COMMUNITY_Validate Agents Step|Validate Agents Step]]
 - [[_COMMUNITY_Dependency Automation|Dependency Automation]]
 - [[_COMMUNITY_Artifact Init Tests|Artifact Init Tests]]
-- [[_COMMUNITY_Gitleaks Secrets Scan|Gitleaks Secrets Scan]]
+- [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_Portainer CD Tests|Portainer CD Tests]]
 - [[_COMMUNITY_Compose Integration|Compose Integration]]
 - [[_COMMUNITY_Full Pipeline E2E|Full Pipeline E2E]]
@@ -48,9 +48,9 @@
 - [[_COMMUNITY_DORA Log Script|DORA Log Script]]
 - [[_COMMUNITY_Contributing & Policy|Contributing & Policy]]
 - [[_COMMUNITY_Pre-flight Validation|Pre-flight Validation]]
-- [[_COMMUNITY_CI Diagnosis & Fix|CI Diagnosis & Fix]]
+- [[_COMMUNITY_Community 33|Community 33]]
 - [[_COMMUNITY_OpenCode Config|OpenCode Config]]
-- [[_COMMUNITY_OpenCode Plugin|OpenCode Plugin]]
+- [[_COMMUNITY_Community 35|Community 35]]
 - [[_COMMUNITY_Tests Package Init|Tests Package Init]]
 - [[_COMMUNITY_Tests Package Init 2|Tests Package Init 2]]
 - [[_COMMUNITY_Graphify Plugin|Graphify Plugin]]
@@ -75,36 +75,92 @@
 - [[_COMMUNITY_Community 57|Community 57]]
 - [[_COMMUNITY_Community 58|Community 58]]
 - [[_COMMUNITY_Community 59|Community 59]]
+- [[_COMMUNITY_Community 60|Community 60]]
 - [[_COMMUNITY_Community 61|Community 61]]
+- [[_COMMUNITY_Community 62|Community 62]]
+- [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
 - [[_COMMUNITY_Community 67|Community 67]]
 - [[_COMMUNITY_Community 68|Community 68]]
 - [[_COMMUNITY_Community 69|Community 69]]
 - [[_COMMUNITY_Community 70|Community 70]]
 - [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 73|Community 73]]
 - [[_COMMUNITY_Community 74|Community 74]]
 - [[_COMMUNITY_Community 75|Community 75]]
 - [[_COMMUNITY_Community 76|Community 76]]
+- [[_COMMUNITY_Community 77|Community 77]]
+- [[_COMMUNITY_Community 78|Community 78]]
 - [[_COMMUNITY_Community 79|Community 79]]
 - [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 81|Community 81]]
 - [[_COMMUNITY_Community 82|Community 82]]
 - [[_COMMUNITY_Community 83|Community 83]]
 - [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
 - [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
 - [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 89|Community 89]]
+- [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
 - [[_COMMUNITY_Community 92|Community 92]]
+- [[_COMMUNITY_Community 93|Community 93]]
 - [[_COMMUNITY_Community 94|Community 94]]
+- [[_COMMUNITY_Community 95|Community 95]]
+- [[_COMMUNITY_Community 96|Community 96]]
+- [[_COMMUNITY_Community 97|Community 97]]
+- [[_COMMUNITY_Community 98|Community 98]]
+- [[_COMMUNITY_Community 99|Community 99]]
+- [[_COMMUNITY_Community 100|Community 100]]
+- [[_COMMUNITY_Community 101|Community 101]]
+- [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
+- [[_COMMUNITY_Community 105|Community 105]]
+- [[_COMMUNITY_Community 106|Community 106]]
+- [[_COMMUNITY_Community 107|Community 107]]
+- [[_COMMUNITY_Community 108|Community 108]]
+- [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
+- [[_COMMUNITY_Community 111|Community 111]]
+- [[_COMMUNITY_Community 112|Community 112]]
+- [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
+- [[_COMMUNITY_Community 116|Community 116]]
+- [[_COMMUNITY_Community 117|Community 117]]
+- [[_COMMUNITY_Community 118|Community 118]]
+- [[_COMMUNITY_Community 119|Community 119]]
+- [[_COMMUNITY_Community 120|Community 120]]
+- [[_COMMUNITY_Community 121|Community 121]]
+- [[_COMMUNITY_Community 122|Community 122]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
+- [[_COMMUNITY_Community 129|Community 129]]
+- [[_COMMUNITY_Community 130|Community 130]]
+- [[_COMMUNITY_Community 131|Community 131]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `TestUploadDefectDojoStep` - 18 edges
-2. `Acceptance Criteria — uFawkesPipe v0.3` - 18 edges
-3. `uFawkesPipe` - 17 edges
-4. `TestNotifyObsStep` - 17 edges
-5. `DORA Logging Anchor` - 14 edges
-6. `uFawkesPipe — Architecture` - 13 edges
-7. `TestVulnScanFsStep` - 13 edges
-8. `uFawkesPipe — Implementation Plan v0.2` - 13 edges
-9. `AGENTS.md — uFawkesPipe` - 12 edges
-10. `TestVulnScanImageStep` - 12 edges
+1. `TestNotifyObsStep` - 23 edges
+2. `TestUploadDefectDojoStep` - 18 edges
+3. `uFawkesPipe` - 18 edges
+4. `Acceptance Criteria — uFawkesPipe v0.3` - 18 edges
+5. `_contract()` - 16 edges
+6. `run_conftest()` - 15 edges
+7. `uFawkesPipe — Architecture` - 14 edges
+8. `DORA Logging Anchor` - 14 edges
+9. `TestVulnScanFsStep` - 13 edges
+10. `AGENTS.md — uFawkesPipe` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Pre-flight Checks Job` --semantically_similar_to--> `Gitleaks Scan Anchor`  [INFERRED] [semantically similar]
@@ -133,13 +189,13 @@
 - **Jenkins to Woodpecker Migration** — history_jenkins_migration, docs_architecture_legacy_jenkins, docs_architecture_woodpecker_stack, docs_webhook_api [EXTRACTED 1.00]
 - **Polyglot Pipeline Contract Examples** — examples_fawkespipe_go_contract, examples_fawkespipe_java_maven_contract, examples_fawkespipe_nodejs_express_contract, examples_fawkespipe_python_flask_contract [INFERRED 0.95]
 
-## Communities (78 total, 14 thin omitted)
+## Communities (134 total, 13 thin omitted)
 
 ### Community 0 - "Platform Architecture"
 Cohesion: 0.06
 Nodes (47): Change Impact Map — uFawkesPipe, Compose (standalone mode — compose.yaml), Compose (suite mode — compose.suite.yaml), Cross-Plane Impact, Pipeline Contract (.fawkespipe.yml), Pipeline Definition (.woodpecker.yml), Architecture & Documentation, Current Limitations (+39 more)
 
-### Community 1 - "Agent Stack & DORA"
+### Community 1 - "Community 1"
 Cohesion: 0.29
 Nodes (8): compose.yaml Stack, portainer service, sonarqube service, Suite Mode Compose Overlay, woodpecker-agent service, woodpecker-server service, PIPE-004 Design: workflow-agent.md Stale Ref Fix, PIPE-004 Specification
 
@@ -149,27 +205,27 @@ Nodes (24): Acceptance tests: Pipeline structure verification.  Covers AC-08, AC
 
 ### Community 3 - "Compose Validation Tests"
 Cohesion: 0.10
-Nodes (11): Unit tests for compose.yaml configuration validation., compose.yaml must be valid YAML., compose.yaml must have a services section., Every service must have an 'image' specified., No service should use ':latest' image tags., Every service must have plane/managed-by labels., Top-level volumes must be declared., No hardcoded secrets or credentials in compose.yaml. (+3 more)
+Nodes (11): Unit tests for compose.yaml configuration validation., compose.yaml must be valid YAML., compose.yaml must have a services section., Every service must have an 'image' specified., No service should use ':latest' image tags.          trivy-server is a documente, Every service must have plane/managed-by labels., Top-level volumes must be declared., No hardcoded secrets or credentials in compose.yaml. (+3 more)
 
 ### Community 4 - "Compose Network Tests"
-Cohesion: 0.06
-Nodes (24): compose_config(), makefile_content(), Automated acceptance test for WP-002: fawkes-net external network  Validates the, Acceptance: suite fawkes-net has external: true., Acceptance: suite fawkes-net has name: fawkes-net., Acceptance: All four services attach to fawkes-net in suite mode., Acceptance: suite woodpecker-agent has         WOODPECKER_BACKEND_DOCKER_NETWORK, Validate Makefile network target and suite dependency. (+16 more)
+Cohesion: 0.08
+Nodes (17): compose_config(), Automated acceptance test for WP-002: fawkes-net network  Validates the standalo, Acceptance: suite fawkes-net has name: fawkes-net., Acceptance: All four services attach to fawkes-net in suite mode., Acceptance: suite woodpecker-agent has         WOODPECKER_BACKEND_DOCKER_NETWORK, Load and parse standalone compose.yaml., Load and parse suite overlay compose.suite.yaml., Standalone compose.yaml must work without fawkes-net. (+9 more)
 
 ### Community 5 - "DefectDojo Upload Tests"
 Cohesion: 0.06
 Nodes (18): Acceptance: upload-defectdojo step (WP-005) is correctly configured., Helper: find the upload-defectdojo step by name., Acceptance: Step named 'upload-defectdojo' exists in steps list., Acceptance: upload-defectdojo uses 'curlimages/curl:8.6.0'., Acceptance: upload-defectdojo has DOJO_API_TOKEN from_secret., Acceptance: upload-defectdojo has when: branch: main condition., Acceptance: upload-defectdojo loops over gitleaks artifacts., Acceptance: upload-defectdojo loops over trivy-repo artifacts. (+10 more)
 
 ### Community 6 - "Notify-OBS Telemetry"
-Cohesion: 0.06
-Nodes (17): Acceptance: notify-obs step (WP-006) is correctly configured., Helper: find the notify-obs step by name., Acceptance: Step named 'notify-obs' exists in steps list., Acceptance: notify-obs uses 'curlimages/curl:8.6.0'., Acceptance: notify-obs has when: branch: main condition., Acceptance: notify-obs has OTEL_ENDPOINT from_secret., Acceptance: notify-obs has OTEL_HEADERS from_secret., Acceptance: notify-obs has DORA start log at beginning. (+9 more)
+Cohesion: 0.07
+Nodes (22): Helper: find the sign-image step by name., Acceptance: notify-obs step (WP-006) is correctly configured., Helper: find the notify-obs step by name., Acceptance: Step named 'notify-obs' exists in steps list., Acceptance: notify-obs uses 'curlimages/curl:8.6.0'., Acceptance: notify-obs has when: branch: main condition., Acceptance: notify-obs has OTEL_ENDPOINT from_secret., Acceptance: notify-obs has OTEL_HEADERS from_secret. (+14 more)
 
-### Community 7 - "Legacy Jenkins Library"
+### Community 7 - "Community 7"
 Cohesion: 0.25
 Nodes (6): 1. Purpose and Scope, 2. Personas and JTBD, 4. Non-Functional Requirements, 5. Acceptance Criteria, 6. Open Questions (block implementation if unresolved), uFawkesPipe — Specification v0.3
 
-### Community 8 - "Woodpecker Config Tests"
-Cohesion: 0.05
-Nodes (26): Tests for .woodpecker.yml pipeline structure.  Validates step ordering, image pi, Acceptance: secrets-scan uses 'zricethezav/gitleaks:v8.18.2'., Acceptance: secrets-scan command includes '--exit-code=1'., Basic structural validation of .woodpecker.yml., Acceptance: secrets-scan writes JSON report to artifacts/security/., Acceptance: secrets-scan has DORA structured JSON logging., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: secrets-scan image tag is pinned (not 'latest'). (+18 more)
+### Community 8 - "Community 8"
+Cohesion: 0.09
+Nodes (12): Basic structural validation of .woodpecker.yml., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: .woodpecker.yml has a steps list., Acceptance: .woodpecker.yml has a when section., Acceptance: Pipeline steps are in the correct order per v0.2 spec., Acceptance: First step (index 0) is 'init'., Acceptance: lint steps come before security steps., Acceptance: test steps come before security steps. (+4 more)
 
 ### Community 9 - "SonarQube Fixtures"
 Cohesion: 0.08
@@ -181,7 +237,7 @@ Nodes (19): compose_config(), compose_file(), env_example(), env_example_config(
 
 ### Community 11 - "Trivy FS Scan Tests"
 Cohesion: 0.08
-Nodes (13): Acceptance: vuln-scan-fs step (WP-004) is correctly configured., Helper: find the vuln-scan-fs step by name., Acceptance: Step named 'vuln-scan-fs' exists in steps list., Acceptance: vuln-scan-fs uses 'aquasec/trivy:latest'.          Trivy uses :lates, Acceptance: vuln-scan-fs command includes '--format json'., Acceptance: vuln-scan-fs writes to artifacts/security/trivy-repo.json., Acceptance: vuln-scan-fs command includes '--no-progress'., Acceptance: vuln-scan-fs scans current directory ('.'). (+5 more)
+Nodes (13): Acceptance: vuln-scan-fs step (WP-004) is correctly configured., Helper: find the vuln-scan-fs step by name., Acceptance: Step named 'vuln-scan-fs' exists in steps list., Acceptance: vuln-scan-fs uses a pinned aquasec/trivy version., Acceptance: vuln-scan-fs command includes '--format json'., Acceptance: vuln-scan-fs writes to artifacts/security/trivy-repo.json., Acceptance: vuln-scan-fs command includes '--no-progress'., Acceptance: vuln-scan-fs scans current directory ('.'). (+5 more)
 
 ### Community 12 - "Stack Health Tests"
 Cohesion: 0.09
@@ -192,16 +248,16 @@ Cohesion: 0.09
 Nodes (12): Integration tests for pipeline contract and configuration validation., .fawkespipe.yml.example must be valid YAML., .fawkespipe.yml.example must have an app section., .fawkespipe.yml.example must have a build section., .fawkespipe.yml.example must have a stages section., app section must have name, type, language., build section must have a builder field., stages must include lint, test, sast, build, push. (+4 more)
 
 ### Community 14 - "Image Signing Tests"
-Cohesion: 0.13
-Nodes (12): Acceptance: sign-image includes '--yes' flag., Acceptance: sign-image only runs on main branch., Acceptance: sign-image has DORA structured JSON logging., Acceptance: sign-image step is correctly configured., Helper: find the sign-image step by name., Acceptance: Step named 'sign-image' exists in steps list., Acceptance: sign-image uses bitnami/cosign image., Acceptance: sign-image has COSIGN_PRIVATE_KEY from_secret. (+4 more)
+Cohesion: 0.10
+Nodes (12): Acceptance: sign-image step is correctly configured., Acceptance: Step named 'sign-image' exists in steps list., Acceptance: sign-image uses bitnami/cosign image., Acceptance: sign-image has COSIGN_PRIVATE_KEY from_secret., Acceptance: sign-image has COSIGN_PASSWORD from_secret., Acceptance: sign-image has REGISTRY_USERNAME from_secret., Acceptance: sign-image uses '--key env://COSIGN_PRIVATE_KEY'., Acceptance: sign-image includes '--yes' flag. (+4 more)
 
 ### Community 15 - "Trivy Image Scan Tests"
-Cohesion: 0.09
-Nodes (12): Acceptance: vuln-scan-image step (WP-004) is correctly configured., Helper: find the vuln-scan-image step by name., Acceptance: Step named 'vuln-scan-image' exists in steps list., Acceptance: vuln-scan-image uses 'aquasec/trivy:latest'.          Trivy uses :la, Acceptance: vuln-scan-image command includes '--format json'., Acceptance: vuln-scan-image writes to artifacts/security/trivy-image.json., Acceptance: vuln-scan-image command includes '--no-progress'., Acceptance: vuln-scan-image has when: branch: main condition. (+4 more)
+Cohesion: 0.10
+Nodes (12): Acceptance: vuln-scan-image step (WP-004) is correctly configured., Helper: find the vuln-scan-image step by name., Acceptance: Step named 'vuln-scan-image' exists in steps list., Acceptance: vuln-scan-image uses a pinned aquasec/trivy version., Acceptance: vuln-scan-image command includes '--format json'., Acceptance: vuln-scan-image writes to artifacts/security/trivy-image.json., Acceptance: vuln-scan-image command includes '--no-progress'., Acceptance: vuln-scan-image has when: branch: main condition. (+4 more)
 
 ### Community 16 - "SBOM Generation Tests"
-Cohesion: 0.09
-Nodes (12): Acceptance: generate-sbom step is correctly configured., Helper: find the generate-sbom step by name., Acceptance: Step named 'generate-sbom' exists in steps list., Acceptance: generate-sbom uses 'aquasec/trivy:latest'., Acceptance: generate-sbom has REGISTRY_USERNAME from_secret., Acceptance: generate-sbom produces artifacts/security/sbom.cdx.json., Acceptance: generate-sbom uses CycloneDX format., Acceptance: generate-sbom uses CI built-in variables for image ref. (+4 more)
+Cohesion: 0.08
+Nodes (13): Acceptance: notify-obs POSTs to ${DORA_INGESTION_URL}/event., Acceptance: the DORA event POST doesn't fail the pipeline on         ingestion e, Acceptance: generate-sbom step is correctly configured., Helper: find the generate-sbom step by name., Acceptance: Step named 'generate-sbom' exists in steps list., Acceptance: generate-sbom uses a pinned aquasec/trivy version., Acceptance: generate-sbom has REGISTRY_USERNAME from_secret., Acceptance: generate-sbom produces artifacts/security/sbom.cdx.json. (+5 more)
 
 ### Community 17 - "Service Auth Tests"
 Cohesion: 0.10
@@ -223,7 +279,7 @@ Nodes (15): assignees, automerge, extends, github-actions, enabled, fileMatch, l
 Cohesion: 0.12
 Nodes (9): Automated acceptance test for WP-001: Add artifact directory init step to .woodp, Validate WP-001 artifact directory initialization., Load and parse .woodpecker.yml, Acceptance: .woodpecker.yml first step is named 'init', image 'alpine:3.20, Acceptance: init commands include 'mkdir -p artifacts/security, Acceptance: init commands include 'mkdir -p artifacts/coverage, Acceptance: init commands include 'mkdir -p artifacts/tests, Acceptance: init uses 'mkdir -p' for idempotent directory creation (+1 more)
 
-### Community 22 - "Gitleaks Secrets Scan"
+### Community 22 - "Community 22"
 Cohesion: 0.40
 Nodes (5): 3.1 Compose Lifecycle Fixtures, 3.2 HTTP Helper Fixtures, 3.3 Authentication Token Fixtures, 3.4 Pipeline Configuration Fixtures, 3. Shared Fixtures (`conftest.py`)
 
@@ -267,9 +323,17 @@ Nodes (11): Attribution, Contributor Covenant Code of Conduct, Enforcement, Our 
 Cohesion: 0.70
 Nodes (4): validate.sh script, error(), success(), warning()
 
-### Community 33 - "CI Diagnosis & Fix"
+### Community 33 - "Community 33"
 Cohesion: 0.40
 Nodes (5): 6. Tradeoffs and Decisions, Decision 1: pytest over Gherkin/BDD, Decision 2: No Selenium/Browser Automation, Decision 3: Portainer Admin Initialization Strategy, Decision 4: Pipeline Structure via File Parsing, Not API
+
+### Community 35 - "Community 35"
+Cohesion: 0.04
+Nodes (44): additionalProperties, description, const, description, type, $id, description, minLength (+36 more)
+
+### Community 44 - "Test Fixtures"
+Cohesion: 0.25
+Nodes (7): github_dir(), Unit test fixtures and configuration.  Shared fixtures are in tests/conftest.py, Return the .github directory., Return the workflows directory., Return all workflow files., workflow_files(), workflows_dir()
 
 ### Community 46 - "Community 46"
 Cohesion: 0.12
@@ -280,52 +344,76 @@ Cohesion: 0.05
 Nodes (37): Acceptance criteria, Acceptance criteria, Acceptance criteria, Acceptance criteria, Acceptance criteria, Acceptance criteria, Acceptance criteria, Acceptance criteria (+29 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.05
-Nodes (43): 📚 Additional Resources, 🏗️ Architecture, CLI Commands, 🔧 Configuration, Container Security, 🤝 Contributing, DefectDojo Integration, Dependency Scanning (+35 more)
+Cohesion: 0.14
+Nodes (13): 📚 Additional Resources, 🏗️ Architecture, CLI Commands, 🤝 Contributing, 🚀 Features, ☸️ Kubernetes Promotion Path, 📄 License, 🔐 Security Plane (+5 more)
 
 ### Community 49 - "Community 49"
-Cohesion: 0.07
-Nodes (30): 10. Test Architecture, 11. File Reference Map, 12.1 Standalone Mode (default), 12.2 Suite Mode, 12.3 What Changes in Suite Mode, 12.4 Telemetry Architecture, 12. Suite Mode Architecture, 1. System Overview (+22 more)
+Cohesion: 0.06
+Nodes (34): 10. Test Architecture, 11. File Reference Map, 12.1 Standalone Mode (default), 12.2 Suite Mode, 12.3 What Changes in Suite Mode, 12.4 Telemetry Architecture, 12. Suite Mode Architecture, 13.1 Services (+26 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.09
-Nodes (22): 10. Suite Integration, 1. Identity, 2. Where the Agents Live, 3. Context Files — Read Before Generating Anything, 4. Architecture Rules — Never Violate These, 5. The PM–Agent Contract, 6. TDD Commit Order, 7. AI-Assisted Review Block (+14 more)
+Cohesion: 0.08
+Nodes (23): 10. Suite Integration, 11. Security Plane (merged from uFawkesSec), 1. Identity, 2. Where the Agents Live, 3. Context Files — Read Before Generating Anything, 4. Architecture Rules — Never Violate These, 5. The PM–Agent Contract, 6. TDD Commit Order (+15 more)
 
 ### Community 51 - "Community 51"
 Cohesion: 0.08
-Nodes (23): advanced — Advanced Configuration, app — Application Metadata, build — Build Configuration, build (stage), CNB Builder, Complete Example, dependency_scan, Docker Builder (+15 more)
+Nodes (24): advanced — Advanced Configuration, app — Application Metadata, build — Build Configuration, build (stage), CNB Builder, Complete Example, dependency_scan, Docker Builder (+16 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.17
-Nodes (12): 1. Architecture Overview, 2. Component Map, 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Skip Contract, 4. Interface Definitions, 5. Data Flow, 7. Impacted Files (+4 more)
+Cohesion: 0.25
+Nodes (8): 1. Architecture Overview, 2. Component Map, 5. Data Flow, 7. Impacted Files, 8. Constraints, 9. Architecture Decisions Record, Dependency Order, Design — uFawkesPipe Acceptance Test Suite v0.3
 
 ### Community 53 - "Community 53"
 Cohesion: 0.10
 Nodes (20): Change Failure Rate, Change Failure Rate, Deployment Events, Deployment Frequency, Deployment Frequency (per day), DORA Metrics Collection, Grafana Dashboard, Lead Time for Changes (+12 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.07
-Nodes (29): 1. Add `.fawkespipe.yml` to your repository, 2. Enable the repository in Woodpecker, 3. Push code, 4. Monitor the pipeline, Common Commands, Configuration, Core Variables, Create Your First Pipeline (+21 more)
+Cohesion: 0.15
+Nodes (12): Configuration, Core Variables, Installation, Next Steps, Prerequisites, Quick Start Guide, Service Access, Smoke Test (+4 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.11
 Nodes (18): AC-01: Stack Health — All Services Accessible, AC-02: Woodpecker Health Verification, AC-03: SonarQube Health Verification, AC-04: Portainer Health Verification, AC-05: Woodpecker Open Access Verification, AC-06: SonarQube Authentication, AC-07: Portainer First-Run Initialization + Authentication, AC-08: Woodpecker Pipeline Structure Verification (+10 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.11
-Nodes (17): [0.1.0] - 2026-06-01, [0.2.0] - 2026-06-15, [0.3.0] - 2026-06-30, Added, Added, Added, Added, Changed (+9 more)
+Cohesion: 0.07
+Nodes (30): [0.1.0] - 2026-06-01, [0.2.0] - 2026-06-15, [0.3.0] - 2026-06-30, [1.0.0] - 2026-06-27, [1.1.0] - 2026-06-27, [1.1.1] - 2026-07-02, [1.2.0] - 2026-07-18, [1.3.0-beta.1] - 2026-08-10 (+22 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.25
 Nodes (7): Date of Migration, How to Access Historical Jenkins Pipeline Runs, Jenkins → Woodpecker CI Migration, New Stack Quick Reference, See Also, What Was Replaced, Why
 
 ### Community 59 - "Community 59"
-Cohesion: 0.12
-Nodes (15): Code Conventions, Code of Conduct, Commit Messages, Contributing to uFawkesPipe, Development Setup, Docker Compose, Exception: Vulnerability Scanner Images, License (+7 more)
+Cohesion: 0.13
+Nodes (14): Code Conventions, Code of Conduct, Commit Messages, Contributing to uFawkesPipe, Development Setup, Docker Compose, License, Reporting Bugs (+6 more)
+
+### Community 60 - "Community 60"
+Cohesion: 0.07
+Nodes (27): Path, _count_failures_with(), Unit tests for Docker Compose security policies using Conftest via Docker., compose-privileged.yaml: should fail no-privileged policy., compose-host-network.yaml: should fail no-host-network policy., compose-latest-tag.yaml: should fail no-latest-tag policy., Verify explicit allow-lists in policies work correctly., Run conftest against a fixture file and return the list of failure messages. (+19 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.25
 Nodes (8): 3.1 Stack Health Verification, 3.2 Authentication Verification, 3.3 Golden Path Pipeline Simulation, 3.4 Security Verification, 3.5 Deployment & Observability, 3.6 Test Infrastructure, 3.7 Documentation, 3. Functional Requirements — v0.3 Acceptance Test Suite
+
+### Community 62 - "Community 62"
+Cohesion: 0.05
+Nodes (21): compose_data(), Unit tests for compose.yaml and compose.suite.yaml structure.  Parses the YAML f, defectdojo and infisical must have healthcheck blocks., defectdojo must wait for postgres and valkey to be healthy., falco is the only service with privileged: true., No :latest tags on any service., All service secrets must be declared in top-level secrets block., All secrets should use the environment: injection syntax. (+13 more)
+
+### Community 63 - "Community 63"
+Cohesion: 0.06
+Nodes (35): additionalProperties, description, pattern, type, description, const, description, type (+27 more)
+
+### Community 64 - "Community 64"
+Cohesion: 0.06
+Nodes (32): 1. The `deny[msg]` Pattern, 2. Conftest Input Object Structure, 3. Testing Policies Locally, 4. Adding Exceptions to Policies, 5. Reference: All 5 Current Policies, 6. Upgrading to OCI Policy Bundle (v0.3), Available Input Fields, Basic Testing Command (+24 more)
+
+### Community 65 - "Community 65"
+Cohesion: 0.09
+Nodes (11): _contract(), Tests for scripts/generate_woodpecker_yml.py.  Encodes specification.md (PIPE-00, Build a minimal valid .fawkespipe.yml contract dict, with overrides merged in., examples/fawkespipe-contract-migration/ (PIPE-009 AC-01, AC-02)., TestBuilderSelection, TestCheckMode, TestContractLoading, TestLanguageSelection (+3 more)
+
+### Community 66 - "Community 66"
+Cohesion: 0.09
+Nodes (22): 1. Set Required Environment Variables, 2. Create the Network, 3. Start the Stack, 4. Run Database Migration (First Run Only), 5. Verify Services, DefectDojo, DefectDojo Migration Errors, Falco (+14 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.33
@@ -336,28 +424,44 @@ Cohesion: 0.17
 Nodes (12): Exceptions, Golden Path Cheat Sheet, Golden Path — uFawkesPipe, Phase 0 — Discovery & Spec, Phase 1 — Design, Phase 2 — Plan, Phase 3 — Build, Phase 4 — Test Execution (+4 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.07
-Nodes (30): Agent Context Shared State, Rename Plan deliveryd to uFawkesPipe, buildImage.groovy, loadConfig.groovy, promoteToProduction.groovy, seed-job.groovy, ufawkes-cli, Architecture Rules (+22 more)
+Cohesion: 0.25
+Nodes (9): Rename Plan deliveryd to uFawkesPipe, buildImage.groovy, loadConfig.groovy, promoteToProduction.groovy, seed-job.groovy, ufawkes-cli, Language Pack Skill, Pipeline Contract Skill (+1 more)
 
 ### Community 70 - "Community 70"
 Cohesion: 0.22
 Nodes (8): Acceptance Criterion, Discovery Brief: Automated Acceptance Test Suite, DORA Outcome Target, Golden Path (build → scan → deploy), Job to Be Done, Notes, Prior Art, Riskiest Assumption
 
 ### Community 71 - "Community 71"
-Cohesion: 0.20
-Nodes (9): Credential Handling, DORA Logging — Strict Rules, Error Handling, File Convention, Idempotency Patterns, Pattern 1: Marker File (preferred), Pattern 2: Check Output, Pipeline Library — Woodpecker CI Standards (+1 more)
+Cohesion: 0.09
+Nodes (12): Unit tests for GitHub Actions workflow validation., At least one workflow file must exist., Jobs should have timeout-minutes set., All workflow files must be valid YAML., All workflows must have a name., All workflows must have an 'on' trigger., All workflows must have a 'jobs' section., All jobs must have 'runs-on'. (+4 more)
+
+### Community 72 - "Community 72"
+Cohesion: 0.18
+Nodes (14): Exception, _build_step(), ContractError, _language_command(), _language_image(), _lint_step(), load_contract(), main() (+6 more)
+
+### Community 73 - "Community 73"
+Cohesion: 0.12
+Nodes (9): Acceptance: secrets-scan uses 'zricethezav/gitleaks:v8.18.2'., Acceptance: secrets-scan command includes '--exit-code=1'., Acceptance: secrets-scan writes JSON report to artifacts/security/., Acceptance: secrets-scan has DORA structured JSON logging., Acceptance: secrets-scan image tag is pinned (not 'latest')., Acceptance: secrets-scan step is correctly configured., Helper: find the secrets-scan step by name., Acceptance: Step named 'secrets-scan' exists in steps list. (+1 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.22
 Nodes (8): Actual Behavior, Additional Context, Bug Description, Environment, Expected Behavior, Logs, Make Up Output, Steps to Reproduce
 
 ### Community 75 - "Community 75"
-Cohesion: 0.22
-Nodes (8): Acceptance Criteria (Phase E), E1: Implement `shared/vars/loadConfig.groovy`, E2: Implement `shared/vars/buildImage.groovy`, E3: Implement Real Seed Job, E4: Implement Environment Promotion, E5: Implement `ufawkes-cli` Self-Service Tool, Phase E: Platform Implementation (from 0.1% review), Rename Plan: deliveryd → uFawkesPipe
+Cohesion: 0.17
+Nodes (11): Consistency Checks, Cross-Validation Report — Acceptance Test Suite v0.3, Design ↔ Review: ✅ PASS, Gap Analysis: ✅ No Uncovered Requirements, Overall, Spec ↔ Design: ✅ PASS, Spec ↔ Implementation: ✅ PASS, Spec ↔ Review: ✅ PASS (+3 more)
 
 ### Community 76 - "Community 76"
 Cohesion: 0.22
 Nodes (8): Anti-Patterns, DORA Metrics, DORA Metrics Log Format — Single Source of Truth, Error Events (on failure), Format Specification, Groovy Utility, Log Line Examples, Stage Events
+
+### Community 77 - "Community 77"
+Cohesion: 0.17
+Nodes (11): Common Fields, Contributing, Deployment Event (`deployment-event.schema.json`), Determining Rework vs Normal Deployment, DORA Event Schemas, Event Types, Field Reference, Incident Event (`incident-event.schema.json`) (+3 more)
+
+### Community 78 - "Community 78"
+Cohesion: 0.18
+Nodes (10): Architecture Decisions in This Build, Blockers or Problems, Build Report — Acceptance Test Suite v0.3, Documentation & Config Updated, Files Changed, No Changes Needed, Summary of Work Done, Tasks Completed with Status (+2 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.25
@@ -365,51 +469,231 @@ Nodes (7): Changed Files, CI Fix Report — PR #55 `feat/gitops-lifecycle-gates`
 
 ### Community 80 - "Community 80"
 Cohesion: 0.25
-Nodes (7): Breaking Change Rules, Contract File, Deprecation Shim (in Woodpecker / GitHub Actions), Migration Checklist When Contract Changes, Pipeline Contract — Schema and Migration, Schema Reference, Validation
+Nodes (8): GitHub webhook fails, OTEL collector unreachable (suite mode), Pack build fails, Port 8000 (or 9000, 9443) already in use, SonarQube won't start, Trivy scan is slow, 🐛 Troubleshooting, Woodpecker won't start
+
+### Community 81 - "Community 81"
+Cohesion: 0.20
+Nodes (9): Architecture: ✅ PASS, Correctness: ✅ PASS, Maintainability: ✅ PASS, Methodology, Overall: ✅ APPROVED, Pre-existing Issues (not from this change), Review Report — Acceptance Test Suite v0.3, Risk: ✅ PASS (+1 more)
 
 ### Community 83 - "Community 83"
 Cohesion: 0.29
 Nodes (6): Additional Context, Alternatives Considered, DORA Capability Impact, Implementation Notes, Problem Statement, Proposed Solution
 
 ### Community 84 - "Community 84"
-Cohesion: 0.29
-Nodes (6): Adding a New Language, Example Pipeline Contract Pattern (.fawkespipe.yml — app teams create this), Language Pack — Buildpack Language Support, Pack Directory Structure, Validation Checklist for New Packs, Woodpecker Pipeline Template (Current)
+Cohesion: 0.20
+Nodes (9): Claim-by-Claim Verification, Diff Claims (from build-report.md's "Files Changed"), File Existence, Fixture Claims (from conftest.py), Non-Regression, Overall, Summary, Test Execution Claims (from test-report.md) (+1 more)
+
+### Community 85 - "Community 85"
+Cohesion: 0.31
+Nodes (9): Pipeline Library Skill, DORA Log Format Spec, isoNow.groovy, CI Workflow, CI Pipeline Workflow, CI Tests Workflow, Main CI Guard Workflow, Reusable Build Workflow (+1 more)
 
 ### Community 86 - "Community 86"
 Cohesion: 0.33
 Nodes (5): CI Diagnosis — PR #55 `feat/gitops-lifecycle-gates`, Failure 1, 2, 3: Markdown Lint Failure, Failure 4: Pipeline Complete (Cascade), Failure Summary, Individual Diagnoses
 
+### Community 87 - "Community 87"
+Cohesion: 0.22
+Nodes (8): How uFawkesPipe emits DORA events, Known gap: no automated sync with uFawkesObs, Origin and scope, OTLP telemetry contract (traces, metrics, logs), Table of Contents, uFawkesPipe ⇄ uFawkesObs Contract Reference, Where the human-readable page goes next, Who consumes this contract today
+
 ### Community 88 - "Community 88"
-Cohesion: 0.33
-Nodes (5): Active Task, Agent Context — Shared State, Agent Health, Notes, Recent Changes
+Cohesion: 0.25
+Nodes (7): Action checklist, Beta Release Plan — uFawkesPipe, Blockers (must fix before beta), Cleanup (should fix, doesn't block), Current state, Explicitly out of scope for beta, Gate criteria (ready to tag beta when all true)
+
+### Community 89 - "Community 89"
+Cohesion: 0.25
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+
+### Community 90 - "Community 90"
+Cohesion: 0.25
+Nodes (7): additionalProperties, description, $id, required, $schema, title, type
+
+### Community 91 - "Community 91"
+Cohesion: 0.25
+Nodes (7): Explicitly Deferred (AC-07, AC-08), Live-system boot — deferred manual pre-merge step (AC-08), Pre-existing, unrelated failure (out of scope for CONSOLIDATE-SEC), Summary, Test Report — CONSOLIDATE-SEC, `tests/unit/test_policy.py` — 7 failures (deferred, not silently skipped), `tests/unit/test_workflow_validation.py::TestWorkflowValidation::test_use_official_actions`
 
 ### Community 92 - "Community 92"
-Cohesion: 0.40
-Nodes (4): 1. Impacted Components, 2. Change Details, 3. Anti-Goals, PIPE-004 — Design: Fix Stale File Reference in workflow-agent.md
+Cohesion: 0.29
+Nodes (6): 1. Constraint Check, 2. Evidence Gathered, 3. Compose Merge Approach, 4. `policy-check` Step Design, 5. Impacted Components, Design — CONSOLIDATE-SEC
+
+### Community 93 - "Community 93"
+Cohesion: 0.25
+Nodes (5): Tests for .woodpecker.yml pipeline structure.  Validates step ordering, image pi, Acceptance: init step (WP-001) is correctly configured., Acceptance: init uses 'alpine:3.20'., Acceptance: init commands create the three artifact directories., TestInitStep
 
 ### Community 94 - "Community 94"
+Cohesion: 0.33
+Nodes (5): Acceptance Criteria, Out of Scope (this PR), Problem Statement, Requirements, Specification — CONSOLIDATE-SEC (merge uFawkesSec into uFawkesPipe)
+
+### Community 95 - "Community 95"
+Cohesion: 0.50
+Nodes (4): description, type, properties, ai_assisted
+
+### Community 96 - "Community 96"
+Cohesion: 0.50
+Nodes (4): description, pattern, type, commit_sha
+
+### Community 97 - "Community 97"
+Cohesion: 0.50
+Nodes (4): description, minimum, type, deploy_duration_seconds
+
+### Community 98 - "Community 98"
+Cohesion: 0.50
+Nodes (4): description, format, type, deployed_at
+
+### Community 99 - "Community 99"
+Cohesion: 0.50
+Nodes (4): description, minLength, type, environment
+
+### Community 100 - "Community 100"
+Cohesion: 0.50
+Nodes (4): const, description, type, event_type
+
+### Community 101 - "Community 101"
+Cohesion: 0.50
+Nodes (4): description, format, type, pipeline_url
+
+### Community 102 - "Community 102"
+Cohesion: 0.50
+Nodes (4): repo, description, minLength, type
+
+### Community 103 - "Community 103"
+Cohesion: 0.50
+Nodes (4): schema_version, description, pattern, type
+
+### Community 104 - "Community 104"
+Cohesion: 0.50
+Nodes (4): service, description, minLength, type
+
+### Community 105 - "Community 105"
+Cohesion: 0.50
+Nodes (4): status, description, enum, type
+
+### Community 106 - "Community 106"
+Cohesion: 0.50
+Nodes (4): description, type, properties, ai_assisted
+
+### Community 107 - "Community 107"
+Cohesion: 0.50
+Nodes (4): description, pattern, type, commit_sha
+
+### Community 108 - "Community 108"
+Cohesion: 0.50
+Nodes (4): const, description, type, event_type
+
+### Community 109 - "Community 109"
+Cohesion: 0.50
+Nodes (4): description, format, type, first_commit_at
+
+### Community 110 - "Community 110"
+Cohesion: 0.50
+Nodes (4): description, minimum, type, lines_added
+
+### Community 111 - "Community 111"
+Cohesion: 0.50
+Nodes (4): description, minimum, type, lines_deleted
+
+### Community 112 - "Community 112"
+Cohesion: 0.50
+Nodes (4): description, format, type, occurred_at
+
+### Community 113 - "Community 113"
+Cohesion: 0.50
+Nodes (4): description, minimum, type, pr_number
+
+### Community 114 - "Community 114"
+Cohesion: 0.50
+Nodes (4): repo, description, minLength, type
+
+### Community 115 - "Community 115"
+Cohesion: 0.50
+Nodes (4): schema_version, description, pattern, type
+
+### Community 116 - "Community 116"
+Cohesion: 0.50
+Nodes (4): status, description, enum, type
+
+### Community 118 - "Community 118"
+Cohesion: 0.15
+Nodes (12): Acceptance Criteria (Binary Pass/Fail), FR-1: VISION.md — North Star & Principles (DD-1, DD-2), FR-2: MILESTONES.md — Horizon Map & Release Gates (DD-1, DD-3), FR-3: EXECUTION_QUEUE.md — Priority Tiers & Drift Protection (DD-1, DD-4), FR-4: plan-for-the-day.md — Daily Execution (DD-1, DD-5), FR-5: docs/product/discovery-draft.md — JTBD & Acceptance (DD-1 through DD-6), FR-6: docs/product/spec.md — This Document (DD-1), FR-7: Cross-Cutting Doc Integration (DD-1, DD-6) (+4 more)
+
+### Community 119 - "Community 119"
+Cohesion: 0.29
+Nodes (7): Container Security, DefectDojo Integration, Dependency Scanning, 📋 Pipeline Stages, Secret Detection, 🔒 Security Features, Static Application Security Testing (SAST)
+
+### Community 120 - "Community 120"
+Cohesion: 0.33
+Nodes (6): Common Commands, Lifecycle, Observability, Pre-commit, Testing, Validation
+
+### Community 121 - "Community 121"
+Cohesion: 0.33
+Nodes (6): GitHub webhook fails, OTEL Collector unreachable (suite mode), Port 8000 already in use, SonarQube won't start, Troubleshooting, Woodpecker won't start
+
+### Community 122 - "Community 122"
 Cohesion: 0.40
-Nodes (4): 1. Problem, 2. Requirements, 3. Acceptance Criteria, PIPE-004 — Fix Stale File Reference in workflow-agent.md
+Nodes (5): 1. Add `.fawkespipe.yml` to your repository, 2. Enable the repository in Woodpecker, 3. Push code, 4. Monitor the pipeline, Create Your First Pipeline
+
+### Community 123 - "Community 123"
+Cohesion: 0.40
+Nodes (5): 🔧 Configuration, Pipeline Configuration, Pipeline Contract Configuration, Service Configuration, Volume Management
+
+### Community 124 - "Community 124"
+Cohesion: 0.50
+Nodes (4): First Pipeline, Prerequisites, 🛠️ Quick Start, Setup
+
+### Community 125 - "Community 125"
+Cohesion: 0.50
+Nodes (4): Running Tests, 🧪 Test Coverage, What `pytest tests/unit/` Verifies, What Unit Tests Do NOT Cover
+
+### Community 126 - "Community 126"
+Cohesion: 0.67
+Nodes (3): Key Sections, Language-Specific Examples, 📖 Pipeline Contract Reference
+
+### Community 127 - "Community 127"
+Cohesion: 0.18
+Nodes (10): Learnings for VISION/MILESTONES/EXECUTION_QUEUE, Non-Goal Pressure That Appeared, plan-for-the-day.md — uFawkesPipe, Primary Goal, Queue Deltas (Add/Remove/Reprioritize), Session Retrospective (Capture at End), Target Issues Pulled from Queue, TDD Execution Protocol (Per Task) (+2 more)
+
+### Community 128 - "Community 128"
+Cohesion: 0.20
+Nodes (9): bump-minor-pre-major, bump-patch-for-minor-pre-major, changelog-path, changelog-sections, draft, packages, prerelease, release-type (+1 more)
+
+### Community 129 - "Community 129"
+Cohesion: 0.22
+Nodes (8): Bottom-Up Feedback Loop, EXECUTION_QUEUE.md — uFawkesPipe, P0 — Blocks Release (Must complete before any v0.x tag), P1 — This Sprint (Week of 2026-09-14), P2 — Next Sprint (Week of 2026-09-21), P3 — Backlog (Post v0.3 / H2), Priority Tiers, Scope-Drift Protection
+
+### Community 130 - "Community 130"
+Cohesion: 0.22
+Nodes (8): H1 — Contract Hardening & Acceptance Automation (Current), H2 — Suite-Mode Maturity & Observability Closure, H3 — Production Hardening & Team Onboarding, Horizon Map, Milestones, MILESTONES.md — uFawkesPipe, Release Gates, Traceability: Milestones → Vision Principles
+
+### Community 131 - "Community 131"
+Cohesion: 0.22
+Nodes (8): Discovery Draft — uFawkesPipe Planning Cascade Setup, Job to Be Done (JTBD), Measurable Acceptance Criterion, Notes, Prior Art / Reference Pattern, Riskiest Assumption, Scope Boundary (What This Discovery Covers), Test-Type Reasoning
+
+### Community 132 - "Community 132"
+Cohesion: 0.29
+Nodes (6): Core Principles (4–8, specific to this product), How This Connects, Non-Goals (Explicit for Pre-Alpha Stage), North Star, Single Riskiest Assumption, VISION.md — uFawkesPipe
+
+### Community 133 - "Community 133"
+Cohesion: 0.50
+Nodes (4): 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Skip Contract, 4. Interface Definitions
 
 ## Knowledge Gaps
-- **395 isolated node(s):** `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything`, `compose.yaml`, `Woodpecker Configuration (`.woodpecker.yml`)` (+390 more)
+- **664 isolated node(s):** `$schema`, `$id`, `title`, `description`, `type` (+659 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DORA Logging Anchor` connect `Platform Architecture` to `Community 46`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Platform Architecture`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Why does `uFawkesPipe — Implementation Plan v0.2` connect `Community 47` to `Platform Architecture`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Are the 6 inferred relationships involving `DORA Logging Anchor` (e.g. with `Reusable Lint Workflow` and `Reusable Main CI Guard Workflow`) actually correct?**
-  _`DORA Logging Anchor` has 6 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Shared fixtures for uFawkesPipe acceptance test suite.  All fixtures here are se`, `Skip test if compose stack is not running.      Tests that require a running sta`, `Check that all 4 compose services are running.      Session-scoped — checked onc` to the rest of the system?**
-  _661 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `DORA Logging Anchor` connect `Platform Architecture` to `Community 46`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Platform Architecture`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
+- **What connects `$schema`, `$id`, `title` to the rest of the system?**
+  _974 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Platform Architecture` be split into smaller, more focused modules?**
-  _Cohesion score 0.05870020964360587 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05723905723905724 - nodes in this community are weakly interconnected._
 - **Should `Pipeline Structure Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
+- **Should `Compose Validation Tests` be split into smaller, more focused modules?**
+  _Cohesion score 0.1 - nodes in this community are weakly interconnected._

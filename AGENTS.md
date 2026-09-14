@@ -73,16 +73,37 @@ steps another agent calls directly.
 | Priority | File | What You Learn |
 | -------- | ---- | -------------- |
 | 1 | `AGENTS.md` (this file) | Identity, governance, GitOps contract |
-| 2 | `compose.yaml` + `compose.suite.yaml` | Service versions, configuration, standalone vs suite mode |
-| 3 | `.fawkespipe.yml.example` | The pipeline contract that app teams use |
-| 4 | `docs/ARCHITECTURE.md` | How components connect |
-| 5 | `docs/KNOWN_LIMITATIONS.md` | Known issues — do not make these worse |
-| 6        | `docs/CHANGE_IMPACT_MAP.md`  | What breaks when pipeline contract changes |
-| 7        | `docs/PR_STANDARD.md`        | PR title and body format rules             |
+| 2 | `VISION.md` | North star, core principles, non-goals, riskiest assumption |
+| 3 | `MILESTONES.md` | Horizon map, milestones, release gates, traceability |
+| 4 | `EXECUTION_QUEUE.md` | Priority tiers (P0–P3), scope-drift guard, feedback loop |
+| 5 | `plan-for-the-day.md` | Daily goal, TDD protocol, retrospective |
+| 6 | `compose.yaml` + `compose.suite.yaml` | Service versions, configuration, standalone vs suite mode |
+| 7 | `.fawkespipe.yml.example` | The pipeline contract that app teams use |
+| 8 | `docs/ARCHITECTURE.md` | How components connect |
+| 9 | `docs/KNOWN_LIMITATIONS.md` | Known issues — do not make these worse |
+| 10 | `docs/CHANGE_IMPACT_MAP.md` | What breaks when pipeline contract changes |
+| 11 | `docs/PR_STANDARD.md` | PR title and body format rules |
+| 12 | `docs/GOLDEN_PATH.md` | Canonical idea → deploy workflow |
+| 13 | `docs/MODEL_POLICY.md` | Model selection and cost tracking |
+| 14 | `docs/product/discovery-draft.md` | JTBD, riskiest assumption, acceptance criterion |
+| 15 | `docs/product/spec.md` | Numbered functional requirements |
 
-**Gaps** (noted — agents proceed with what's available):
-- `docs/GOLDEN_PATH.md` — exists. Read for the canonical idea → deploy workflow.
-- `docs/MODEL_POLICY.md` — exists. Read for model selection and cost tracking.
+**Hard Rules (never delegated to agent judgment):**
+- Architecture Rules (§4): no `latest` tags, secrets via `.env`, healthchecks required, pinned Woodpecker images
+- Pipeline Contract (§4): changes are breaking; new fields optional with defaults; removed fields need deprecation period
+- Coding Standards (§4): `yamllint`/`shellcheck` must pass; `set -euo pipefail`; no bare `except: pass`
+- PM-Agent Contract (§5): agents must ask before changing Woodpecker versions, contract fields, compose structure, pipeline stages, k8s manifests, dependencies, public interfaces
+- TDD Commit Order (§6): test → feat → refactor as separate commits; conventional commit format
+- AI Review Block (§7): every agent PR must include the 5-section block + uFawkesPipe specifics
+- GitOps Contract (§8): no direct trunk pushes; PR size >400 lines blocks; 5 gates for merge; rework rate >10% stops new scope
+
+**Governance Rules (live in docs, referenced here):**
+- `docs/KNOWN_LIMITATIONS.md` — living list; agents must not worsen
+- `docs/CHANGE_IMPACT_MAP.md` — cross-plane impact; check before modifying contract/compose/pipeline
+- `docs/GOLDEN_PATH.md` — 8-phase workflow; deviations require documentation
+- `docs/MODEL_POLICY.md` — model assignment per agent; cost tracking
+- `docs/ARCHITECTURE.md` — component map, data flows, suite mode topology
+- `docs/PR_STANDARD.md` — PR title/body format
 
 ---
 
