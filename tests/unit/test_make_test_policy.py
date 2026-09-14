@@ -1,5 +1,4 @@
 import pytest
-import subprocess
 from pathlib import Path
 
 
@@ -33,8 +32,9 @@ class TestMakeTestPolicy:
                 else:
                     break
 
-        assert any("conftest" in cmd for cmd in target_commands), \
+        assert any("conftest" in cmd for cmd in target_commands), (
             f"test-policy target must invoke conftest. Found: {target_commands}"
+        )
 
     def test_test_policy_target_runs_valid_policy_files(self, makefile):
         """test-policy must validate compose.yaml, compose.suite.yaml, and .woodpecker.yml."""
@@ -54,7 +54,9 @@ class TestMakeTestPolicy:
                     break
 
         full_command = " ".join(target_commands)
-        assert "compose.yaml" in full_command or "compose.suite.yaml" in full_command, \
+        assert "compose.yaml" in full_command or "compose.suite.yaml" in full_command, (
             f"test-policy must validate compose files. Found: {full_command}"
-        assert ".woodpecker.yml" in full_command, \
+        )
+        assert ".woodpecker.yml" in full_command, (
             f"test-policy must validate .woodpecker.yml. Found: {full_command}"
+        )
