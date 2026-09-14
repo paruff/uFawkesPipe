@@ -268,43 +268,44 @@ compose.yaml + compose.suite.yaml → make up-suite
 
 **Network topology in suite mode:**
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  fawkes-backbone-net (ufawkes-resources_fawkes-backbone-net)             │
-│  Created by: uFawkesRes                                                  │
-│                                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
-│  │ woodpecker-  │  │  sonarqube   │  │  portainer   │                  │
-│  │ server       │  │              │  │              │                  │
-│  │ PostgreSQL   │  │  PostgreSQL  │  │              │                  │
-│  └──────────────┘  └──────────────┘  └──────────────┘                  │
-│         │                                                                │
-│         │  Also on fawkes-backbone-net (from uFawkesRes):                │
-│         │  - fawkes-postgres:5432  (shared PostgreSQL)                    │
-│         │  - fawkes-cache:6379     (shared Valkey)                        │
-│         │  - fawkes-ingress:80     (Traefik)                              │
-│         │  - fawkes-sso:9091       (Authelia SSO)                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "fawkes-net (internal)"
+        WP[woodpecker-server]
+        WA[woodpecker-agent]
+        SQ[sonarqube]
+        PT[portainer]
+        DD[defectdojo]
+        DDN[defectdojo-nginx]
+        I[infisical]
+        TS[trivy-server]
+        F[falco]
+    end
 
-┌─────────────────────────────────────────────────────────────────────────┐
-│  observability-lab                                                       │
-│  Created by: uFawkesObs                                                  │
-│                                                                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
-│  │ woodpecker-  │  │ woodpecker-  │  │  portainer   │                  │
-│  │ server       │  │ agent        │  │              │                  │
-│  │ OTEL exports │  │              │  │              │                  │
-│  └──────────────┘  └──────────────┘  └──────────────┘                  │
-│         │                                                                │
-│         │  Also on observability-lab (from uFawkesObs):                  │
-│         │  - otel-collector:4317   (OTLP gRPC)                           │
-│         │  - otel-collector:4318   (OTLP HTTP)                           │
-│         │  - tempo:4317           (traces)                               │
-│         │  - loki:3100            (logs)                                 │
-│         │  - prometheus:9090      (metrics)                              │
-│         │  - grafana:3000         (dashboards)                           │
-└─────────────────────────────────────────────────────────────────────────┘
+    subgraph "observability-lab"
+        OC[otel-collector:4317]
+        T[tempo]
+        L[loki]
+        P[prometheus]
+        G[grafana]
+    end
+
+    WP --> OC
+    WA --> OC
+    WP --> P
+    WA --> L
+    WA --> T
+    DD --> L
+    I --> L
+    TS --> P
 ```
+
+**Note:** uFawkesRes and uFawkesDora are decommissioned. The security services
+(DefectDojo, Infisical, Trivy, Falco) are now embedded in uFawkesPipe as
+part of the CI/CD pipeline. For teams needing the full Fawkes IDP experience
+with shared PostgreSQL, Valkey, Traefik ingress, and Authelia SSO, upgrade to
+**Fawkes** — the complete Internal Developer Platform that includes uFawkesPipe
+as its CI/CD engine.
 
 ### 12.3 What Changes in Suite Mode
 
@@ -318,6 +319,18 @@ compose.yaml + compose.suite.yaml → make up-suite
 | **Events** | `notify-obs` writes to stdout | `notify-obs` POSTs OTLP to otel-collector:4318 + stdout |
 | **Ingress** | Direct port access | Traefik on fawkes-backbone-net |
 | **Auth** | None | Authelia SSO via fawkes-sso |
+| **Security services** | DefectDojo/Infisical/Falco on `security` profile | Same services on `fawkes-net` for pipeline integration |
+
+**Upgrade path to Fawkes:** For teams needing the full IDP experience with
+shared PostgreSQL, Valkey, Traefik ingress, and Authelia SSO, upgrade to
+**Fawkes** — the complete Internal Developer Platform that includes uFawkesPipe
+as its CI/CD engine. Fawkes provides:
+- Shared PostgreSQL (fawkes-postgres:5432)
+- Shared Valkey cache (fawkes-cache:6379)
+- Traefik ingress (fawkes-ingress:80)
+- Authelia SSO (fawkes-sso:9091)
+- Full security stack: DefectDojo, Infisical, Trivy, Falco
+- Observability stack: OTEL Collector, Prometheus, Loki, Tempo, Grafana
 
 ### 12.4 Telemetry Architecture
 
@@ -358,14 +371,19 @@ compose.yaml + compose.suite.yaml → make up-suite
 
 ---
 
-## 13. Security Plane (merged from uFawkesSec)
+## 13. Security Plane
 
-uFawkesSec was merged into this repo as a security plane addition. DefectDojo,
-Infisical, Trivy server, and Falco run as `compose.yaml` services, gated behind
-the `security` Compose profile — not started by a plain `docker compose up -d`.
+uFawkesPipe includes a security plane with DefectDojo, Infisical, Trivy server,
+and Falco running as `compose.yaml` services, gated behind the `security`
+Compose profile — not started by a plain `docker compose up -d`.
 `trivy-server` alone stays in the default profile since the pipeline uses it
 for scanning. Rego policies gate the pipeline via the `policy-check` step in
 `.woodpecker.yml` (see §3.2).
+
+**Note:** uFawkesSec was decommissioned. The security services are now embedded
+in uFawkesPipe as part of the CI/CD pipeline. For teams needing the full Fawkes
+IDP experience, upgrade to **Fawkes** — the complete Internal Developer Platform
+that includes uFawkesPipe as its CI/CD engine.
 
 ### 13.1 Services
 
@@ -387,9 +405,10 @@ file — do not "fix" this away in tests or docs.
 
 - **Standalone** (`compose.yaml`): security services use their own embedded
   `postgres`/`valkey`.
-- **Suite** (`compose.suite.yaml`): security services redirect to uFawkesRes's
-  shared `fawkes-postgres`/`fawkes-cache` instead; `fawkes-net` is an internal
-  Compose network owned by this repo (not external — see §12).
+- **Suite** (`compose.suite.yaml`): security services are on `fawkes-net`
+  internal network for pipeline integration. For full IDP experience with
+  shared PostgreSQL, Valkey, Traefik ingress, and Authelia SSO, upgrade to
+  **Fawkes**.
 
 ### 13.3 Policy Gate
 

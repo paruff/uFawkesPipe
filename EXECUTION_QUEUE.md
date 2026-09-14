@@ -8,20 +8,21 @@
 
 ### P0 — Blocks Release (Must complete before any v0.x tag)
 
-| # | Task | Source | Acceptance Criteria | Skill(s) |
-|---|------|--------|---------------------|----------|
-| P0-1 | Complete `docs/KNOWN_LIMITATIONS.md` resolution — all items RESOLVED or mitigated | M1.5 | Zero "Unresolved" rows; each has Mitigation column filled | doc-reality-check, verification |
-| P0-2 | `make test-acceptance` passes on fresh `make up` (no pre-warmed services) | M1.6 | Cold start: `make down -v && make up && make test-acceptance` → 0 failures | test-execution, e2e-happy-path |
-| P0-3 | Update CHANGELOG.md for v0.3 with all M1.x deliverables | M1.6 | CHANGELOG follows Keep a Changelog format; entries link issues | release |
+| # | Task | Source | Acceptance Criteria | Skill(s) | Status |
+|---|------|--------|---------------------|----------|--------|
+| P0-1 | Complete `docs/KNOWN_LIMITATIONS.md` resolution — all items RESOLVED or mitigated | M1.5 | Zero "Unresolved" rows; each has Mitigation column filled | doc-reality-check, verification | DONE (PR #83) |
+| P0-2 | `make test-acceptance` passes on fresh `make up` (no pre-warmed services) | M1.6 | Cold start: `make down -v && make up && make test-acceptance` → 0 failures | test-execution, e2e-happy-path | |
+| P0-3 | Update CHANGELOG.md for v0.3 with all M1.x deliverables | M1.6 | CHANGELOG follows Keep a Changelog format; entries link issues | release | |
 
 ### P1 — This Sprint (Week of 2026-09-14)
 
-| # | Task | Source | Acceptance Criteria | Skill(s) |
-|---|------|--------|---------------------|----------|
-| P1-1 | Fix `vuln-scan-fs` Trivy severity threshold alignment (HIGH/CRITICAL vs CRITICAL only) | KNOWN_LIMITATIONS L-008 follow-up | Trivy fs scan fails on HIGH+; config in `.fawkespipe.yml.example` matches | pipeline-policy, verification |
-| P1-2 | Add `policy-check` step timeout (currently unbounded) | AGENTS.md §4 | Step has `timeout: 5` minutes; fails fast on OPA hang | pipeline-policy, governance-enforcement |
-| P1-3 | Document suite-mode network topology in `docs/ARCHITECTURE.md` §12.2 (add diagram for security plane services) | ARCHITECTURE.md gap | Mermaid diagram shows defectdojo/infisical/trivy/falco on `fawkes-net` internal | documentation, design-compliance |
-| P1-4 | Add `make test-policy` target running Conftest against local compose files | design.md §4 | `make test-policy` runs `conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml` | test-execution, pipeline-test-stage-validation |
+| # | Task | Source | Acceptance Criteria | Skill(s) | Status |
+|---|------|--------|---------------------|----------|--------|
+| P1-1 | Fix `vuln-scan-fs` Trivy severity threshold alignment (HIGH/CRITICAL vs CRITICAL only) | KNOWN_LIMITATIONS L-008 follow-up | Trivy fs scan fails on HIGH+; config in `.fawkespipe.yml.example` matches | pipeline-policy, verification | DONE (PR #83) |
+| P1-2 | Add `policy-check` step timeout (currently unbounded) | AGENTS.md §4 | Step has `timeout: 5` minutes; fails fast on OPA hang | pipeline-policy, governance-enforcement | |
+| P1-3 | Document suite-mode network topology in `docs/ARCHITECTURE.md` §12.2 (add diagram for security plane services) | ARCHITECTURE.md gap | Mermaid diagram shows defectdojo/infisical/trivy/falco on `fawkes-net` internal | documentation, design-compliance | |
+| P1-4 | Add `make test-policy` target running Conftest against local compose files | design.md §4 | `make test-policy` runs `conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml` | test-execution, pipeline-test-stage-validation | DONE (PR #83) |
+| P1-5 | Add integration tests for `scripts/generate_woodpecker_yml.py` (empty stages, custom builders) | Retrospective insight | Test matrix covers edge cases; all pass | test-execution, verification | |
 
 ### P2 — Next Sprint (Week of 2026-09-21)
 

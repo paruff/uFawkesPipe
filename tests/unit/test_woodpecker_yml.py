@@ -1096,3 +1096,62 @@ class TestSignImageStep:
         assert 'dora_start "sign-image"' in command_str, (
             "sign-image must call dora_start with step name"
         )
+
+
+@pytest.mark.unit
+class TestPolicyCheckStep:
+    """Acceptance: policy-check step has timeout and is correctly configured."""
+
+    def _get_step(self, woodpecker_config):
+        """Helper: find the policy-check step by name."""
+        steps = woodpecker_config["steps"]
+        for step in steps:
+            if step.get("name") == "policy-check":
+                return step
+        return None
+
+    def test_step_exists(self, woodpecker_config):
+        """Acceptance: Step named 'policy-check' exists in steps list."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, (
+            "Step named 'policy-check' must exist in .woodpecker.yml"
+        )
+
+    def test_has_timeout(self, woodpecker_config):
+        """Acceptance: policy-check has a timeout of 5 minutes."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'policy-check' not found"
+        timeout = step.get("timeout")
+        assert timeout == 5, f"policy-check must have timeout: 5, got: {timeout}"
+
+    def test_uses_pinned_conftest_image(self, woodpecker_config):
+        """Acceptance: policy-check uses a pinned conftest image."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'policy-check' not found"
+        image = step.get("image", "")
+        assert "latest" not in image, (
+            f"policy-check image must be pinned, got '{image}'"
+        )
+        assert ":" in image, f"policy-check image must have a tag, got '{image}'"
+
+    def test_depends_on_vuln_scan_fs(self, woodpecker_config):
+        """Acceptance: policy-check depends on vuln-scan-fs."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'policy-check' not found"
+        depends_on = step.get("depends_on", [])
+        assert "vuln-scan-fs" in depends_on, (
+            f"policy-check must depend on 'vuln-scan-fs', got: {depends_on}"
+        )
+
+    def test_has_dora_logging(self, woodpecker_config):
+        """Acceptance: policy-check has DORA structured JSON logging."""
+        step = self._get_step(woodpecker_config)
+        assert step is not None, "Step 'policy-check' not found"
+        commands = step.get("commands", [])
+        command_str = " ".join(commands)
+        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
+            "policy-check must source dora-log.sh for DORA logging"
+        )
+        assert 'dora_start "policy-check"' in command_str, (
+            "policy-check must call dora_start with step name"
+        )
