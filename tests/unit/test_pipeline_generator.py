@@ -9,6 +9,7 @@ import yaml
 from pathlib import Path
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from generate_woodpecker_yml import (
@@ -23,10 +24,12 @@ from generate_woodpecker_yml import (
 @pytest.fixture
 def tmp_contract(tmp_path):
     """Create a temporary .fawkespipe.yml contract file."""
+
     def _make_contract(content: dict) -> Path:
         contract_path = tmp_path / ".fawkespipe.yml"
         contract_path.write_text(yaml.safe_dump(content))
         return contract_path
+
     return _make_contract
 
 
@@ -55,10 +58,12 @@ class TestLoadContract:
 
     def test_valid_minimal_contract(self, tmp_contract):
         """Acceptance: Minimal valid contract loads successfully."""
-        contract_path = tmp_contract({
-            "app": {"name": "test", "language": "python"},
-            "stages": {"test": {"enabled": True}},
-        })
+        contract_path = tmp_contract(
+            {
+                "app": {"name": "test", "language": "python"},
+                "stages": {"test": {"enabled": True}},
+            }
+        )
         contract = load_contract(contract_path)
         assert contract["app"]["language"] == "python"
 
@@ -116,7 +121,12 @@ class TestRenderMinimalContract:
         """Acceptance: Contract with only test stage produces one step."""
         contract = {
             "app": {"name": "test", "language": "python"},
-            "stages": {"test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]}},
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                }
+            },
         }
         result = render(contract)
         parsed = yaml.safe_load(result)
@@ -129,8 +139,14 @@ class TestRenderMinimalContract:
         contract = {
             "app": {"name": "test", "language": "python"},
             "stages": {
-                "lint": {"enabled": True, "commands": [{"language": "python", "cmd": "ruff check"}]},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "lint": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "ruff check"}],
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         result = render(contract)
@@ -169,10 +185,16 @@ class TestRenderEdgeCases:
         """Acceptance: Docker builder produces correct step."""
         contract = {
             "app": {"name": "test", "language": "python"},
-            "build": {"builder": "docker", "docker": {"dockerfile": "Dockerfile.prod", "context": "src/"}},
+            "build": {
+                "builder": "docker",
+                "docker": {"dockerfile": "Dockerfile.prod", "context": "src/"},
+            },
             "stages": {
                 "build": {"enabled": True},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         result = render(contract)
@@ -188,7 +210,10 @@ class TestRenderEdgeCases:
             "build": {"builder": "bazel"},
             "stages": {
                 "build": {"enabled": True},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         with pytest.raises(ContractError, match="unsupported build.builder"):
@@ -201,7 +226,10 @@ class TestRenderEdgeCases:
             "build": {"builder": "cnb"},
             "stages": {
                 "build": {"enabled": True},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         result = render(contract)
@@ -216,7 +244,10 @@ class TestRenderEdgeCases:
             "build": {"builder": "cnb", "cnb": {"builder": "my/custom-builder:latest"}},
             "stages": {
                 "build": {"enabled": True},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         result = render(contract)
@@ -233,7 +264,12 @@ class TestRenderOutputFormat:
         """Acceptance: Output starts with generated comment."""
         contract = {
             "app": {"name": "test", "language": "python"},
-            "stages": {"test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]}},
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                }
+            },
         }
         result = render(contract)
         assert result.startswith("# Generated by scripts/generate_woodpecker_yml.py")
@@ -243,7 +279,12 @@ class TestRenderOutputFormat:
         contract = {
             "app": {"name": "test", "language": "python"},
             "advanced": {"timeout": 30},
-            "stages": {"test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]}},
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                }
+            },
         }
         result = render(contract)
         assert "advanced.timeout: 30" in result
@@ -252,7 +293,12 @@ class TestRenderOutputFormat:
         """Acceptance: No timeout comment when advanced.timeout is not set."""
         contract = {
             "app": {"name": "test", "language": "python"},
-            "stages": {"test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]}},
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                }
+            },
         }
         result = render(contract)
         assert "advanced.timeout" not in result
@@ -262,8 +308,14 @@ class TestRenderOutputFormat:
         contract = {
             "app": {"name": "test", "language": "python"},
             "stages": {
-                "lint": {"enabled": True, "commands": [{"language": "python", "cmd": "ruff check"}]},
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "lint": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "ruff check"}],
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
             },
         }
         result = render(contract)

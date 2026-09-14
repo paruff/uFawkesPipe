@@ -1122,9 +1122,7 @@ class TestPolicyCheckStep:
         step = self._get_step(woodpecker_config)
         assert step is not None, "Step 'policy-check' not found"
         timeout = step.get("timeout")
-        assert timeout == 5, (
-            f"policy-check must have timeout: 5, got: {timeout}"
-        )
+        assert timeout == 5, f"policy-check must have timeout: 5, got: {timeout}"
 
     def test_uses_pinned_conftest_image(self, woodpecker_config):
         """Acceptance: policy-check uses a pinned conftest image."""
