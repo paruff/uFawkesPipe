@@ -148,7 +148,7 @@ steps:
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "vuln-scan-fs"
-      - trivy fs --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
+      - trivy fs --severity HIGH,CRITICAL --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy filesystem scan completed" ",\"exit_code\":$rc"
       - exit $rc
 

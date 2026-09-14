@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -25,6 +25,12 @@ test-acceptance: ## Run acceptance tests (requires running stack)
 
 test-coverage: ## Run tests with coverage report
 	pytest tests/unit/ -v --tb=short --cov=tests/unit --cov-report=term-missing
+
+test-policy: ## Validate compose/pipeline config against Rego policies (requires Docker)
+	@echo "Running policy checks..."
+	@which conftest >/dev/null 2>&1 || { echo "⚠️  conftest not found — skipping policy check"; exit 0; }
+	conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml
+	@echo "✅ Policy checks passed"
 
 # ============================================================================
 # Validation Commands
