@@ -26,6 +26,7 @@ EXPECTED_STEPS = [
     "secrets-scan",
     "vuln-scan-fs",
     "vuln-scan-image",
+    "policy-check",
     "build-image",
     "generate-sbom",
     "sign-image",

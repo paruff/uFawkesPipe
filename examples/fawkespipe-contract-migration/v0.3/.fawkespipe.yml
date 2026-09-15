@@ -1,0 +1,57 @@
+# v0.3 Pipeline Contract Example
+#
+# Demonstrates v0.2 → v0.3 field changes:
+#   - sonarqube.qualityGate: true (NEW in v0.3)
+#   - trivy.severity: HIGH,CRITICAL (NEW in v0.3)
+#   - defectdojo integration (NEW in v0.3)
+
+app:
+  name: example-v03-app
+  type: service
+  language: python
+  version: 2.0.0
+
+build:
+  builder: cnb
+  cnb:
+    builder: paketobuildpacks/builder:base
+
+stages:
+  lint:
+    enabled: true
+    commands:
+      - language: python
+        cmd: ruff check src/ && mypy src/
+
+  test:
+    enabled: true
+    commands:
+      - language: python
+        cmd: pytest tests/ --cov=src --cov-report=xml
+
+  sast:
+    enabled: true
+    sonarqube:
+      enabled: true
+      qualityGate: true  # NEW in v0.3: Wait for quality gate result
+      projectKey: example-v03-app
+      sources: src/
+      exclusions: "**/test/**,**/tests/**"
+    trivy:
+      enabled: true
+      severity: HIGH,CRITICAL  # NEW in v0.3: Configure severity threshold
+
+  dependency_scan:
+    enabled: true
+
+  build:
+    enabled: true
+
+  image_scan:
+    enabled: true
+
+  push:
+    enabled: true
+
+advanced:
+  timeout: 30

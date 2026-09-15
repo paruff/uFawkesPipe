@@ -300,7 +300,7 @@ stages:
 
 ### sast
 
-Static Application Security Testing — SonarQube analysis and optional Trivy filesystem scanning.
+Static Application Security Testing — SonarQube analysis, Bandit (Python), Trivy filesystem scanning.
 
 | Field                 | Type    | Required | Default | Description |
 |-----------------------|---------|----------|---------|-------------|
@@ -312,6 +312,9 @@ Static Application Security Testing — SonarQube analysis and optional Trivy fi
 | `sonarqube.qualityGate` | boolean | no     | `true`  | Wait for quality gate result |
 | `trivy.enabled`       | boolean | no       | `true`  | Enable Trivy filesystem scan |
 | `trivy.severity`      | string  | no       | `HIGH,CRITICAL` | Severity filter for findings |
+| `bandit.enabled`      | boolean | no       | `true`  | Enable Bandit Python security linting |
+| `bandit.severity`     | string  | no       | `MEDIUM` | Severity filter (LOW, MEDIUM, HIGH) |
+| `bandit.confidence`   | string  | no       | `MEDIUM` | Confidence filter (LOW, MEDIUM, HIGH) |
 
 **Example:**
 
@@ -328,6 +331,10 @@ stages:
     trivy:
       enabled: true
       severity: HIGH,CRITICAL
+    bandit:
+      enabled: true
+      severity: MEDIUM
+      confidence: MEDIUM
 ```
 
 ### dependency_scan
@@ -394,6 +401,38 @@ stages:
     severity: HIGH,CRITICAL
     fail_on: CRITICAL
 ```
+
+### dast
+
+Dynamic Application Security Testing — OWASP ZAP active scanning against running application.
+
+| Field         | Type    | Required | Default         | Description |
+|---------------|---------|----------|-----------------|-------------|
+| `enabled`     | boolean | no       | `false`         | Enable DAST stage |
+| `tool`        | string  | no       | `zap`           | DAST tool to use |
+| `target_url`  | string  | yes      | —               | URL of running application (e.g., `http://app:8000`) |
+| `rules`       | array   | no       | `Default Policy` | ZAP policy/rules to run |
+| `fail_on`     | string  | no       | `HIGH`          | Severity threshold to fail (HIGH, MEDIUM, LOW) |
+| `timeout`     | integer | no       | `300`           | Max scan time in seconds |
+
+**Valid tools:** `zap`
+
+**Example:**
+
+```yaml
+stages:
+  dast:
+    enabled: true
+    tool: zap
+    target_url: http://my-app:8000
+    rules: "Default Policy"
+    fail_on: HIGH
+    timeout: 300
+```
+
+**Note:** DAST requires the application to be running and accessible. Typically runs in a staging/integration environment after deployment.
+
+---
 
 ### push
 

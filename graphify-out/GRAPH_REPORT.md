@@ -1,16 +1,16 @@
 # Graph Report - uFawkesPipe  (2026-09-14)
 
 ## Corpus Check
-- 86 files · ~73,607 words
+- 94 files · ~78,841 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1654 nodes · 1774 edges · 139 communities (126 shown, 13 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 35 edges (avg confidence: 0.82)
+- 1798 nodes · 1960 edges · 145 communities (131 shown, 14 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 60 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6a1816b4`
+- Built from commit: `20c63126`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -154,30 +154,36 @@
 - [[_COMMUNITY_Community 136|Community 136]]
 - [[_COMMUNITY_Community 137|Community 137]]
 - [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `TestNotifyObsStep` - 23 edges
-2. `TestUploadDefectDojoStep` - 18 edges
-3. `uFawkesPipe` - 18 edges
-4. `Acceptance Criteria — uFawkesPipe v0.3` - 18 edges
-5. `_contract()` - 16 edges
-6. `run_conftest()` - 15 edges
-7. `uFawkesPipe — Architecture` - 14 edges
-8. `DORA Logging Anchor` - 14 edges
-9. `AGENTS.md — uFawkesPipe` - 13 edges
-10. `TestVulnScanFsStep` - 13 edges
+2. `render()` - 22 edges
+3. `TestUploadDefectDojoStep` - 18 edges
+4. `uFawkesPipe` - 18 edges
+5. `Acceptance Criteria — uFawkesPipe v0.3` - 18 edges
+6. `_contract()` - 16 edges
+7. `ContractError` - 15 edges
+8. `run_conftest()` - 15 edges
+9. `uFawkesPipe — Architecture` - 14 edges
+10. `TestDefectDojoUploadStep` - 13 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Pre-flight Checks Job` --semantically_similar_to--> `Gitleaks Scan Anchor`  [INFERRED] [semantically similar]
-  .github/workflows/reusable-preflight.yml → .woodpecker/steps/common.yaml
-- `Reusable Main CI Guard Workflow` --conceptually_related_to--> `DORA Logging Anchor`  [INFERRED]
-  .github/workflows/reusable-main-ci-guard.yml → .woodpecker/steps/common.yaml
-- `Reusable Rollback Workflow` --conceptually_related_to--> `DORA Logging Anchor`  [INFERRED]
-  .github/workflows/reusable-rollback.yml → .woodpecker/steps/common.yaml
-- `CI Workflow` --references--> `DORA Log Format Spec`  [INFERRED]
-  .github/workflows/ci.yml → .agents/specs/dora-log-format.md
-- `CI Tests Workflow` --references--> `DORA Log Format Spec`  [INFERRED]
-  .github/workflows/ci-tests.yml → .agents/specs/dora-log-format.md
+- `TestLanguageImage` --uses--> `ContractError`  [INFERRED]
+  tests/unit/test_pipeline_generator.py → scripts/generate_woodpecker_yml.py
+- `TestLoadContract` --uses--> `ContractError`  [INFERRED]
+  tests/unit/test_pipeline_generator.py → scripts/generate_woodpecker_yml.py
+- `TestRenderEdgeCases` --uses--> `ContractError`  [INFERRED]
+  tests/unit/test_pipeline_generator.py → scripts/generate_woodpecker_yml.py
+- `TestRenderMinimalContract` --uses--> `ContractError`  [INFERRED]
+  tests/unit/test_pipeline_generator.py → scripts/generate_woodpecker_yml.py
+- `TestRenderOutputFormat` --uses--> `ContractError`  [INFERRED]
+  tests/unit/test_pipeline_generator.py → scripts/generate_woodpecker_yml.py
 
 ## Import Cycles
 - None detected.
@@ -194,11 +200,7 @@
 - **Jenkins to Woodpecker Migration** — history_jenkins_migration, docs_architecture_legacy_jenkins, docs_architecture_woodpecker_stack, docs_webhook_api [EXTRACTED 1.00]
 - **Polyglot Pipeline Contract Examples** — examples_fawkespipe_go_contract, examples_fawkespipe_java_maven_contract, examples_fawkespipe_nodejs_express_contract, examples_fawkespipe_python_flask_contract [INFERRED 0.95]
 
-## Communities (139 total, 13 thin omitted)
-
-### Community 0 - "Platform Architecture"
-Cohesion: 0.26
-Nodes (12): .fawkespipe.yml Contract, DefectDojo Upload Anchor, DORA Logging Anchor, Gitleaks Scan Anchor, Notify-Obs Anchor, Pytest Contract Anchor, Pytest Integration Anchor, Pytest Unit Anchor (+4 more)
+## Communities (145 total, 14 thin omitted)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.29
@@ -229,8 +231,8 @@ Cohesion: 0.25
 Nodes (6): 1. Purpose and Scope, 2. Personas and JTBD, 4. Non-Functional Requirements, 5. Acceptance Criteria, 6. Open Questions (block implementation if unresolved), uFawkesPipe — Specification v0.3
 
 ### Community 8 - "Community 8"
-Cohesion: 0.17
-Nodes (7): Acceptance: Pipeline steps are in the correct order per v0.2 spec., Acceptance: First step (index 0) is 'init'., Acceptance: lint steps come before security steps., Acceptance: test steps come before security steps., Acceptance: generate-sbom step comes after build-image step., Acceptance: sign-image step comes after generate-sbom step., TestStepOrdering
+Cohesion: 0.09
+Nodes (12): Basic structural validation of .woodpecker.yml., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: .woodpecker.yml has a steps list., Acceptance: .woodpecker.yml has a when section., Acceptance: Pipeline steps are in the correct order per v0.2 spec., Acceptance: First step (index 0) is 'init'., Acceptance: lint steps come before security steps., Acceptance: test steps come before security steps. (+4 more)
 
 ### Community 9 - "SonarQube Fixtures"
 Cohesion: 0.08
@@ -361,16 +363,16 @@ Cohesion: 0.08
 Nodes (23): 10. Suite Integration, 11. Security Plane (merged from uFawkesSec), 1. Identity, 2. Where the Agents Live, 3. Context Files — Read Before Generating Anything, 4. Architecture Rules — Never Violate These, 5. The PM–Agent Contract, 6. TDD Commit Order (+15 more)
 
 ### Community 51 - "Community 51"
-Cohesion: 0.08
-Nodes (24): advanced — Advanced Configuration, app — Application Metadata, build — Build Configuration, build (stage), CNB Builder, Complete Example, dependency_scan, Docker Builder (+16 more)
+Cohesion: 0.05
+Nodes (33): Architecture & Documentation, CI/CD & Release, Current Limitations, Deprecations, Known Limitations — uFawkesPipe, Pipeline & CI, Security, Stack & Infrastructure (+25 more)
 
 ### Community 52 - "Community 52"
 Cohesion: 0.17
 Nodes (12): 1. Architecture Overview, 2. Component Map, 4.1 Test-to-Service Interactions, 4.2 Error Handling Contract, 4.3 Skip Contract, 4. Interface Definitions, 5. Data Flow, 7. Impacted Files (+4 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.10
-Nodes (20): Change Failure Rate, Change Failure Rate, Deployment Events, Deployment Frequency, Deployment Frequency (per day), DORA Metrics Collection, Grafana Dashboard, Lead Time for Changes (+12 more)
+Cohesion: 0.05
+Nodes (38): Change Impact Map — uFawkesPipe, Compose (standalone mode — compose.yaml), Compose (suite mode — compose.suite.yaml), Cross-Plane Impact, Pipeline Contract (.fawkespipe.yml), Pipeline Definition (.woodpecker.yml), Exceptions, Golden Path Cheat Sheet (+30 more)
 
 ### Community 54 - "Community 54"
 Cohesion: 0.15
@@ -425,8 +427,8 @@ Cohesion: 0.15
 Nodes (12): Benchmark References, Current Model Mapping, Escalation Log, Escalation Rule, Fallback Chain, Grade Definitions, Grade Update Process, Model Policy Enforcement (+4 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.17
-Nodes (12): Exceptions, Golden Path Cheat Sheet, Golden Path — uFawkesPipe, Phase 0 — Discovery & Spec, Phase 1 — Design, Phase 2 — Plan, Phase 3 — Build, Phase 4 — Test Execution (+4 more)
+Cohesion: 0.11
+Nodes (14): Tests for DefectDojo API ingestion in upload-defectdojo step.  Validates that th, Acceptance: curl sends form data with scan_type, engagement_name, product_name,, Acceptance: curl outputs to /dev/null (we only need the status code)., Acceptance: upload-defectdojo step correctly wires DefectDojo API ingestion., Acceptance: Step handles HTTP errors gracefully (non-blocking)., Helper: find the upload-defectdojo step by name., Acceptance: Step named 'upload-defectdojo' exists in steps list., Acceptance: curl command does not use -sf flag which silently fails on HTTP erro (+6 more)
 
 ### Community 69 - "Community 69"
 Cohesion: 0.25
@@ -441,8 +443,8 @@ Cohesion: 0.09
 Nodes (12): Unit tests for GitHub Actions workflow validation., At least one workflow file must exist., Jobs should have timeout-minutes set., All workflow files must be valid YAML., All workflows must have a name., All workflows must have an 'on' trigger., All workflows must have a 'jobs' section., All jobs must have 'runs-on'. (+4 more)
 
 ### Community 72 - "Community 72"
-Cohesion: 0.18
-Nodes (14): Exception, _build_step(), ContractError, _language_command(), _language_image(), _lint_step(), load_contract(), main() (+6 more)
+Cohesion: 0.23
+Nodes (9): Exception, _build_step(), ContractError, _language_command(), _language_image(), _lint_step(), Raised when .fawkespipe.yml is missing, malformed, or unsupported., _stage_enabled() (+1 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.12
@@ -473,8 +475,8 @@ Cohesion: 0.25
 Nodes (7): Changed Files, CI Fix Report — PR #55 `feat/gitops-lifecycle-gates`, Remaining Risks, Root Cause Details, Summary, Validation, What Changed
 
 ### Community 80 - "Community 80"
-Cohesion: 0.25
-Nodes (8): GitHub webhook fails, OTEL collector unreachable (suite mode), Pack build fails, Port 8000 (or 9000, 9443) already in use, SonarQube won't start, Trivy scan is slow, 🐛 Troubleshooting, Woodpecker won't start
+Cohesion: 0.15
+Nodes (12): Path, load_contract(), main(), Tests for scripts/generate_woodpecker_yml.py pipeline contract generator.  Valid, Create a temporary .fawkespipe.yml contract file., Test contract loading and validation., Acceptance: Missing contract file raises ContractError., Acceptance: Invalid YAML raises ContractError. (+4 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.20
@@ -621,36 +623,36 @@ Cohesion: 0.15
 Nodes (12): Acceptance Criteria (Binary Pass/Fail), FR-1: VISION.md — North Star & Principles (DD-1, DD-2), FR-2: MILESTONES.md — Horizon Map & Release Gates (DD-1, DD-3), FR-3: EXECUTION_QUEUE.md — Priority Tiers & Drift Protection (DD-1, DD-4), FR-4: plan-for-the-day.md — Daily Execution (DD-1, DD-5), FR-5: docs/product/discovery-draft.md — JTBD & Acceptance (DD-1 through DD-6), FR-6: docs/product/spec.md — This Document (DD-1), FR-7: Cross-Cutting Doc Integration (DD-1, DD-6) (+4 more)
 
 ### Community 119 - "Community 119"
-Cohesion: 0.29
-Nodes (7): Container Security, DefectDojo Integration, Dependency Scanning, 📋 Pipeline Stages, Secret Detection, 🔒 Security Features, Static Application Security Testing (SAST)
+Cohesion: 0.19
+Nodes (9): Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract., render(), Test edge cases in pipeline generation., Acceptance: Empty stages dict raises ContractError., Acceptance: Docker builder produces correct step., Acceptance: Unsupported builder raises ContractError., Acceptance: CNB builder uses default pack builder., Acceptance: CNB builder uses custom builder when specified. (+1 more)
 
 ### Community 120 - "Community 120"
-Cohesion: 0.33
-Nodes (6): Common Commands, Lifecycle, Observability, Pre-commit, Testing, Validation
+Cohesion: 0.17
+Nodes (7): Acceptance: go maps to golang:1.22., Acceptance: nodejs maps to node:20-slim., Acceptance: Unsupported language raises ContractError., Test language image mapping., Acceptance: python maps to python:3.12-slim., Acceptance: java maps to maven:3.9-eclipse-temurin-17., TestLanguageImage
 
 ### Community 121 - "Community 121"
-Cohesion: 0.33
-Nodes (6): GitHub webhook fails, OTEL Collector unreachable (suite mode), Port 8000 already in use, SonarQube won't start, Troubleshooting, Woodpecker won't start
+Cohesion: 0.17
+Nodes (7): Test SonarQube quality gate wait in generated pipeline., Acceptance: sonarqube.qualityGate: true adds quality gate wait command., Acceptance: sonarqube.qualityGate: false omits quality gate wait command., Acceptance: Default qualityGate is true when not specified., Acceptance: Quality gate wait uses SONARQUBE_TOKEN from environment., Acceptance: Quality gate wait polls until status is not 'PENDING'., TestSonarQubeQualityGate
 
 ### Community 122 - "Community 122"
-Cohesion: 0.40
-Nodes (5): 1. Add `.fawkespipe.yml` to your repository, 2. Enable the repository in Woodpecker, 3. Push code, 4. Monitor the pipeline, Create Your First Pipeline
+Cohesion: 0.20
+Nodes (6): Test output format of rendered pipeline., Acceptance: Output starts with generated comment., Acceptance: Timeout comment appears when advanced.timeout is set., Acceptance: No timeout comment when advanced.timeout is not set., Acceptance: Test step depends on lint when lint is enabled., TestRenderOutputFormat
 
 ### Community 123 - "Community 123"
-Cohesion: 0.40
-Nodes (5): 🔧 Configuration, Pipeline Configuration, Pipeline Contract Configuration, Service Configuration, Volume Management
+Cohesion: 0.22
+Nodes (8): 1. SonarQube Quality Gate (NEW), 2. Security Stage Integration (NEW), 3. DefectDojo Upload (NEW), Example Files, Key Changes, Migration Steps, Pipeline Contract Migration — v0.2 → v0.3, Validation
 
 ### Community 124 - "Community 124"
-Cohesion: 0.50
-Nodes (4): First Pipeline, Prerequisites, 🛠️ Quick Start, Setup
+Cohesion: 0.25
+Nodes (5): Test rendering minimal valid contracts., Acceptance: Contract with only test stage produces one step., Acceptance: Contract with lint + test produces two steps., Acceptance: All stages disabled raises ContractError., TestRenderMinimalContract
 
 ### Community 125 - "Community 125"
-Cohesion: 0.50
-Nodes (4): Running Tests, 🧪 Test Coverage, What `pytest tests/unit/` Verifies, What Unit Tests Do NOT Cover
+Cohesion: 0.25
+Nodes (5): Test stage enablement logic., Acceptance: Missing stage returns False., Acceptance: Stage with enabled: false returns False., Acceptance: Stage with enabled: true returns True., TestStageEnabled
 
 ### Community 126 - "Community 126"
-Cohesion: 0.67
-Nodes (3): Key Sections, Language-Specific Examples, 📖 Pipeline Contract Reference
+Cohesion: 0.07
+Nodes (16): Tests for scripts/release.sh automated release script.  Validates that the relea, Acceptance: Script supports --help flag., Acceptance: Script passes ShellCheck linting., Unit tests for release script helper functions., Acceptance: Version regex matches vX.Y.Z format., Acceptance: CHANGELOG entry follows Keep a Changelog format., Test release script functionality., Acceptance: scripts/release.sh exists and is executable. (+8 more)
 
 ### Community 127 - "Community 127"
 Cohesion: 0.18
@@ -677,48 +679,72 @@ Cohesion: 0.29
 Nodes (6): Core Principles (4–8, specific to this product), How This Connects, Non-Goals (Explicit for Pre-Alpha Stage), North Star, Single Riskiest Assumption, VISION.md — uFawkesPipe
 
 ### Community 133 - "Community 133"
-Cohesion: 0.20
-Nodes (9): Branch Naming, CI Requirements, Pipeline Contract Changes, PR Body, PR Standards — uFawkesPipe, Title Format, Reusable Main CI Guard Workflow, Reusable Pre-flight Workflow (+1 more)
+Cohesion: 0.15
+Nodes (19): Branch Naming, CI Requirements, Pipeline Contract Changes, PR Body, PR Standards — uFawkesPipe, Title Format, Reusable Main CI Guard Workflow, Reusable Pre-flight Workflow (+11 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.40
-Nodes (10): Reusable Tests Workflow, Compose Smoke Job, E2E Tests Job, Integration Tests Job, Link Check Job, Markdown Lint Job, Required Files Job, Smoke Tests Job (+2 more)
+Cohesion: 0.44
+Nodes (12): check_clean_git_state(), check_release_blockers(), create_git_tag(), create_github_release(), log_error(), log_info(), log_warn(), main() (+4 more)
 
 ### Community 135 - "Community 135"
 Cohesion: 0.25
-Nodes (6): Change Impact Map — uFawkesPipe, Compose (standalone mode — compose.yaml), Compose (suite mode — compose.suite.yaml), Cross-Plane Impact, Pipeline Contract (.fawkespipe.yml), Pipeline Definition (.woodpecker.yml)
+Nodes (8): GitHub webhook fails, OTEL collector unreachable (suite mode), Pack build fails, Port 8000 (or 9000, 9443) already in use, SonarQube won't start, Trivy scan is slow, 🐛 Troubleshooting, Woodpecker won't start
 
 ### Community 136 - "Community 136"
-Cohesion: 0.25
-Nodes (5): Basic structural validation of .woodpecker.yml., Acceptance: .woodpecker.yml parses as valid YAML., Acceptance: .woodpecker.yml has a steps list., Acceptance: .woodpecker.yml has a when section., TestWoodpeckerYamlValid
+Cohesion: 0.29
+Nodes (7): Container Security, DefectDojo Integration, Dependency Scanning, 📋 Pipeline Stages, Secret Detection, 🔒 Security Features, Static Application Security Testing (SAST)
 
 ### Community 137 - "Community 137"
-Cohesion: 0.29
-Nodes (7): Architecture & Documentation, Current Limitations, Deprecations, Known Limitations — uFawkesPipe, Pipeline & CI, Security, Stack & Infrastructure
+Cohesion: 0.33
+Nodes (6): Common Commands, Lifecycle, Observability, Pre-commit, Testing, Validation
 
 ### Community 138 - "Community 138"
 Cohesion: 1.00
 Nodes (3): Reusable Lint Workflow, Detect Languages Job, Lint Summary Job
 
+### Community 139 - "Community 139"
+Cohesion: 0.33
+Nodes (6): GitHub webhook fails, OTEL Collector unreachable (suite mode), Port 8000 already in use, SonarQube won't start, Troubleshooting, Woodpecker won't start
+
+### Community 140 - "Community 140"
+Cohesion: 0.40
+Nodes (5): 1. Add `.fawkespipe.yml` to your repository, 2. Enable the repository in Woodpecker, 3. Push code, 4. Monitor the pipeline, Create Your First Pipeline
+
+### Community 141 - "Community 141"
+Cohesion: 0.40
+Nodes (5): 🔧 Configuration, Pipeline Configuration, Pipeline Contract Configuration, Service Configuration, Volume Management
+
+### Community 142 - "Community 142"
+Cohesion: 0.50
+Nodes (4): First Pipeline, Prerequisites, 🛠️ Quick Start, Setup
+
+### Community 143 - "Community 143"
+Cohesion: 0.50
+Nodes (4): Running Tests, 🧪 Test Coverage, What `pytest tests/unit/` Verifies, What Unit Tests Do NOT Cover
+
+### Community 144 - "Community 144"
+Cohesion: 0.67
+Nodes (3): Key Sections, Language-Specific Examples, 📖 Pipeline Contract Reference
+
 ## Knowledge Gaps
-- **668 isolated node(s):** `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything`, `compose.yaml`, `Woodpecker Configuration (`.woodpecker.yml`)` (+663 more)
+- **679 isolated node(s):** `Architecture & Documentation`, `Pipeline & CI`, `Stack & Infrastructure`, `Security`, `CI/CD & Release` (+674 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `uFawkesPipe — Implementation Plan v0.2` connect `Community 47` to `Platform Architecture`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Platform Architecture`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `.fawkespipe.yml Contract` connect `Platform Architecture` to `Community 51`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **What connects `1. Identity`, `2. Where the Agents Live`, `3. Context Files — Read Before Generating Anything` to the rest of the system?**
-  _978 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Community 51`?**
+  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Are the 17 inferred relationships involving `render()` (e.g. with `.test_cnb_builder_custom()` and `.test_cnb_builder_default()`) actually correct?**
+  _`render()` has 17 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Tests for scripts/release.sh automated release script.  Validates that the relea`, `Test release script functionality.`, `Acceptance: scripts/release.sh exists and is executable.` to the rest of the system?**
+  _1054 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Pipeline Structure Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
 - **Should `Compose Validation Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
 - **Should `Compose Network Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
+- **Should `DefectDojo Upload Tests` be split into smaller, more focused modules?**
+  _Cohesion score 0.058823529411764705 - nodes in this community are weakly interconnected._
