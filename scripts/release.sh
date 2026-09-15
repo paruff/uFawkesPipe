@@ -70,12 +70,12 @@ validate_version() {
 
 check_release_blockers() {
     log_info "Checking for release blockers..."
-    
+
     # Check for open issues with release-blocker label
     if command -v gh &> /dev/null; then
         local blockers
         blockers=$(gh issue list --label "release-blocker" --state open --json number,title --jq '.[] | "\(.number): \(.title)"' 2>/dev/null || echo "")
-        
+
         if [[ -n "$blockers" ]]; then
             log_error "Release blockers found:"
             echo "$blockers"
@@ -90,7 +90,7 @@ check_release_blockers() {
 
 check_clean_git_state() {
     log_info "Checking git state..."
-    
+
     # Check for uncommitted changes
     if [[ -n "$(git status --porcelain)" ]]; then
         log_error "Uncommitted changes found"
@@ -98,7 +98,7 @@ check_clean_git_state() {
         return 1
     fi
     log_info "Git working tree clean"
-    
+
     # Check we're on main branch
     local branch
     branch=$(git branch --show-current)
@@ -111,9 +111,9 @@ check_clean_git_state() {
 create_git_tag() {
     local version="$1"
     local dry_run="$2"
-    
+
     log_info "Creating git tag: $version"
-    
+
     if [[ "$dry_run" == "true" ]]; then
         log_info "[DRY RUN] Would create tag: $version"
     else
@@ -125,9 +125,9 @@ create_git_tag() {
 push_to_remote() {
     local version="$1"
     local dry_run="$2"
-    
+
     log_info "Pushing to remote..."
-    
+
     if [[ "$dry_run" == "true" ]]; then
         log_info "[DRY RUN] Would push main and tag $version"
     else
@@ -140,21 +140,21 @@ push_to_remote() {
 create_github_release() {
     local version="$1"
     local dry_run="$2"
-    
+
     log_info "Creating GitHub Release..."
-    
+
     if ! command -v gh &> /dev/null; then
         log_warn "GitHub CLI (gh) not found, skipping GitHub Release creation"
         return 0
     fi
-    
+
     # Generate release notes from CHANGELOG
     local release_notes="/tmp/release-notes-${version}.md"
     if [[ -f "$REPO_ROOT/CHANGELOG.md" ]]; then
         # Extract the section for this version
         grep -A 30 "## \[${version}\]" "$REPO_ROOT/CHANGELOG.md" | head -n 25 > "$release_notes" || true
     fi
-    
+
     if [[ "$dry_run" == "true" ]]; then
         log_info "[DRY RUN] Would create GitHub Release: $version"
         log_info "[DRY RUN] Release notes: ${release_notes}"
@@ -170,7 +170,7 @@ create_github_release() {
 main() {
     local version=""
     local dry_run="false"
-    
+
     # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -193,35 +193,35 @@ main() {
                 ;;
         esac
     done
-    
+
     # Validate required arguments
     if [[ -z "$version" ]]; then
         log_error "VERSION argument required"
         usage
         exit 1
     fi
-    
+
     echo "=========================================="
     echo "  Release: $version"
     echo "=========================================="
     echo ""
-    
+
     # Run checks
     validate_version "$version" || exit 1
     check_release_blockers || exit 1
     check_clean_git_state || exit 1
-    
+
     echo ""
     echo "=========================================="
     echo "  Creating Release"
     echo "=========================================="
     echo ""
-    
+
     # Create release
     create_git_tag "$version" "$dry_run"
     push_to_remote "$version" "$dry_run"
     create_github_release "$version" "$dry_run"
-    
+
     echo ""
     echo "=========================================="
     log_info "Release $version complete!"

@@ -23,6 +23,9 @@ steps:
     python3 -c "import sys,json; print(json.load(sys.stdin).get(''status'',''PENDING''))");   echo
     "Quality gate status: $STATUS"; done; if [ "$STATUS" != "OK" ]; then   echo "Quality
     gate failed with status: $STATUS";   exit 1; fi'
+  - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+  - bandit -r src/ -ll -ii -f json -o bandit-report.json || true
+  - bandit -r src/ -s MEDIUM -c MEDIUM --exit-code 1
 - name: dependency-scan
   image: aquasec/trivy:latest
   commands:

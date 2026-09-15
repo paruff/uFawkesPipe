@@ -10,9 +10,7 @@ Validates that the release script correctly:
 
 import pytest
 import subprocess
-import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 
 @pytest.mark.unit
@@ -23,14 +21,18 @@ class TestReleaseScript:
         """Acceptance: scripts/release.sh exists and is executable."""
         script_path = Path(__file__).parent.parent.parent / "scripts" / "release.sh"
         assert script_path.exists(), "scripts/release.sh must exist"
-        assert script_path.stat().st_mode & 0o111, "scripts/release.sh must be executable"
+        assert script_path.stat().st_mode & 0o111, (
+            "scripts/release.sh must be executable"
+        )
 
     def test_script_has_shebang(self):
         """Acceptance: scripts/release.sh has proper shebang."""
         script_path = Path(__file__).parent.parent.parent / "scripts" / "release.sh"
         with open(script_path) as f:
             first_line = f.readline()
-        assert first_line.startswith("#!/"), "scripts/release.sh must have a shebang line"
+        assert first_line.startswith("#!/"), (
+            "scripts/release.sh must have a shebang line"
+        )
 
     def test_script_has_set_euo_pipefail(self):
         """Acceptance: scripts/release.sh uses strict error handling."""
@@ -81,9 +83,10 @@ class TestReleaseScript:
         )
         # Should fail because we're not in a release-ready state, but not
         # because of version format validation
-        assert "invalid" not in result.stderr.lower() or "version" not in result.stderr.lower(), (
-            "Script should accept valid version format v1.0.0"
-        )
+        assert (
+            "invalid" not in result.stderr.lower()
+            or "version" not in result.stderr.lower()
+        ), "Script should accept valid version format v1.0.0"
 
     def test_dry_run_flag(self):
         """Acceptance: Script supports --dry-run flag."""
@@ -95,9 +98,11 @@ class TestReleaseScript:
             timeout=5,
         )
         # Should show usage information including --dry-run
-        assert "dry-run" in result.stdout.lower() or "dry_run" in result.stdout.lower() or "dry run" in result.stdout.lower(), (
-            "Script should document --dry-run flag in help"
-        )
+        assert (
+            "dry-run" in result.stdout.lower()
+            or "dry_run" in result.stdout.lower()
+            or "dry run" in result.stdout.lower()
+        ), "Script should document --dry-run flag in help"
 
     def test_help_flag(self):
         """Acceptance: Script supports --help flag."""
@@ -135,8 +140,9 @@ class TestReleaseScriptUnit:
     def test_version_regex_pattern(self):
         """Acceptance: Version regex matches vX.Y.Z format."""
         import re
+
         # Common semver pattern
-        pattern = r'^v[0-9]+\.[0-9]+\.[0-9]+$'
+        pattern = r"^v[0-9]+\.[0-9]+\.[0-9]+$"
         assert re.match(pattern, "v1.0.0"), "Should match v1.0.0"
         assert re.match(pattern, "v0.1.0"), "Should match v0.1.0"
         assert re.match(pattern, "v10.20.30"), "Should match v10.20.30"
@@ -147,7 +153,8 @@ class TestReleaseScriptUnit:
     def test_changelog_entry_format(self):
         """Acceptance: CHANGELOG entry follows Keep a Changelog format."""
         import re
+
         # Check that a CHANGELOG entry would match the expected format
         entry = "## [v1.0.0] - 2026-09-14"
-        pattern = r'^## \[v[0-9]+\.[0-9]+\.[0-9]+\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$'
+        pattern = r"^## \[v[0-9]+\.[0-9]+\.[0-9]+\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$"
         assert re.match(pattern, entry), f"CHANGELOG entry should match format: {entry}"

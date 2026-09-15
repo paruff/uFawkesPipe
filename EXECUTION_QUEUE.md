@@ -32,6 +32,8 @@
 | P2-2 | Add SonarQube quality gate wait in generated pipeline (currently fire-and-forget) | `.fawkespipe.yml.example` gap | `sonarqube: qualityGate: true` produces polling step in generated `.woodpecker.yml` | pipeline-generation, build |
 | P2-3 | Create `examples/fawkespipe-contract-migration/v0.3/` with worked example | M1.6 | Example shows v0.2 → v0.3 field changes; migration guide in `docs/` | documentation, template-scaffolding |
 | P2-4 | Add GitHub Actions workflow for `make validate` on PR (mirror Woodpecker validate stage) | CI-local parity | `.github/workflows/validate.yml` runs yamllint, shellcheck, pytest unit | ci-local-parity, pipeline-generation |
+| P2-5 | Add Bandit Python security linting to SAST stage (`bandit.enabled`, `bandit.severity`, `bandit.confidence`) | Pipeline contract gap | `bandit: {enabled: true, severity: MEDIUM, confidence: MEDIUM}` produces Bandit step in SAST | pipeline-generation, pipeline-policy |
+| P2-6 | Add DAST stage with OWASP ZAP (`dast.enabled`, `dast.target_url`, `dast.tool: zap`) | Pipeline contract gap | `dast: {enabled: true, target_url: http://app:8000, tool: zap}` produces ZAP baseline + API scan step | pipeline-generation, pipeline-policy |
 
 ### P3 — Backlog (Post v0.3 / H2)
 
@@ -44,6 +46,9 @@
 | P3-5 | Alloy config for structured pipeline log parsing (JSON → Loki labels) | M2.4 | Loki queries show `stage`, `status`, `duration_ms` labels from step logs | ufawkesobs-observability, build |
 | P3-6 | Automated release script (`scripts/release.sh`) implementing `RELEASE_PROCESS.md` | M3.3 | `./scripts/release.sh vX.Y.Z` cuts tag, CHANGELOG, GitHub Release, deploys | release, build |
 | P3-7 | Kubernetes promotion path: Woodpecker K8s manifests + Helm chart | M3.4 | `docs/kubernetes-promotion.md` has working manifests; `make up-k8s` smoke test | manifest-generation, k8s-design-validation |
+| P3-8 | Python-specific SAST: Bandit findings → DefectDojo ingestion | M2.5 | Bandit JSON uploaded to DefectDojo alongside Trivy/Gitleaks | pipe-to-obs-integration, build |
+| P3-9 | DAST findings (ZAP) → DefectDojo ingestion | M2.5 | ZAP HTML/JSON report uploaded to DefectDojo | pipe-to-obs-integration, build |
+| P3-10 | Dependency license scanning (OSV-Scanner / pip-audit) | Pipeline contract gap | `dependency_scan.tools: [osv-scanner]` produces license + CVE report | pipeline-policy, build |
 
 ---
 

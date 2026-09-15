@@ -64,7 +64,9 @@ class TestDefectDojoUploadStep:
         assert step is not None, "Step 'upload-defectdojo' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "-w '%{http_code}'" in command_str or '-w "%{http_code}"' in command_str, (
+        assert (
+            "-w '%{http_code}'" in command_str or '-w "%{http_code}"' in command_str
+        ), (
             "upload-defectdojo curl command must capture HTTP status code via -w '%{http_code}'"
         )
 

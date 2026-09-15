@@ -47,7 +47,7 @@
 
 | # | Limitation | Impact | Mitigation |
 | - | ---------- | ------ | ---------- |
-| L-017 | Release Please workflow fails when `RELEASE_PLEASE_TOKEN` secret is not configured and repository default workflow permissions are `read` | Release PRs cannot be created automatically; manual changelog updates required | Create a Personal Access Token (PAT) with `repo` and `pull_requests` scopes, add it as `RELEASE_PLEASE_TOKEN` secret; see workflow comments for details |
+| L-017 | ~~Release Please workflow fails when `RELEASE_PLEASE_TOKEN` secret is not configured and repository default workflow permissions are `read`~~ | **RESOLVED:** `scripts/release.sh` provides automated release process (tag, CHANGELOG, GitHub Release) independent of Release Please | Use `./scripts/release.sh vX.Y.Z` for automated releases; see `RELEASE_PROCESS.md` |
 
 ---
 

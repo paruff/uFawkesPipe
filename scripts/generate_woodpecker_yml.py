@@ -19,7 +19,16 @@ from pathlib import Path
 
 import yaml
 
-STAGE_ORDER = ("lint", "test", "sast", "dependency_scan", "build", "image_scan", "push")
+STAGE_ORDER = (
+    "lint",
+    "test",
+    "sast",
+    "dependency_scan",
+    "build",
+    "image_scan",
+    "dast",
+    "push",
+)
 
 _LANGUAGE_IMAGES = {
     "java": "maven:3.9-eclipse-temurin-17",
@@ -98,6 +107,12 @@ def _sast_step(contract: dict) -> dict:
     sast_cfg = contract.get("stages", {}).get("sast", {})
     sonarqube_cfg = sast_cfg.get("sonarqube", {})
     quality_gate = sonarqube_cfg.get("qualityGate", True)
+    trivy_cfg = sast_cfg.get("trivy", {})
+    trivy_enabled = trivy_cfg.get("enabled", True)
+    bandit_cfg = sast_cfg.get("bandit", {})
+    bandit_enabled = bandit_cfg.get("enabled", True)
+    bandit_severity = bandit_cfg.get("severity", "MEDIUM")
+    bandit_confidence = bandit_cfg.get("confidence", "MEDIUM")
 
     commands = ["sonar-scanner"]
 
@@ -107,16 +122,26 @@ def _sast_step(contract: dict) -> dict:
         commands.append(
             'STATUS="PENDING"; '
             'while [ "$STATUS" = "PENDING" ]; do '
-            '  sleep 5; '
+            "  sleep 5; "
             '  STATUS=$(curl -s -u "$SONARQUBE_TOKEN:" '
             '    "$SONARQUBE_URL/api/qualitygates/project?projectKey=$SONARQUBE_PROJECT_KEY" '
-            '    | python3 -c "import sys,json; print(json.load(sys.stdin).get(\'status\',\'PENDING\'))"); '
+            "    | python3 -c \"import sys,json; print(json.load(sys.stdin).get('status','PENDING'))\"); "
             '  echo "Quality gate status: $STATUS"; '
-            'done; '
+            "done; "
             'if [ "$STATUS" != "OK" ]; then '
             '  echo "Quality gate failed with status: $STATUS"; '
-            '  exit 1; '
-            'fi'
+            "  exit 1; "
+            "fi"
+        )
+
+    if trivy_enabled:
+        trivy_severity = trivy_cfg.get("severity", "HIGH,CRITICAL")
+        commands.append(f"trivy fs --severity {trivy_severity} --exit-code 1 .")
+
+    if bandit_enabled:
+        commands.append("bandit -r src/ -ll -ii -f json -o bandit-report.json || true")
+        commands.append(
+            f"bandit -r src/ -s {bandit_severity} -c {bandit_confidence} --exit-code 1"
         )
 
     return {
@@ -162,6 +187,33 @@ def _image_scan_step(contract: dict) -> dict:
     }
 
 
+def _dast_step(contract: dict) -> dict:
+    dast_cfg = contract.get("stages", {}).get("dast", {})
+    target_url = dast_cfg.get("target_url", "")
+    tool = dast_cfg.get("tool", "zap")
+    _rules = dast_cfg.get("rules", "Default Policy")
+    _fail_on = dast_cfg.get("fail_on", "HIGH")
+    _timeout = dast_cfg.get("timeout", 300)
+
+    if not target_url:
+        raise ContractError("dast.target_url is required when dast.enabled is true")
+
+    if tool != "zap":
+        raise ContractError(f"unsupported dast.tool '{tool}' — supported: zap")
+
+    # ZAP baseline scan + active scan
+    commands = [
+        f"zap-baseline.py -t {target_url} -r zap-report.html || true",
+        f"zap-api-scan.py -t {target_url}/openapi.json -r zap-api-report.html -f openapi -P 300 || true",
+    ]
+
+    return {
+        "name": "dast",
+        "image": "owasp/zap2docker-stable:latest",
+        "commands": commands,
+    }
+
+
 def _push_step(contract: dict) -> dict:
     return {
         "name": "push",
@@ -177,6 +229,7 @@ _STEP_BUILDERS = {
     "dependency_scan": _dependency_scan_step,
     "build": _build_step,
     "image_scan": _image_scan_step,
+    "dast": _dast_step,
     "push": _push_step,
 }
 
