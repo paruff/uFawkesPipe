@@ -28,6 +28,7 @@ STAGE_ORDER = (
     "image_scan",
     "dast",
     "push",
+    "deploy",
 )
 
 _LANGUAGE_IMAGES = {
@@ -222,6 +223,65 @@ def _push_step(contract: dict) -> dict:
     }
 
 
+def _deploy_step(contract: dict) -> dict:
+    deploy_cfg = contract.get("stages", {}).get("deploy", {})
+    target = deploy_cfg.get("target", "docker")
+
+    if target == "docker":
+        port = deploy_cfg.get("port", 8000)
+        network = deploy_cfg.get("network", "ufawkespipe_default")
+        env_file = deploy_cfg.get("env_file", "")
+        env_file_flag = f" --env-file {env_file}" if env_file else ""
+        commands = [
+            f"docker run -d --name $CI_REPO_NAME "
+            f"--network {network} "
+            f"-p {port}:8000 "
+            f"--restart unless-stopped "
+            f"{env_file_flag} "
+            f"${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}",
+        ]
+    elif target == "compose":
+        compose_file = deploy_cfg.get("compose_file", "docker-compose.yml")
+        service_name = deploy_cfg.get("service_name", "$CI_REPO_NAME")
+        commands = [
+            f"docker compose -f {compose_file} up -d {service_name}",
+        ]
+    elif target == "ssh":
+        host = deploy_cfg.get("host", "")
+        user = deploy_cfg.get("user", "root")
+        port = deploy_cfg.get("port", 22)
+        ssh_key = deploy_cfg.get("ssh_key", "")
+        if not host:
+            raise ContractError("deploy.host is required when deploy.target is ssh")
+        if not ssh_key:
+            raise ContractError("deploy.ssh_key is required when deploy.target is ssh")
+        # Woodpecker environment variables ($$) must be passed through to YAML.
+        # Ruff F821 false positive: these are Woodpecker env vars, not Python vars.
+        # ruff: noqa: F821
+        commands = [
+            f"ssh -i {ssh_key} -p {deploy_cfg.get('port', 22)} {user}@{host} "
+            f"'docker pull $${REGISTRY_USERNAME}/$${CI_REPO_NAME}:$${CI_COMMIT_SHA:0:7} && "
+            f"docker stop $${CI_REPO_NAME} 2>/dev/null || true && "
+            f"docker rm $${CI_REPO_NAME} 2>/dev/null || true && "
+            f"docker run -d --name $${CI_REPO_NAME} -p 8000:8000 --restart unless-stopped "
+            f"$${REGISTRY_USERNAME}/$${CI_REPO_NAME}:$${CI_COMMIT_SHA:0:7}'",
+        ]
+    else:
+        raise ContractError(
+            f"unsupported deploy.target '{target}' — supported: docker, compose, ssh"
+        )
+
+    return {
+        "name": "deploy",
+        "image": "docker:24-cli",
+        "commands": commands,
+        "when": {
+            "event": "push",
+            "branch": "main",
+        },
+    }
+
+
 _STEP_BUILDERS = {
     "lint": _lint_step,
     "test": _test_step,
@@ -231,6 +291,7 @@ _STEP_BUILDERS = {
     "image_scan": _image_scan_step,
     "dast": _dast_step,
     "push": _push_step,
+    "deploy": _deploy_step,
 }
 
 

@@ -55,6 +55,12 @@ validate-agents: ## Validate agent and skill definitions
 	@echo "Validating agent and skill definitions..."
 	bash scripts/validate-agents.sh
 
+bootstrap-woodpecker: ## Bootstrap Woodpecker repo + secrets (requires WOODPECKER_ADMIN_TOKEN)
+	@scripts/bootstrap-woodpecker.sh
+
+bootstrap-secrets: ## Full secrets bootstrap across providers (requires WOODPECKER_ADMIN_TOKEN + provider flags)
+	@scripts/bootstrap-secrets.sh
+
 # ============================================================================
 # Pipeline Contract Commands
 # ============================================================================

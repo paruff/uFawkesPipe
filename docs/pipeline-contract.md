@@ -504,6 +504,62 @@ notifications:
 
 ---
 
+### deploy
+
+Deploys the built image to a target environment (Docker, Docker Compose, or remote host).
+
+| Field           | Type    | Required | Default              | Description |
+|-----------------|---------|----------|----------------------|-------------|
+| `enabled`       | boolean | no       | `false`              | Enable deploy stage |
+| `target`        | string  | no       | `docker`             | Deployment target: `docker`, `compose`, `ssh` |
+| `host`          | string  | no       | `localhost`          | Target host (for `ssh` target) |
+| `port`          | integer | no       | `22`                 | SSH port (for `ssh` target) |
+| `user`          | string  | no       | `root`               | SSH user (for `ssh` target) |
+| `ssh_key`       | string  | no       | —                    | Path to SSH private key (for `ssh` target) |
+| `compose_file`  | string  | no       | `docker-compose.yml` | Compose file path (for `compose` target) |
+| `service_name`  | string  | no       | `app.name`           | Service name in compose file |
+| `port`          | integer | no       | `8000`               | Host port to expose |
+| `network`       | string  | no       | `ufawkespipe_default`| Docker network to attach to |
+| `env_file`      | string  | no       | —                    | Path to env file for container |
+
+**Valid targets:** `docker`, `compose`, `ssh`
+
+**Example (Docker):**
+
+```yaml
+stages:
+  deploy:
+    enabled: true
+    target: docker
+    port: 8080
+    network: ufawkespipe_default
+```
+
+**Example (Docker Compose):**
+
+```yaml
+stages:
+  deploy:
+    enabled: true
+    target: compose
+    compose_file: docker-compose.prod.yml
+    service_name: my-app
+```
+
+**Example (SSH):**
+
+```yaml
+stages:
+  deploy:
+    enabled: true
+    target: ssh
+    host: prod.example.com
+    user: deploy
+    ssh_key: /secrets/deploy_key
+```
+
+---
+
 ## kubernetes — Kubernetes Deployment
 
 Configuration for deploying to Kubernetes (promotion path from Docker Compose).
