@@ -96,8 +96,8 @@ class TestLanguageImage:
         assert _language_image("python") == "python:3.12-slim"
 
     def test_java_image(self):
-        """Acceptance: java maps to maven:3.9-eclipse-temurin-17."""
-        assert _language_image("java") == "maven:3.9-eclipse-temurin-17"
+        """Acceptance: java maps to maven:3.9-eclipse-temurin-21."""
+        assert _language_image("java") == "maven:3.9-eclipse-temurin-21"
 
     def test_go_image(self):
         """Acceptance: go maps to golang:1.22."""

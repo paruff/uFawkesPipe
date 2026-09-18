@@ -39,7 +39,7 @@ STAGE_ORDER = (
 ARTIFACTS_DIR = "artifacts/security"
 
 _LANGUAGE_IMAGES = {
-    "java": "maven:3.9-eclipse-temurin-17",
+    "java": "maven:3.9-eclipse-temurin-21",
     "python": "python:3.12-slim",
     "nodejs": "node:20-slim",
     "go": "golang:1.22",
