@@ -341,29 +341,36 @@ stages:
 
 Scans application dependencies for known vulnerabilities.
 
-| Field         | Type    | Required | Default                              | Description |
-|---------------|---------|----------|--------------------------------------|-------------|
-| `enabled`     | boolean | no       | `true`                               | Enable dependency scanning stage |
-| `tools`       | array   | no       | `[owasp-dependency-check, trivy]`    | Scanning tools to use |
-| `fail_on`     | string  | no       | `CRITICAL`                           | Severity threshold to fail the build |
-| `suppressions` | string | no       | —                                     | Path to OWASP Dependency-Check suppressions XML |
+| Field         | Type    | Required | Default     | Description |
+|---------------|---------|----------|-------------|-------------|
+| `enabled`     | boolean | no       | `true`      | Enable dependency scanning stage |
+| `tools`       | array   | no       | `[trivy]`   | Scanning tool to use — exactly one, not a combinable set (see note) |
+| `licenses`    | array   | no       | —           | Only with `tools: [osv-scanner]`: license allowlist passed to `--licenses` |
 
-**Valid tools:** `owasp-dependency-check`, `trivy`
+**Valid `tools` values:** `[trivy]` (default) or `[osv-scanner]`. `owasp-dependency-check` and `fail_on`/`suppressions` are documented elsewhere in this repo's history but are **not implemented** by `scripts/generate_woodpecker_yml.py` — see `docs/KNOWN_LIMITATIONS.md`. `tools` selects one tool per stage; combining multiple tools in a single `dependency_scan` stage is not supported.
 
-**Valid fail_on values:** `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`
+**Example (default — Trivy):**
 
-**Example:**
+```yaml
+stages:
+  dependency_scan:
+    enabled: true
+```
+
+**Example (OSV-Scanner — CVEs + license allowlist, P3-10):**
 
 ```yaml
 stages:
   dependency_scan:
     enabled: true
     tools:
-      - owasp-dependency-check
-      - trivy
-    fail_on: CRITICAL
-    suppressions: dependency-check-suppressions.xml
+      - osv-scanner
+    licenses:
+      - MIT
+      - Apache-2.0
 ```
+
+Both tools write a machine-readable report to `artifacts/security/` (`trivy-repo.json` or `osv.json`) that the [`defectdojo`](#defectdojo) stage picks up if enabled.
 
 ### build (stage)
 
@@ -431,6 +438,43 @@ stages:
 ```
 
 **Note:** DAST requires the application to be running and accessible. Typically runs in a staging/integration environment after deployment.
+
+---
+
+### defectdojo
+
+Uploads whatever machine-readable security reports the earlier stages produced (Trivy, Bandit, ZAP, OSV-Scanner) to a [DefectDojo](https://www.defectdojo.org/) instance for centralized findings tracking (P2-1, P3-8, P3-9).
+
+| Field             | Type    | Required | Default                    | Description |
+|-------------------|---------|----------|-----------------------------|-------------|
+| `enabled`         | boolean | no       | `false`                     | Enable DefectDojo upload stage |
+| `url`             | string  | no       | `http://defectdojo:8080`   | DefectDojo base URL |
+| `engagement_name` | string  | no       | `CI-Engagement`             | Engagement to import findings into |
+
+Requires a Woodpecker secret named `defectdojo_api_token`.
+
+Each report is uploaded independently as `[ -f <report> ] && curl ... || true` — a report a given pipeline never produced (e.g. `dast` disabled, so no `zap-*.xml`) is silently skipped, and a failed upload never fails the build. Only runs on `push` to `main`.
+
+**Example:**
+
+```yaml
+stages:
+  defectdojo:
+    enabled: true
+    url: http://defectdojo:8080
+    engagement_name: CI-Engagement
+```
+
+| Report | Produced by | DefectDojo `scan_type` |
+|---|---|---|
+| `artifacts/security/trivy-repo.json` | `dependency_scan` (tools: trivy) | `Trivy Scan` |
+| `artifacts/security/trivy-image.json` | `image_scan` | `Trivy Scan` |
+| `artifacts/security/bandit.json` | `sast` (bandit.enabled) | `Bandit Scan` |
+| `artifacts/security/zap-baseline.xml` | `dast` | `ZAP Scan` |
+| `artifacts/security/zap-api.xml` | `dast` | `ZAP Scan` |
+| `artifacts/security/osv.json` | `dependency_scan` (tools: osv-scanner) | `OSV Scan` |
+
+**Known limitation:** `OSV Scan` is DefectDojo's documented parser name as of this writing but has not been confirmed against a live DefectDojo instance from this repo — no `defectdojo` service was running in this environment during implementation. Confirm the parser name before the first real import.
 
 ---
 

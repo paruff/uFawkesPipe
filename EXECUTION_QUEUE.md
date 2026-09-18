@@ -19,10 +19,10 @@
 | # | Task | Source | Acceptance Criteria | Skill(s) | Status |
 |---|------|--------|---------------------|----------|--------|
 | P1-1 | Fix `vuln-scan-fs` Trivy severity threshold alignment (HIGH/CRITICAL vs CRITICAL only) | KNOWN_LIMITATIONS L-008 follow-up | Trivy fs scan fails on HIGH+; config in `.fawkespipe.yml.example` matches | pipeline-policy, verification | DONE (PR #83) |
-| P1-2 | Add `policy-check` step timeout (currently unbounded) | AGENTS.md §4 | Step has `timeout: 5` minutes; fails fast on OPA hang | pipeline-policy, governance-enforcement | |
-| P1-3 | Document suite-mode network topology in `docs/ARCHITECTURE.md` §12.2 (add diagram for security plane services) | ARCHITECTURE.md gap | Mermaid diagram shows defectdojo/infisical/trivy/falco on `fawkes-net` internal | documentation, design-compliance | |
+| P1-2 | Add `policy-check` step timeout (currently unbounded) | AGENTS.md §4 | Step has `timeout: 5` minutes; fails fast on OPA hang | pipeline-policy, governance-enforcement | DONE (PR #83) |
+| P1-3 | Document suite-mode network topology in `docs/ARCHITECTURE.md` §12.2 (add diagram for security plane services) | ARCHITECTURE.md gap | Mermaid diagram shows defectdojo/infisical/trivy/falco on `fawkes-net` internal | documentation, design-compliance | DONE (PR #83) |
 | P1-4 | Add `make test-policy` target running Conftest against local compose files | design.md §4 | `make test-policy` runs `conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml` | test-execution, pipeline-test-stage-validation | DONE (PR #83) |
-| P1-5 | Add integration tests for `scripts/generate_woodpecker_yml.py` (empty stages, custom builders) | Retrospective insight | Test matrix covers edge cases; all pass | test-execution, verification | |
+| P1-5 | Add integration tests for `scripts/generate_woodpecker_yml.py` (empty stages, custom builders) | Retrospective insight | Test matrix covers edge cases; all pass | test-execution, verification | DONE (PR #83) |
 
 ### P2 — Next Sprint (Week of 2026-09-21)
 
@@ -39,8 +39,8 @@
 
 | # | Task | Source | Acceptance Criteria | Skill(s) |
 |---|------|--------|---------------------|----------|
-| P3-1 | Woodpecker PostgreSQL migration (standalone → shared via uFawkesRes) | M2.1 | `compose.yaml` Woodpecker service uses external Postgres; SQLite volume optional | refactoring, k8s-design-validation |
-| P3-2 | SonarQube PostgreSQL migration (embedded H2 → shared via uFawkesRes) | M2.1 | `compose.yaml` SonarQube uses external Postgres; H2 removed | refactoring, k8s-design-validation |
+| P3-1 | ~~Woodpecker PostgreSQL migration (standalone → shared via uFawkesRes)~~ | M2.1 | N/A — there is no uFawkesRes repo/product; no shared-Postgres target exists. SQLite stays standalone-only unless a new target is named. Alternative if capacity allows: host shared Postgres on whichever of uFawkesPipe/uFawkesObs/uFawkesDevX has spare memory/CPU, rather than a dedicated 4th repo (per 2026-09-18 planning note) — not scheduled, just a live option. | — |
+| P3-2 | ~~SonarQube PostgreSQL migration (embedded H2 → shared via uFawkesRes)~~ | M2.1 | N/A — same as P3-1: no uFawkesRes repo/product exists | — |
 | P3-3 | OTEL metrics export from Woodpecker server → Prometheus scrape config | M2.2 | `WOODPECKER_PROMETHEUS_AUTH_TOKEN` works; Grafana dashboard shows pipeline duration | ufawkesobs-observability, build |
 | P3-4 | Pipeline step traces via OTEL (Woodpecker native or wrapper) | M2.3 | Tempo shows per-pipeline spans; not just server request traces | ufawkesobs-observability, pipe-to-obs-integration |
 | P3-5 | Alloy config for structured pipeline log parsing (JSON → Loki labels) | M2.4 | Loki queries show `stage`, `status`, `duration_ms` labels from step logs | ufawkesobs-observability, build |
@@ -49,6 +49,12 @@
 | P3-8 | Python-specific SAST: Bandit findings → DefectDojo ingestion | M2.5 | Bandit JSON uploaded to DefectDojo alongside Trivy/Gitleaks | pipe-to-obs-integration, build |
 | P3-9 | DAST findings (ZAP) → DefectDojo ingestion | M2.5 | ZAP HTML/JSON report uploaded to DefectDojo | pipe-to-obs-integration, build |
 | P3-10 | Dependency license scanning (OSV-Scanner / pip-audit) | Pipeline contract gap | `dependency_scan.tools: [osv-scanner]` produces license + CVE report | pipeline-policy, build |
+| P3-11 | Commit + open PR for P3-3/4/5/8/9/10 (implemented 2026-09-17, currently uncommitted working-tree changes) | This session | PR opened; CI green; these rows get a `DONE (PR #NN)` status | release, verification |
+| P3-12 | Adopt `docs/adr/` (matching uFawkesObs's convention) and backfill ADRs for: Woodpecker-vs-Jenkins migration, standalone-vs-suite mode split, security-plane consolidation (uFawkesSec merge, §13) | 2026-09-18 architecture audit — no ADRs exist anywhere in this repo | `docs/adr/README.md` + ≥3 ADRs exist, cross-linked from `docs/ARCHITECTURE.md` | documentation, architecture-decision-records |
+| P3-13 | Fix `docs/ARCHITECTURE.md` section numbering (physical order is 1–8, 12, 13, 9, 10, 11 — sections 9/10/11 were never renumbered when 12/13 were inserted) | 2026-09-18 architecture audit | Headings numbered 1–13 in physical/reading order | documentation |
+| P3-14 | ~~Resolve the uFawkesRes contradiction~~ | 2026-09-18 architecture audit | DONE (2026-09-18) — confirmed decommissioned; ARCHITECTURE.md §7/§12.1/§11, MILESTONES.md M2.1 + release gates, VISION.md non-goals #1/#6, and EXECUTION_QUEUE P3-1/P3-2/scope-drift table all updated to match | documentation, design-compliance |
+| P3-15 | Design + scope a suite acceptance test tier structure: per-plane (uFawkesPipe alone) → 2-plane (uFawkesPipe + uFawkesObs) → 3-plane (+ uFawkesDevX) | 2026-09-18 planning request | Design note + `tests/acceptance/` skeleton for the per-plane tier at minimum | test-execution, design-compliance |
+| P3-16 | Document the uFawkesDevX integration contract — `docs/ARCHITECTURE.md` §7 has a placeholder row ("Developer tooling → developerd, Status read (future)") with no defined protocol | ARCHITECTURE.md §7 gap | Contract documented: what uFawkesDevX reads (pipeline status API? webhook? Prometheus?) and how | documentation, pipe-to-obs-integration |
 
 ---
 
@@ -63,7 +69,7 @@
 | External artifact repo | Adding Nexus/Harbor service | → Reject; OCI registry is the contract |
 | Full DefectDojo integration | Building DefectDojo UI dashboards | → Scope to API ingestion only (P2-1) |
 | GitOps controller integration | Adding Flux/Argo to compose | → Reject; app team concern |
-| SSO/RBAC for platform | Adding Authelia to standalone | → Suite mode only (uFawkesRes) |
+| SSO/RBAC for platform | Adding Authelia to standalone | → Reject; uFawkesRes (the only planned carrier) is decommissioned — no current suite-mode SSO path |
 | Performance testing | Adding k6/Locust to CI | → Post-alpha (H3) |
 | Custom pipeline DSL | Adding `script:` or `cel:` fields to contract | → Reject; declarative YAML only |
 
@@ -78,6 +84,7 @@
 | Date | Retrospective Insight | Queue Impact |
 |------|----------------------|--------------|
 | 2026-09-14 | (This session) — Pipeline contract generator needs integration tests for edge cases (empty stages, custom builders) | Added P1-5 (new): `scripts/generate_woodpecker_yml.py` contract test matrix |
+| 2026-09-18 | Milestones/EXECUTION_QUEUE Issue/PR citations for M1.1–M1.4 were fabricated (real PRs, wrong ones — mostly unrelated Dependabot bumps); P1-2/P1-3/P1-5 were implemented but left unmarked; `docs/ARCHITECTURE.md` has a live internal contradiction about whether uFawkesRes is decommissioned | Added P3-11..P3-16 (new); flagged P3-14 as blocking on a human decision before any suite-mode integration work proceeds |
 | — | — | — |
 
 **Process:** At end of each `plan-for-the-day.md` session, the retrospective section captures:

@@ -20,18 +20,18 @@
 
 | Milestone | Deliverable | Status | Issue / PR | Target |
 |-----------|-------------|--------|------------|--------|
-| M1.1 | Acceptance test suite complete (stack health, auth, pipeline sim, scan artifacts, deploy webhook) | ✅ Done | #49, #52, #55 | Jul 2026 |
-| M1.2 | Pipeline contract generator (`scripts/generate_woodpecker_yml.py`) covers all `stages.*` fields | ✅ Done | #47 | Jul 2026 |
-| M1.3 | `notify-obs` emits structured DORA deployment event to OTEL collector (suite mode) | ✅ Done | #58 | Aug 2026 |
-| M1.4 | Security plane merged (DefectDojo, Infisical, Trivy server, Falco + policy-check) | ✅ Done | #62 | Aug 2026 |
-| M1.5 | All `docs/KNOWN_LIMITATIONS.md` items marked RESOLVED or have mitigation | 🔄 In progress | #65 | Sep 2026 |
+| M1.1 | Acceptance test suite complete (stack health, auth, pipeline sim, scan artifacts, deploy webhook) | ✅ Done | #42 | Jul 2026 |
+| M1.2 | Pipeline contract generator (`scripts/generate_woodpecker_yml.py`) covers all `stages.*` fields | ✅ Done | #64 | Jul 2026 |
+| M1.3 | `notify-obs` emits structured DORA deployment event to OTEL collector (suite mode) | ✅ Done | #34, #70 | Aug 2026 |
+| M1.4 | Security plane merged (DefectDojo, Infisical, Trivy server, Falco + policy-check) | ✅ Done | #67 | Aug 2026 |
+| M1.5 | All `docs/KNOWN_LIMITATIONS.md` items marked RESOLVED or have mitigation | ✅ Done | #83 | Sep 2026 |
 | M1.6 | **v0.3 Release** — Tag, CHANGELOG, GitHub Release, acceptance suite green | ⏳ Planned | — | **Sep 2026** |
 
 ### H2 — Suite-Mode Maturity & Observability Closure
 
 | Milestone | Deliverable | Status | Issue / PR | Target |
 |-----------|-------------|--------|------------|--------|
-| M2.1 | Suite mode `make up-suite` passes full acceptance suite against uFawkesRes + uFawkesObs | ⏳ Planned | — | Oct 2026 |
+| M2.1 | Suite mode `make up-suite` passes full acceptance suite against uFawkesObs (uFawkesRes is decommissioned — see docs/ARCHITECTURE.md §12.2) | ⏳ Planned | — | Oct 2026 |
 | M2.2 | Woodpecker metrics scraped by Prometheus (uFawkesObs) — dashboards show pipeline duration, success rate | ⏳ Planned | — | Nov 2026 |
 | M2.3 | OTEL traces from Woodpecker server visible in Tempo/Grafana | ⏳ Planned | — | Nov 2026 |
 | M2.4 | Alloy log scraping → Loki working for all services (including pipeline step logs) | ⏳ Planned | — | Dec 2026 |
@@ -60,9 +60,9 @@ A release (tag + GitHub Release + CHANGELOG) ships **only when all gates pass**:
 | **Docs Updated** | CHANGELOG.md, README.md, ARCHITECTURE.md (if changed), KNOWN_LIMITATIONS.md | `git diff docs/` |
 | **Contract Stable** | `.fawkespipe.yml.example` version bumped; migration example in `examples/` if breaking | `examples/fawkespipe-contract-migration/` |
 | **Tag Created** | Semver tag pushed (`git tag vX.Y.Z && git push --tags`) | GitHub Releases page |
-| **Deploy + Verify** | `make up` (standalone) and `make up-suite` (suite, if uFawkesRes/Obs available) both green | Manual or CI |
+| **Deploy + Verify** | `make up` (standalone) and `make up-suite` (suite, if uFawkesObs available) both green | Manual or CI |
 
-> **Pre-alpha exception:** H1 releases (v0.x) may ship with suite-mode gate as "verify when uFawkesRes/Obs available" — document in release notes.
+> **Pre-alpha exception:** H1 releases (v0.x) may ship with suite-mode gate as "verify when uFawkesObs available" — document in release notes.
 
 ---
 

@@ -16,8 +16,15 @@
 #   dora_error "my-step" "Critical failure: connection refused" ',"exit_code":1'
 #   exit 1
 #
+# dora_end also takes an optional status (default "success"), and computes
+# duration_ms from the matching dora_start call earlier in the same step
+# (start/end must run in the same shell session — Woodpecker runs a step's
+# `commands` as one script, so this holds within a step, not across steps):
+#   dora_end "my-step" "failure"
+#
 # Each function emits one JSON line to stdout with:
 #   @timestamp, level, logger, message, pipeline, repo, step
+# dora_end additionally emits: status, duration_ms
 #
 # Optional extra_fields can be appended as a raw JSON fragment
 # (e.g. ',"exit_code":1,"secrets_found":true').
@@ -43,11 +50,23 @@ dora_emit() {
 }
 
 dora_start() {
+  # exported so dora_end can compute duration_ms later in this same step's
+  # shell session (separate steps run in separate containers and don't
+  # share this)
+  export _DORA_START_MS
+  _DORA_START_MS=$(( $(date +%s%N) / 1000000 ))
   dora_emit "info" "$1" "Starting ${1}"
 }
 
 dora_end() {
-  dora_emit "info" "$1" "Completed ${1}"
+  local logger="$1"
+  local status="${2:-success}"
+  local duration_ms=0
+  if [[ -n "${_DORA_START_MS:-}" ]]; then
+    duration_ms=$(( $(date +%s%N) / 1000000 - _DORA_START_MS ))
+  fi
+  dora_emit "info" "${logger}" "Completed ${logger}" \
+    ",\"status\":\"${status}\",\"duration_ms\":${duration_ms}"
 }
 
 dora_info() {
