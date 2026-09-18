@@ -999,7 +999,10 @@ class TestImageReferenceConsistency:
             "app": {"name": "test", "language": "python"},
             "build": build,
             "stages": {
-                "test": {"enabled": True, "commands": [{"language": "python", "cmd": "pytest"}]},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
                 "build": {"enabled": True},
                 "image_scan": {"enabled": True},
                 "push": {"enabled": True},
@@ -1014,7 +1017,9 @@ class TestImageReferenceConsistency:
             assert "$CI_REPO_NAME" in " ".join(step["commands"])
 
     def test_uses_contract_image_namespace_and_name_consistently(self):
-        result = render(self._contract({"namespace": "paruff", "name": "java-fawkes-path"}))
+        result = render(
+            self._contract({"namespace": "paruff", "name": "java-fawkes-path"})
+        )
         parsed = yaml.safe_load(result)
         for name in ("build", "image-scan", "push"):
             step = next(s for s in parsed["steps"] if s["name"] == name)
