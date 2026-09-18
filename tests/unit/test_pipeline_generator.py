@@ -528,8 +528,17 @@ class TestBanditInSast:
         """Regression: the generated bandit gate command must be accepted by
         real bandit, not just contain the right substring. -s/-c and
         --exit-code previously shipped as unrecognized/wrong flags and never
-        failed a build regardless of findings."""
+        failed a build regardless of findings.
+
+        Skipped when the bandit binary isn't on PATH — it's not a declared
+        dependency of this repo (only of pipelines it generates for other
+        repos), so it's not guaranteed to be installed in CI. Flags were
+        verified once, for real, against a local bandit install."""
+        import shutil
         import subprocess
+
+        if shutil.which("bandit") is None:
+            pytest.skip("bandit binary not on PATH")
 
         contract = {
             "app": {"name": "test", "language": "python"},
