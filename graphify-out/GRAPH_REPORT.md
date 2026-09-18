@@ -1,16 +1,16 @@
 # Graph Report - uFawkesPipe  (2026-09-18)
 
 ## Corpus Check
-- 101 files · ~86,134 words
+- 101 files · ~86,204 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1971 nodes · 2285 edges · 153 communities (135 shown, 18 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 91 edges (avg confidence: 0.76)
+- 1971 nodes · 2286 edges · 152 communities (134 shown, 18 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 93 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eba028bf`
+- Built from commit: `34dcf20c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -154,7 +154,6 @@
 - [[_COMMUNITY_Community 136|Community 136]]
 - [[_COMMUNITY_Community 137|Community 137]]
 - [[_COMMUNITY_Community 138|Community 138]]
-- [[_COMMUNITY_Community 139|Community 139]]
 - [[_COMMUNITY_Community 140|Community 140]]
 - [[_COMMUNITY_Community 141|Community 141]]
 - [[_COMMUNITY_Community 142|Community 142]]
@@ -208,7 +207,7 @@
 - **Jenkins to Woodpecker Migration** — history_jenkins_migration, docs_architecture_legacy_jenkins, docs_architecture_woodpecker_stack, docs_webhook_api [EXTRACTED 1.00]
 - **Polyglot Pipeline Contract Examples** — examples_fawkespipe_go_contract, examples_fawkespipe_java_maven_contract, examples_fawkespipe_nodejs_express_contract, examples_fawkespipe_python_flask_contract [INFERRED 0.95]
 
-## Communities (153 total, 18 thin omitted)
+## Communities (152 total, 18 thin omitted)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.29
@@ -451,8 +450,8 @@ Cohesion: 0.09
 Nodes (12): Unit tests for GitHub Actions workflow validation., At least one workflow file must exist., Jobs should have timeout-minutes set., All workflow files must be valid YAML., All workflows must have a name., All workflows must have an 'on' trigger., All workflows must have a 'jobs' section., All jobs must have 'runs-on'. (+4 more)
 
 ### Community 72 - "Community 72"
-Cohesion: 0.18
-Nodes (14): Exception, _build_step(), ContractError, _dast_step(), _defectdojo_step(), _dependency_scan_step(), _deploy_step(), _language_command() (+6 more)
+Cohesion: 0.10
+Nodes (23): Exception, _build_step(), ContractError, _dast_step(), _defectdojo_step(), _dependency_scan_step(), _deploy_step(), _language_command() (+15 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.12
@@ -483,8 +482,8 @@ Cohesion: 0.25
 Nodes (7): Changed Files, CI Fix Report — PR #55 `feat/gitops-lifecycle-gates`, Remaining Risks, Root Cause Details, Summary, Validation, What Changed
 
 ### Community 80 - "Community 80"
-Cohesion: 0.15
-Nodes (12): load_contract(), main(), Path, Tests for scripts/generate_woodpecker_yml.py pipeline contract generator.  Valid, Create a temporary .fawkespipe.yml contract file., Test contract loading and validation., Acceptance: Missing contract file raises ContractError., Acceptance: Invalid YAML raises ContractError. (+4 more)
+Cohesion: 0.17
+Nodes (11): load_contract(), main(), Tests for scripts/generate_woodpecker_yml.py pipeline contract generator.  Valid, Create a temporary .fawkespipe.yml contract file., Test contract loading and validation., Acceptance: Missing contract file raises ContractError., Acceptance: Invalid YAML raises ContractError., Acceptance: Missing app.language raises ContractError. (+3 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.20
@@ -639,7 +638,7 @@ Cohesion: 0.13
 Nodes (12): Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract., render(), Test deploy stage generation for each target., Regression: deploy.target: ssh previously raised NameError on every         call, P3-10: dependency_scan.tools selects the scanning tool used., Regression: run the generated osv-scanner command for real against         a sma, P2-1/P3-8/P3-9: DefectDojo ingestion of Trivy/Bandit/ZAP findings., Each upload is `[ -f path ] && curl ... || true` so a report a         given pip (+4 more)
 
 ### Community 121 - "Community 121"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (8): Test DAST stage generation., Acceptance: dast.enabled adds ZAP commands to pipeline., Acceptance: fail_on other than HIGH must fail the build on WARN too., Acceptance: contract timeout (seconds) maps to ZAP's -T (minutes)., Acceptance: dast.enabled: false omits DAST step., Acceptance: dast requires target_url when enabled., Acceptance: Unsupported dast.tool raises ContractError., TestDastStage
 
 ### Community 122 - "Community 122"
@@ -655,8 +654,8 @@ Cohesion: 0.25
 Nodes (5): Test rendering minimal valid contracts., Acceptance: Contract with only test stage produces one step., Acceptance: Contract with lint + test produces two steps., Acceptance: All stages disabled raises ContractError., TestRenderMinimalContract
 
 ### Community 125 - "Community 125"
-Cohesion: 0.24
-Nodes (7): _stage_enabled(), _test_step(), Test stage enablement logic., Acceptance: Missing stage returns False., Acceptance: Stage with enabled: false returns False., Acceptance: Stage with enabled: true returns True., TestStageEnabled
+Cohesion: 0.28
+Nodes (6): _stage_enabled(), Test stage enablement logic., Acceptance: Missing stage returns False., Acceptance: Stage with enabled: false returns False., Acceptance: Stage with enabled: true returns True., TestStageEnabled
 
 ### Community 126 - "Community 126"
 Cohesion: 0.07
@@ -695,8 +694,8 @@ Cohesion: 0.44
 Nodes (12): check_clean_git_state(), check_release_blockers(), create_git_tag(), create_github_release(), log_error(), log_info(), log_warn(), main() (+4 more)
 
 ### Community 135 - "Community 135"
-Cohesion: 0.20
-Nodes (6): Test Bandit Python security linting in SAST stage., Acceptance: bandit.enabled adds bandit commands to SAST., Acceptance: bandit.enabled: false omits bandit commands., Acceptance: Custom bandit severity/confidence used in commands., Regression: the generated bandit gate command must be accepted by         real b, TestBanditInSast
+Cohesion: 0.18
+Nodes (7): Path, Test Bandit Python security linting in SAST stage., Acceptance: bandit.enabled adds bandit commands to SAST., Acceptance: bandit.enabled: false omits bandit commands., Acceptance: Custom bandit severity/confidence used in commands., Regression: the generated bandit gate command must be accepted by         real b, TestBanditInSast
 
 ### Community 136 - "Community 136"
 Cohesion: 0.17
@@ -709,10 +708,6 @@ Nodes (8): Tests for .woodpecker.yml pipeline structure.  Validates step orderin
 ### Community 138 - "Community 138"
 Cohesion: 1.00
 Nodes (3): Reusable Lint Workflow, Detect Languages Job, Lint Summary Job
-
-### Community 139 - "Community 139"
-Cohesion: 0.21
-Nodes (8): _language_image(), Acceptance: go maps to golang:1.22., Acceptance: nodejs maps to node:20-slim., Acceptance: Unsupported language raises ContractError., Test language image mapping., Acceptance: python maps to python:3.12-slim., Acceptance: java maps to maven:3.9-eclipse-temurin-17., TestLanguageImage
 
 ### Community 140 - "Community 140"
 Cohesion: 0.17
@@ -751,7 +746,7 @@ Cohesion: 0.40
 Nodes (3): P3-4: OTEL span emission wired into curl-capable steps only., docker:24-cli, aquasec/trivy and python:3.12-slim have neither         curl nor, TestOtelTracing
 
 ## Knowledge Gaps
-- **693 isolated node(s):** `$schema`, `$id`, `title`, `description`, `type` (+688 more)
+- **692 isolated node(s):** `P0 — Blocks Release (Must complete before any v0.x tag)`, `P1 — This Sprint (Week of 2026-09-14)`, `P2 — Next Sprint (Week of 2026-09-21)`, `P3 — Backlog (Post v0.3 / H2)`, `Scope-Drift Protection` (+687 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -760,7 +755,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `render()` connect `Community 120` to `Community 135`, `Community 72`, `Community 80`, `Community 144`, `Community 149`, `Community 119`, `Community 121`, `Community 122`, `Community 124`, `Community 125`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
-- **Why does `ContractError` connect `Community 72` to `Community 135`, `Community 139`, `Community 80`, `Community 144`, `Community 149`, `Community 119`, `Community 120`, `Community 121`, `Community 122`, `Community 124`, `Community 125`?**
+- **Why does `ContractError` connect `Community 72` to `Community 135`, `Community 80`, `Community 144`, `Community 149`, `Community 119`, `Community 120`, `Community 121`, `Community 122`, `Community 124`, `Community 125`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Community 53`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
@@ -768,7 +763,7 @@ _Questions this graph is uniquely positioned to answer:_
   _`render()` has 43 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 13 inferred relationships involving `ContractError` (e.g. with `TestBanditInSast` and `TestDastStage`) actually correct?**
   _`ContractError` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `$schema`, `$id`, `title` to the rest of the system?**
+- **What connects `P0 — Blocks Release (Must complete before any v0.x tag)`, `P1 — This Sprint (Week of 2026-09-14)`, `P2 — Next Sprint (Week of 2026-09-21)` to the rest of the system?**
   _1117 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Pipeline Structure Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._
