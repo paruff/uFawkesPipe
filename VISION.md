@@ -30,12 +30,12 @@
 
 | # | Non-Goal | Rationale |
 |---|----------|-----------|
-| 1 | **Multi-node / HA Woodpecker** | SQLite is fine for single-node dev. PostgreSQL migration is a suite-mode concern (uFawkesRes), not a v0.x concern. |
+| 1 | **Multi-node / HA Woodpecker** | SQLite is fine for single-node dev. PostgreSQL migration is a suite-mode concern, not a v0.x concern (uFawkesRes, which would have hosted this, is decommissioned — see docs/ARCHITECTURE.md §12.2). |
 | 2 | **Kubernetes-native deployment** | K8s promotion path is documented (`docs/kubernetes-promotion.md`) but not built. Compose is the delivery vehicle. |
 | 3 | **External artifact repository (Nexus, Harbor, etc.)** | OCI registry (DockerHub/GHCR) is the artifact store. Nexus was removed in the Jenkins→Woodpecker migration. |
 | 4 | **Full DefectDojo integration** | DefectDojo runs in the security plane but findings ingestion is stubbed. v0.x scope stops at Trivy → filesystem JSON. |
 | 5 | **GitOps controller (Flux/Argo) integration** | uFawkesPipe *is* the CI/CD engine. GitOps for *applications* is the app team's concern, not the platform's. |
-| 6 | **SSO / RBAC for the platform itself** | `WOODPECKER_OPEN=true` for dev. Authelia SSO comes via uFawkesRes in suite mode. Not a pre-alpha concern. |
+| 6 | **SSO / RBAC for the platform itself** | `WOODPECKER_OPEN=true` for dev. Authelia SSO would have come via uFawkesRes in suite mode; uFawkesRes is decommissioned (docs/ARCHITECTURE.md §12.2), so platform SSO has no current suite-mode path. Not a pre-alpha concern. |
 | 7 | **Performance / stress testing** | Functional correctness first. Load testing is post-alpha when real teams onboard. |
 | 8 | **Custom pipeline DSL / scripting** | `.fawkespipe.yml` is declarative YAML. No Groovy, no CEL, no custom scripts in the contract. |
 

@@ -148,14 +148,24 @@ Pipeline steps share a Woodpecker workspace (`/woodpecker/src/github.com/<org>/<
 ```
 artifacts/
   security/
-    gitleaks.json       # Gitleaks output (when integrated)
-    trivy-repo.json     # Trivy filesystem scan
-    trivy-image.json    # Trivy image scan
+    gitleaks.json       # Gitleaks output (this repo's own .woodpecker.yml)
+    trivy-repo.json     # Trivy filesystem scan (dependency_scan stage)
+    trivy-image.json    # Trivy image scan (image_scan stage)
+    bandit.json         # Bandit (sast stage, bandit.enabled — P3-8)
+    zap-baseline.xml    # ZAP baseline scan (dast stage — P3-9)
+    zap-api.xml         # ZAP API scan (dast stage — P3-9)
+    osv.json            # OSV-Scanner (dependency_scan.tools: [osv-scanner] — P3-10)
   coverage/
     coverage.xml        # Cobertura XML
   tests/
     junit.xml           # JUnit XML
 ```
+
+The last four rows are only produced by pipelines the *generator*
+(`scripts/generate_woodpecker_yml.py`) builds for consumer app repos — this
+repo's own `.woodpecker.yml` doesn't run bandit/dast/osv-scanner on itself.
+A `defectdojo` stage (also generator-only, disabled by default) uploads
+whichever of these actually exist to DefectDojo's import-scan API.
 
 ---
 
@@ -218,7 +228,10 @@ Secrets are stored in **Woodpecker native secrets store** (encrypted in SQLite).
 - No secrets in repo files (`.env` is in `.gitignore`)
 - Pre-commit Gitleaks hook enforces locally
 - `from_secret:` syntax in `.woodpecker.yml` is the only delivery mechanism
-- No Vault / Infisical integration (future scope)
+- Infisical runs as a security-plane service (§13.1) but is not yet wired
+  to feed secrets into Woodpecker's own store — see `docs/KNOWN_LIMITATIONS.md`
+  L-016. This row previously said "No Vault / Infisical integration" outright,
+  which contradicted §13; corrected during the 2026-09-18 architecture audit.
 
 ---
 
@@ -231,8 +244,6 @@ Secrets are stored in **Woodpecker native secrets store** (encrypted in SQLite).
 | **uFawkesObs** (suite mode) | OTLP gRPC | 4317 | → OBS | Traces + metrics + logs |
 | **uFawkesObs** (suite mode) | OTLP HTTP | 4318 | → OBS | Deployment events |
 | **uFawkesObs** (suite mode) | Prometheus scrape | 8000/metrics | ← OBS | Pipeline metrics |
-| **uFawkesRes** (suite mode) | PostgreSQL | 5432 | ⇄ Res | Shared database |
-| **uFawkesRes** (suite mode) | Traefik ingress | 80 | → Pipe | Reverse proxy + SSO |
 | Developer tooling | Pipeline events | — | → developerd | Status read (future) |
 
 ---
@@ -252,7 +263,7 @@ uFawkesPipe supports two deployment modes:
 | Mode | Command | Dependencies | Use case |
 | ---- | ------- | ------------ | -------- |
 | **Standalone** | `make up` | None | Local dev, isolated testing |
-| **Suite** | `make up-suite` | uFawkesRes + uFawkesObs running | Full IDP integration |
+| **Suite** | `make up-suite` | uFawkesObs running | Full IDP integration |
 
 ### 12.1 Standalone Mode (default)
 
@@ -361,13 +372,24 @@ as its CI/CD engine. Fawkes provides:
 
 | Signal | Source | Protocol | Destination | Status |
 | ------ | ------ | -------- | ----------- | ------ |
-| **Metrics** | Woodpecker server `/metrics` | Prometheus scrape (HTTP) | Prometheus :9090 | ✅ Configured |
-| **Traces** | Woodpecker server | OTLP gRPC → :4317 | Tempo | ✅ Configured |
-| **Logs (service)** | Docker container logs | Docker json-file → Alloy scrape | Loki | ✅ Auto (Alloy discovers all containers) |
-| **Logs (pipeline)** | Pipeline steps (stdout) | Structured JSON → Docker logs → Alloy scrape | Loki | ✅ All steps emit JSON |
+| **Metrics** | Woodpecker server `/metrics` | Prometheus scrape (HTTP) | Prometheus :9090 | ⚠️ Endpoint verified live (P3-3); no Prometheus scrape job actually configured anywhere yet — see `docs/METRICS.md` |
+| **Traces (server)** | Woodpecker server | OTLP gRPC → :4317 | Tempo | ⚠️ Env var present in `compose.suite.yaml`; whether the Woodpecker binary itself emits server-request spans is unverified from this repo |
+| **Traces (pipeline steps)** | `scripts/otel-trace.sh` wrapper | OTLP HTTP → :4318 | Tempo | ✅ Verified (P3-4) — `sast`/`dast`/`defectdojo-upload` only; other generator steps' images have no curl, see `docs/METRICS.md` |
+| **Logs (service)** | Docker container logs | Docker json-file → Alloy scrape | Loki | ⚠️ Requires an Alloy instance (uFawkesObs) actually running `alloy/pipeline-logs.alloy` (P3-5) — not verified end-to-end against a real uFawkesObs |
+| **Logs (pipeline)** | Pipeline steps (stdout) | Structured JSON → Docker logs → Alloy scrape | Loki | ✅ All steps emit JSON; `stage`/`status`/`duration_ms` fields added in P3-5 |
 | **Events** | `notify-obs` step | OTLP HTTP → :4318 | Loki via collector | ✅ Active (with graceful fallback) |
 
-**Note on traces:** Woodpecker server natively supports OTEL export of its own traces (request handling, pipeline scheduling). Per-pipeline-step traces are not yet available — that requires Woodpecker-native pipeline span emission (future). Pipeline events provide the deployment signal for DORA lead-time calculation in the interim.
+**Note on traces:** Per-pipeline-step traces now exist via `scripts/otel-trace.sh`
+(P3-4, wrapper-based, not Woodpecker-native — Woodpecker CE still has no
+native per-step span emission). Only steps whose image has curl are
+instrumented (`sast`, `dast`, `defectdojo-upload`); `lint`/`test`/`build`/
+`dependency-scan`/`image-scan`/`push`/`deploy` are not. Pipeline events
+(`notify-obs`) remain the deployment signal for DORA lead-time calculation.
+**None of the ⚠️ rows above have been verified against a real uFawkesObs
+instance** — they were checked from uFawkesPipe's side only (live Woodpecker
+server, a throwaway OTEL collector, `alloy validate`), not by actually
+bringing up uFawkesPipe + uFawkesObs together. That cross-repo verification
+is queued as P4-1 in `EXECUTION_QUEUE.md`.
 
 ---
 
@@ -483,7 +505,7 @@ Tests validate:
 | Path | Language | Purpose |
 | ---- | -------- | ------- |
 | `compose.yaml` | YAML | Service orchestration — standalone mode (Woodpecker, SonarQube, Portainer) |
-| `compose.suite.yaml` | YAML | Suite mode overlay — connects to uFawkesRes + uFawkesObs |
+| `compose.suite.yaml` | YAML | Suite mode overlay — connects to uFawkesObs (uFawkesRes is decommissioned, §12.2) |
 | `.woodpecker.yml` | YAML | Pipeline definition for uFawkesPipe's own CI |
 | `.fawkespipe.yml.example` | YAML | Pipeline contract template for app teams |
 | `Makefile` | Make | `make up`, `make validate`, `make test-*` targets |

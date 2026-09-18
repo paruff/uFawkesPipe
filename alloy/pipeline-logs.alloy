@@ -1,0 +1,86 @@
+// uFawkesPipe pipeline log parsing (P3-5)
+//
+// Scrapes Woodpecker server/agent container logs via the Docker socket,
+// extracts the structured fields scripts/dora-log.sh already emits
+// (step, status, duration_ms, pipeline, repo), and promotes them to real
+// Loki labels so they're queryable/filterable, not just full-text-searched.
+//
+// Requires: LOKI_ENDPOINT env var (e.g. http://loki:3100/loki/api/v1/push).
+//
+// Verified during implementation:
+//   - `alloy validate config.alloy` passes against grafana/alloy:latest —
+//     every component/field name below was checked against the real
+//     binary, not guessed (discovery.docker, loki.source.docker,
+//     stage.json, stage.labels, loki.write, sys.env — env() alone is
+//     deprecated).
+//   - A live run (loki.source.file swapped in for loki.source.docker, to
+//     avoid needing the actual Woodpecker containers) tailed a real
+//     dora-log.sh JSON sample line end-to-end through this exact
+//     stage.json/stage.labels block and successfully POSTed a batch to a
+//     real HTTP receiver (200 bytes range, application/x-protobuf) — the
+//     full component graph runs clean, no errors.
+//   - Not verified: the receiving end was a bare HTTP capture, not a real
+//     Loki, so the actual label set on the stored stream (as opposed to
+//     "a push request was sent without error") wasn't inspected — the
+//     push protocol is protobuf+snappy, not something to eyeball raw.
+//     Confirm labels in Loki/Grafana directly once a real Loki is running
+//     in suite mode.
+
+discovery.docker "pipeline_containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "pipeline_containers" {
+  targets = discovery.docker.pipeline_containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(ufawkespipe-woodpecker-agent-.*|ufawkespipe-woodpecker-server-.*)"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "pipeline_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.pipeline_containers.output
+  forward_to = [loki.process.pipeline_logs.receiver]
+}
+
+loki.process "pipeline_logs" {
+  // dora-log.sh lines are JSON; tool stdout (bandit/trivy/zap/etc, surfaced
+  // through the same container logs) generally isn't. stage.json no-ops on
+  // a parse failure rather than dropping the line, so non-JSON output still
+  // reaches Loki for full-text search, just without these extra labels.
+  stage.json {
+    expressions = {
+      step        = "step",
+      status      = "status",
+      duration_ms = "duration_ms",
+      pipeline    = "pipeline",
+      repo        = "repo",
+    }
+  }
+
+  stage.labels {
+    values = {
+      step        = "",
+      status      = "",
+      duration_ms = "",
+      pipeline    = "",
+      repo        = "",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("LOKI_ENDPOINT")
+  }
+}

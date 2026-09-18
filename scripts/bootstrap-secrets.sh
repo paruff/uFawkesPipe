@@ -540,7 +540,7 @@ main() {
     echo "=========================================="
     echo "Configured secrets:"
     for name in "${!SECRETS[@]}"; do
-        echo "  $name: ${SECRETS[$name]:0:20}..."
+        echo "  $name: (stored — value not printed)"
     done
     echo ""
     echo "Next: Push to trigger pipeline → watch at ${WOODPECKER_HOST}/repos/${REPO_FULL_NAME}"

@@ -27,9 +27,16 @@ STAGE_ORDER = (
     "build",
     "image_scan",
     "dast",
+    "defectdojo",
     "push",
     "deploy",
 )
+
+# Shared workspace path where scan steps drop machine-readable reports for
+# the defectdojo stage to pick up. Steps run in separate containers but
+# share the Woodpecker workspace volume, so files written here by one step
+# are visible to later steps in the same pipeline run.
+ARTIFACTS_DIR = "artifacts/security"
 
 _LANGUAGE_IMAGES = {
     "java": "maven:3.9-eclipse-temurin-17",
@@ -83,6 +90,20 @@ def _language_command(stage: dict, language: str, stage_name: str) -> str:
     )
 
 
+def _otel_trace_prefix(step_name: str) -> str:
+    """P3-4: source the OTEL trace wrapper, start the span, and set a trap so
+    otel_span_end fires with the real exit status even if a later command in
+    this step fails under Woodpecker's default `set -e` (verified: a plain
+    trailing call would never run once an earlier command aborts the step).
+    Only used in steps whose image has curl (sonar-scanner-cli, zap-stable,
+    curlimages/curl) — see scripts/otel-trace.sh for why the others don't."""
+    return (
+        "source /drone/src/scripts/otel-trace.sh && "
+        f'otel_span_start "{step_name}" && '
+        f'trap \'otel_span_end "{step_name}" "$([ "$?" = 0 ] && echo ok || echo error)"\' EXIT'
+    )
+
+
 def _lint_step(contract: dict) -> dict:
     language = contract["app"]["language"]
     return {
@@ -115,7 +136,7 @@ def _sast_step(contract: dict) -> dict:
     bandit_severity = bandit_cfg.get("severity", "MEDIUM")
     bandit_confidence = bandit_cfg.get("confidence", "MEDIUM")
 
-    commands = ["sonar-scanner"]
+    commands = [_otel_trace_prefix("sast"), "sonar-scanner"]
 
     if quality_gate:
         # Wait for SonarQube quality gate to complete
@@ -140,9 +161,17 @@ def _sast_step(contract: dict) -> dict:
         commands.append(f"trivy fs --severity {trivy_severity} --exit-code 1 .")
 
     if bandit_enabled:
-        commands.append("bandit -r src/ -ll -ii -f json -o bandit-report.json || true")
+        commands.append(f"mkdir -p {ARTIFACTS_DIR}")
         commands.append(
-            f"bandit -r src/ -s {bandit_severity} -c {bandit_confidence} --exit-code 1"
+            f"bandit -r src/ -ll -ii -f json -o {ARTIFACTS_DIR}/bandit.json || true"
+        )
+        # -s/--skips and -c/--config are different bandit flags; severity/confidence
+        # thresholds are --severity-level/--confidence-level, values lowercase.
+        # Bandit's own exit code is already non-zero when issues meet the
+        # threshold, so no --exit-code flag exists (or is needed).
+        commands.append(
+            f"bandit -r src/ --severity-level {bandit_severity.lower()} "
+            f"--confidence-level {bandit_confidence.lower()}"
         )
 
     return {
@@ -153,11 +182,40 @@ def _sast_step(contract: dict) -> dict:
 
 
 def _dependency_scan_step(contract: dict) -> dict:
-    return {
-        "name": "dependency-scan",
-        "image": "aquasec/trivy:latest",
-        "commands": ["trivy fs --exit-code 1 ."],
-    }
+    dep_cfg = contract.get("stages", {}).get("dependency_scan", {})
+    tools = dep_cfg.get("tools", ["trivy"])
+
+    if tools == ["osv-scanner"]:
+        licenses = dep_cfg.get("licenses", [])
+        # --licenses reports on licenses against an allowlist; osv-scanner
+        # itself exits non-zero on either a vulnerability or a license
+        # outside the allowlist, so no separate --exit-code flag exists.
+        license_flag = f" --licenses={','.join(licenses)}" if licenses else ""
+        return {
+            "name": "dependency-scan",
+            "image": "ghcr.io/google/osv-scanner:latest",
+            "commands": [
+                f"mkdir -p {ARTIFACTS_DIR}",
+                "osv-scanner scan source --recursive --format=json "
+                f"--output-file={ARTIFACTS_DIR}/osv.json --all-packages"
+                f"{license_flag} -- .",
+            ],
+        }
+
+    if tools == ["trivy"]:
+        return {
+            "name": "dependency-scan",
+            "image": "aquasec/trivy:latest",
+            "commands": [
+                f"mkdir -p {ARTIFACTS_DIR}",
+                "trivy fs --exit-code 1 --format json "
+                f"--output {ARTIFACTS_DIR}/trivy-repo.json .",
+            ],
+        }
+
+    raise ContractError(
+        f"unsupported dependency_scan.tools {tools} — supported: [trivy], [osv-scanner]"
+    )
 
 
 def _build_step(contract: dict) -> dict:
@@ -184,7 +242,11 @@ def _image_scan_step(contract: dict) -> dict:
     return {
         "name": "image-scan",
         "image": "aquasec/trivy:latest",
-        "commands": ["trivy image --exit-code 1 $CI_REPO_NAME"],
+        "commands": [
+            f"mkdir -p {ARTIFACTS_DIR}",
+            "trivy image --exit-code 1 --format json "
+            f"--output {ARTIFACTS_DIR}/trivy-image.json $CI_REPO_NAME",
+        ],
     }
 
 
@@ -192,9 +254,11 @@ def _dast_step(contract: dict) -> dict:
     dast_cfg = contract.get("stages", {}).get("dast", {})
     target_url = dast_cfg.get("target_url", "")
     tool = dast_cfg.get("tool", "zap")
-    _rules = dast_cfg.get("rules", "Default Policy")
-    _fail_on = dast_cfg.get("fail_on", "HIGH")
-    _timeout = dast_cfg.get("timeout", 300)
+    fail_on = dast_cfg.get("fail_on", "HIGH")
+    timeout = dast_cfg.get("timeout", 300)
+    # dast.rules ("Default Policy" in examples) has no wired ZAP config-file
+    # equivalent yet — it would need a generated -c rules file, not just a name.
+    # Not implemented; see docs/KNOWN_LIMITATIONS.md.
 
     if not target_url:
         raise ContractError("dast.target_url is required when dast.enabled is true")
@@ -202,16 +266,74 @@ def _dast_step(contract: dict) -> dict:
     if tool != "zap":
         raise ContractError(f"unsupported dast.tool '{tool}' — supported: zap")
 
-    # ZAP baseline scan + active scan
+    # ZAP's own exit code is already non-zero on any WARN or FAIL alert.
+    # fail_on: HIGH (default) means only FAIL-level alerts should break the
+    # build, so pass -I to have ZAP ignore WARN-level ones.
+    ignore_warn_flag = " -I" if fail_on == "HIGH" else ""
+    # ZAP's -T is minutes; the contract's timeout is seconds.
+    timeout_mins = max(1, round(timeout / 60))
+
+    # ZAP baseline scan + active scan (exit code now propagates — no `|| true`).
+    # -x writes the XML report DefectDojo's "ZAP Scan" parser reads; -r is
+    # the human-readable HTML report.
     commands = [
-        f"zap-baseline.py -t {target_url} -r zap-report.html || true",
-        f"zap-api-scan.py -t {target_url}/openapi.json -r zap-api-report.html -f openapi -P 300 || true",
+        _otel_trace_prefix("dast"),
+        f"mkdir -p {ARTIFACTS_DIR}",
+        f"zap-baseline.py -t {target_url} -T {timeout_mins} "
+        f"-r {ARTIFACTS_DIR}/zap-baseline.html -x {ARTIFACTS_DIR}/zap-baseline.xml"
+        f"{ignore_warn_flag}",
+        f"zap-api-scan.py -t {target_url}/openapi.json -f openapi -T {timeout_mins} "
+        f"-r {ARTIFACTS_DIR}/zap-api.html -x {ARTIFACTS_DIR}/zap-api.xml{ignore_warn_flag}",
     ]
 
     return {
         "name": "dast",
-        "image": "owasp/zap2docker-stable:latest",
+        "image": "zaproxy/zap-stable:latest",
         "commands": commands,
+    }
+
+
+def _defectdojo_step(contract: dict) -> dict:
+    dd_cfg = contract.get("stages", {}).get("defectdojo", {})
+    url = dd_cfg.get("url", "http://defectdojo:8080")
+    engagement = dd_cfg.get("engagement_name", "CI-Engagement")
+
+    # (report path, DefectDojo parser name). A report that a given pipeline
+    # never produced (e.g. bandit disabled) is silently skipped at runtime —
+    # same non-blocking pattern as this repo's own .woodpecker.yml.
+    # NOTE: "OSV Scan" is DefectDojo's documented parser name as of this
+    # writing but hasn't been confirmed against a live DefectDojo instance
+    # in this repo (none is running here) — verify before first real use.
+    reports = [
+        (f"{ARTIFACTS_DIR}/trivy-repo.json", "Trivy Scan"),
+        (f"{ARTIFACTS_DIR}/trivy-image.json", "Trivy Scan"),
+        (f"{ARTIFACTS_DIR}/bandit.json", "Bandit Scan"),
+        (f"{ARTIFACTS_DIR}/zap-baseline.xml", "ZAP Scan"),
+        (f"{ARTIFACTS_DIR}/zap-api.xml", "ZAP Scan"),
+        (f"{ARTIFACTS_DIR}/osv.json", "OSV Scan"),
+    ]
+    commands = [_otel_trace_prefix("defectdojo-upload")] + [
+        f'[ -f "{path}" ] && curl -sf -X POST "{url}/api/v2/import-scan/" '
+        '-H "Authorization: Token $DEFECTDOJO_API_TOKEN" '
+        '-F "active=true" -F "verified=false" '
+        f'-F "scan_type={scan_type}" '
+        f'-F "engagement_name={engagement}" '
+        '-F "product_name=$CI_REPO_NAME" '
+        f'-F "file=@{path}" || true'
+        for path, scan_type in reports
+    ]
+
+    return {
+        "name": "defectdojo-upload",
+        "image": "curlimages/curl:8.6.0",
+        # Woodpecker does not auto-inject secrets into a step's environment —
+        # each one must be declared explicitly, same as this repo's own
+        # upload-defectdojo step in .woodpecker.yml.
+        "environment": {
+            "DEFECTDOJO_API_TOKEN": {"from_secret": "defectdojo_api_token"}
+        },
+        "commands": commands,
+        "when": {"event": "push", "branch": "main"},
     }
 
 
@@ -255,16 +377,20 @@ def _deploy_step(contract: dict) -> dict:
             raise ContractError("deploy.host is required when deploy.target is ssh")
         if not ssh_key:
             raise ContractError("deploy.ssh_key is required when deploy.target is ssh")
-        # Woodpecker environment variables ($$) must be passed through to YAML.
-        # Ruff F821 false positive: these are Woodpecker env vars, not Python vars.
-        # ruff: noqa: F821
+        # REGISTRY_USERNAME/CI_REPO_NAME/CI_COMMIT_SHA only exist in the deploy
+        # container's own environment, not on the remote host — so the
+        # remote command must be double-quoted, letting the LOCAL shell
+        # expand them before ssh ever sends the string. Doubled braces
+        # (${{VAR}}) make the f-string emit a literal ${VAR} for that local
+        # shell to expand (single braces here previously raised NameError:
+        # name 'REGISTRY_USERNAME' is not defined on every call).
         commands = [
-            f"ssh -i {ssh_key} -p {deploy_cfg.get('port', 22)} {user}@{host} "
-            f"'docker pull $${REGISTRY_USERNAME}/$${CI_REPO_NAME}:$${CI_COMMIT_SHA:0:7} && "
-            f"docker stop $${CI_REPO_NAME} 2>/dev/null || true && "
-            f"docker rm $${CI_REPO_NAME} 2>/dev/null || true && "
-            f"docker run -d --name $${CI_REPO_NAME} -p 8000:8000 --restart unless-stopped "
-            f"$${REGISTRY_USERNAME}/$${CI_REPO_NAME}:$${CI_COMMIT_SHA:0:7}'",
+            f"ssh -i {ssh_key} -p {port} {user}@{host} "
+            f'"docker pull ${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}} && '
+            f"docker stop ${{CI_REPO_NAME}} 2>/dev/null || true && "
+            f"docker rm ${{CI_REPO_NAME}} 2>/dev/null || true && "
+            f"docker run -d --name ${{CI_REPO_NAME}} -p 8000:8000 --restart unless-stopped "
+            f'${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}"',
         ]
     else:
         raise ContractError(
@@ -290,6 +416,7 @@ _STEP_BUILDERS = {
     "build": _build_step,
     "image_scan": _image_scan_step,
     "dast": _dast_step,
+    "defectdojo": _defectdojo_step,
     "push": _push_step,
     "deploy": _deploy_step,
 }

@@ -516,8 +516,52 @@ class TestBanditInSast:
         parsed = yaml.safe_load(result)
         sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
         commands_str = " ".join(sast_step["commands"])
-        assert "bandit -r src/ -s HIGH -c HIGH" in commands_str, (
-            "Bandit must use custom severity/confidence"
+        assert (
+            "bandit -r src/ --severity-level high --confidence-level high"
+            in commands_str
+        ), (
+            "Bandit must use custom severity/confidence via --severity-level/--confidence-level "
+            "(lowercase) — bandit's -s/-c flags are --skips/--config, not thresholds"
+        )
+
+    def test_bandit_gating_command_is_actually_valid(self):
+        """Regression: the generated bandit gate command must be accepted by
+        real bandit, not just contain the right substring. -s/-c and
+        --exit-code previously shipped as unrecognized/wrong flags and never
+        failed a build regardless of findings."""
+        import subprocess
+
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "sast": {
+                    "enabled": True,
+                    "bandit": {
+                        "enabled": True,
+                        "severity": "HIGH",
+                        "confidence": "HIGH",
+                    },
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        gate_cmd = next(
+            c for c in sast_step["commands"] if c.startswith("bandit") and "-o" not in c
+        )
+        # swap the contract's placeholder "src/" target for a real directory
+        # bandit can actually scan, without changing any of the flags under test
+        real_target = str(Path(__file__).parent.parent.parent / "scripts")
+        args = [real_target if a == "src/" else a for a in gate_cmd.split()]
+
+        proc = subprocess.run(args, capture_output=True, text=True)
+        assert proc.returncode in (0, 1), (
+            f"bandit rejected the generated flags (exit {proc.returncode}): {proc.stderr}"
         )
 
 
@@ -550,6 +594,66 @@ class TestDastStage:
         assert "zap-api-scan.py" in commands_str, (
             "DAST step must include zap-api-scan.py"
         )
+        assert dast_step["image"] == "zaproxy/zap-stable:latest", (
+            "owasp/zap2docker-stable is retired and unpullable — must use the "
+            "maintained zaproxy/zap-stable image"
+        )
+        assert "|| true" not in commands_str, (
+            "DAST commands must not swallow their exit code — a gate that can "
+            "never fail isn't a gate"
+        )
+        assert " -P 300" not in commands_str, (
+            "-P sets the ZAP listen port, not a timeout — using 300 there binds "
+            "a privileged port instead of applying a scan timeout"
+        )
+        # fail_on defaults to HIGH -> only FAIL-level alerts break the build
+        assert " -I" in commands_str, "default fail_on: HIGH must pass -I to ZAP"
+
+    def test_dast_fail_on_non_high_does_not_ignore_warnings(self):
+        """Acceptance: fail_on other than HIGH must fail the build on WARN too."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "dast": {
+                    "enabled": True,
+                    "target_url": "http://my-app:8000",
+                    "fail_on": "LOW",
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        dast_step = next(s for s in parsed["steps"] if s["name"] == "dast")
+        commands_str = " ".join(dast_step["commands"])
+        assert " -I" not in commands_str, (
+            "fail_on: LOW must not ignore WARN-level alerts"
+        )
+
+    def test_dast_timeout_converted_to_zap_minutes(self):
+        """Acceptance: contract timeout (seconds) maps to ZAP's -T (minutes)."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "dast": {
+                    "enabled": True,
+                    "target_url": "http://my-app:8000",
+                    "timeout": 600,
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        dast_step = next(s for s in parsed["steps"] if s["name"] == "dast")
+        commands_str = " ".join(dast_step["commands"])
+        assert " -T 10 " in commands_str, "600s timeout must render as -T 10 (minutes)"
 
     def test_dast_disabled_no_dast_step(self):
         """Acceptance: dast.enabled: false omits DAST step."""
@@ -607,3 +711,263 @@ class TestDastStage:
 
         with pytest.raises(ContractError, match="unsupported dast.tool"):
             render(contract)
+
+
+@pytest.mark.unit
+class TestDeployStage:
+    """Test deploy stage generation for each target."""
+
+    def _contract(self, deploy_cfg):
+        return {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "deploy": {"enabled": True, **deploy_cfg},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+
+    def test_deploy_docker_target(self):
+        result = render(self._contract({"target": "docker"}))
+        parsed = yaml.safe_load(result)
+        deploy_step = next(s for s in parsed["steps"] if s["name"] == "deploy")
+        assert "docker run" in " ".join(deploy_step["commands"])
+
+    def test_deploy_ssh_target_does_not_raise(self):
+        """Regression: deploy.target: ssh previously raised NameError on every
+        call (single-brace f-string tried to evaluate REGISTRY_USERNAME etc.
+        as Python names instead of emitting literal ${VAR} text)."""
+        contract = self._contract(
+            {"target": "ssh", "host": "example.com", "ssh_key": "/keys/id_rsa"}
+        )
+        result = render(contract)  # must not raise NameError
+        parsed = yaml.safe_load(result)
+        deploy_step = next(s for s in parsed["steps"] if s["name"] == "deploy")
+        cmd = deploy_step["commands"][0]
+        assert "ssh -i /keys/id_rsa" in cmd
+        assert (
+            '"docker pull ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}'
+            in cmd
+        ), (
+            "remote command must be double-quoted so the LOCAL shell expands "
+            "Woodpecker vars before ssh sends them — the remote host has no "
+            "REGISTRY_USERNAME/CI_REPO_NAME/CI_COMMIT_SHA of its own"
+        )
+
+    def test_deploy_ssh_requires_host_and_key(self):
+        with pytest.raises(ContractError, match="deploy.host is required"):
+            render(self._contract({"target": "ssh", "ssh_key": "/keys/id_rsa"}))
+        with pytest.raises(ContractError, match="deploy.ssh_key is required"):
+            render(self._contract({"target": "ssh", "host": "example.com"}))
+
+
+@pytest.mark.unit
+class TestDependencyScanTools:
+    """P3-10: dependency_scan.tools selects the scanning tool used."""
+
+    def _contract(self, dep_cfg):
+        return {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "dependency_scan": {"enabled": True, **dep_cfg},
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+            },
+        }
+
+    def test_default_tool_is_trivy_and_writes_report(self):
+        result = render(self._contract({}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "dependency-scan")
+        commands_str = " ".join(step["commands"])
+        assert "trivy fs --exit-code 1" in commands_str
+        assert "artifacts/security/trivy-repo.json" in commands_str
+
+    def test_osv_scanner_tool_selected(self):
+        result = render(self._contract({"tools": ["osv-scanner"]}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "dependency-scan")
+        assert step["image"] == "ghcr.io/google/osv-scanner:latest"
+        commands_str = " ".join(step["commands"])
+        assert "osv-scanner scan source" in commands_str
+        assert "artifacts/security/osv.json" in commands_str
+
+    def test_osv_scanner_licenses_flag(self):
+        result = render(
+            self._contract(
+                {"tools": ["osv-scanner"], "licenses": ["MIT", "Apache-2.0"]}
+            )
+        )
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "dependency-scan")
+        assert "--licenses=MIT,Apache-2.0" in " ".join(step["commands"])
+
+    def test_osv_scanner_command_is_actually_valid(self):
+        """Regression: run the generated osv-scanner command for real against
+        a small real directory, the same way the bandit gate command is
+        checked, since guessed-wrong CLI flags were the root cause of the
+        Bandit/DAST bugs this queue item follows.
+
+        Skipped when the osv-scanner binary isn't on PATH (it's a Go binary,
+        not a pip dependency of this repo, so it's not on every dev/CI
+        machine) — flags were verified once, for real, via
+        `docker run ghcr.io/google/osv-scanner:latest` during development.
+        """
+        import shutil
+        import subprocess
+
+        if shutil.which("osv-scanner") is None:
+            pytest.skip("osv-scanner binary not on PATH")
+
+        result = render(self._contract({"tools": ["osv-scanner"]}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "dependency-scan")
+        scan_cmd = next(c for c in step["commands"] if c.startswith("osv-scanner"))
+        real_dir = str(Path(__file__).parent.parent.parent / "scripts")
+        args = scan_cmd.replace(" -- .", f" -- {real_dir}").split()
+
+        proc = subprocess.run(args, capture_output=True, text=True)
+        assert proc.returncode in (0, 1), (
+            f"osv-scanner rejected the generated flags (exit {proc.returncode}): {proc.stderr}"
+        )
+
+    def test_unsupported_tool_raises(self):
+        with pytest.raises(ContractError, match="unsupported dependency_scan.tools"):
+            render(self._contract({"tools": ["snyk"]}))
+
+
+@pytest.mark.unit
+class TestDefectDojoStage:
+    """P2-1/P3-8/P3-9: DefectDojo ingestion of Trivy/Bandit/ZAP findings."""
+
+    def _contract(self, defectdojo_cfg=None):
+        stages = {
+            "test": {
+                "enabled": True,
+                "commands": [{"language": "python", "cmd": "pytest"}],
+            },
+        }
+        if defectdojo_cfg is not None:
+            stages["defectdojo"] = {"enabled": True, **defectdojo_cfg}
+        return {"app": {"name": "test", "language": "python"}, "stages": stages}
+
+    def test_disabled_by_default(self):
+        result = render(self._contract())
+        parsed = yaml.safe_load(result)
+        names = [s["name"] for s in parsed["steps"]]
+        assert "defectdojo-upload" not in names
+
+    def test_enabled_uploads_all_report_types(self):
+        result = render(self._contract({}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        commands_str = " ".join(step["commands"])
+        for path, scan_type in [
+            ("trivy-repo.json", "Trivy Scan"),
+            ("trivy-image.json", "Trivy Scan"),
+            ("bandit.json", "Bandit Scan"),
+            ("zap-baseline.xml", "ZAP Scan"),
+            ("zap-api.xml", "ZAP Scan"),
+            ("osv.json", "OSV Scan"),
+        ]:
+            assert path in commands_str, f"missing upload for {path}"
+            assert scan_type in commands_str, f"missing scan_type for {path}"
+
+    def test_missing_report_file_does_not_fail_step(self):
+        """Each upload is `[ -f path ] && curl ... || true` so a report a
+        given pipeline never produced (e.g. bandit disabled) can't fail the
+        step — matches the non-blocking pattern in this repo's own
+        .woodpecker.yml upload-defectdojo step."""
+        result = render(self._contract({}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        upload_cmds = [c for c in step["commands"] if "import-scan" in c]
+        assert upload_cmds, "expected at least one DefectDojo upload command"
+        for cmd in upload_cmds:
+            assert cmd.rstrip().endswith("|| true")
+
+    def test_custom_url_and_engagement(self):
+        result = render(
+            self._contract(
+                {"url": "http://dojo.internal:9000", "engagement_name": "nightly"}
+            )
+        )
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        commands_str = " ".join(step["commands"])
+        assert "http://dojo.internal:9000/api/v2/import-scan/" in commands_str
+        assert "engagement_name=nightly" in commands_str
+
+    def test_only_runs_on_push_to_main(self):
+        result = render(self._contract({}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        assert step["when"] == {"event": "push", "branch": "main"}
+
+    def test_api_token_secret_is_wired(self):
+        """Regression: commands reference $DEFECTDOJO_API_TOKEN, but Woodpecker
+        does not auto-inject secrets — the step must declare
+        environment.DEFECTDOJO_API_TOKEN.from_secret itself or the variable
+        is empty at runtime and every upload silently sends no auth header."""
+        result = render(self._contract({}))
+        parsed = yaml.safe_load(result)
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        assert (
+            step["environment"]["DEFECTDOJO_API_TOKEN"]["from_secret"]
+            == "defectdojo_api_token"
+        )
+
+
+@pytest.mark.unit
+class TestOtelTracing:
+    """P3-4: OTEL span emission wired into curl-capable steps only."""
+
+    def test_sast_dast_defectdojo_get_trace_prefix(self):
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+                "sast": {"enabled": True},
+                "dast": {"enabled": True, "target_url": "http://app:8000"},
+                "defectdojo": {"enabled": True},
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        for name in ("sast", "dast", "defectdojo-upload"):
+            step = next(s for s in parsed["steps"] if s["name"] == name)
+            first_cmd = step["commands"][0]
+            assert "source /drone/src/scripts/otel-trace.sh" in first_cmd
+            assert f'otel_span_start "{name}"' in first_cmd
+            assert "trap" in first_cmd and "otel_span_end" in first_cmd
+
+    def test_lint_test_build_get_no_trace_prefix(self):
+        """docker:24-cli, aquasec/trivy and python:3.12-slim have neither
+        curl nor a POST-capable wget — confirmed while implementing P3-4 —
+        so these steps are deliberately left uninstrumented."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {
+                "lint": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "ruff check ."}],
+                },
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+                "build": {"enabled": True},
+            },
+        }
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        for name in ("lint", "test", "build"):
+            step = next(s for s in parsed["steps"] if s["name"] == name)
+            assert "otel-trace.sh" not in " ".join(step["commands"])

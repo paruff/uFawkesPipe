@@ -17,16 +17,24 @@ steps:
 - name: sast
   image: sonarsource/sonar-scanner-cli:latest
   commands:
+  - source /drone/src/scripts/otel-trace.sh && otel_span_start "sast" && trap 'otel_span_end
+    "sast" "$([ "$?" = 0 ] && echo ok || echo error)"' EXIT
   - sonar-scanner
   - 'STATUS="PENDING"; while [ "$STATUS" = "PENDING" ]; do   sleep 5;   STATUS=$(curl
     -s -u "$SONARQUBE_TOKEN:"     "$SONARQUBE_URL/api/qualitygates/project?projectKey=$SONARQUBE_PROJECT_KEY"     |
     python3 -c "import sys,json; print(json.load(sys.stdin).get(''status'',''PENDING''))");   echo
     "Quality gate status: $STATUS"; done; if [ "$STATUS" != "OK" ]; then   echo "Quality
     gate failed with status: $STATUS";   exit 1; fi'
+  - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+  - mkdir -p artifacts/security
+  - bandit -r src/ -ll -ii -f json -o artifacts/security/bandit.json || true
+  - bandit -r src/ --severity-level medium --confidence-level medium
 - name: dependency-scan
   image: aquasec/trivy:latest
   commands:
-  - trivy fs --exit-code 1 .
+  - mkdir -p artifacts/security
+  - trivy fs --exit-code 1 --format json --output artifacts/security/trivy-repo.json
+    .
 - name: build
   image: docker:24-cli
   commands:
@@ -34,7 +42,9 @@ steps:
 - name: image-scan
   image: aquasec/trivy:latest
   commands:
-  - trivy image --exit-code 1 $CI_REPO_NAME
+  - mkdir -p artifacts/security
+  - trivy image --exit-code 1 --format json --output artifacts/security/trivy-image.json
+    $CI_REPO_NAME
 - name: push
   image: docker:24-cli
   commands:
