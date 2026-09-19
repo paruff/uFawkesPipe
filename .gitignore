@@ -44,13 +44,10 @@ cross-validation-report.md
 .coverage
 .headroom/
 
-# Graphify
-graphify-out/cache/
-graphify-out/*/
+# Graphify — auto-regenerated on every branch switch/commit; caused
+# repeated blocked pulls and phantom diffs when tracked. Not hand-authored.
+graphify-out/
 .graphify_*.json
 .graphify_python
 .graphify_root
 manifest.json
-
-# (optional) If you don't want the generated graph itself under version control
-# graphify-out/
