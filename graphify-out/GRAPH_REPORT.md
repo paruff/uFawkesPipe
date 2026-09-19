@@ -1,16 +1,16 @@
-# Graph Report - uFawkesPipe  (2026-09-18)
+# Graph Report - uFawkesPipe  (2026-09-19)
 
 ## Corpus Check
-- 101 files · ~86,204 words
+- 101 files · ~86,554 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1971 nodes · 2286 edges · 152 communities (134 shown, 18 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 93 edges (avg confidence: 0.76)
+- 1979 nodes · 2316 edges · 152 communities (134 shown, 18 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 95 edges (avg confidence: 0.76)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `34dcf20c`
+- Built from commit: `2c752307`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -169,8 +169,8 @@
 - [[_COMMUNITY_Community 152|Community 152]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `render()` - 48 edges
-2. `ContractError` - 24 edges
+1. `render()` - 51 edges
+2. `ContractError` - 25 edges
 3. `TestNotifyObsStep` - 23 edges
 4. `TestUploadDefectDojoStep` - 18 edges
 5. `uFawkesPipe` - 18 edges
@@ -451,7 +451,7 @@ Nodes (12): Unit tests for GitHub Actions workflow validation., At least one wor
 
 ### Community 72 - "Community 72"
 Cohesion: 0.10
-Nodes (23): Exception, _build_step(), ContractError, _dast_step(), _defectdojo_step(), _dependency_scan_step(), _deploy_step(), _language_command() (+15 more)
+Nodes (27): Exception, _build_step(), ContractError, _dast_step(), _defectdojo_step(), _dependency_scan_step(), _deploy_step(), _image_ref() (+19 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.12
@@ -482,8 +482,8 @@ Cohesion: 0.25
 Nodes (7): Changed Files, CI Fix Report — PR #55 `feat/gitops-lifecycle-gates`, Remaining Risks, Root Cause Details, Summary, Validation, What Changed
 
 ### Community 80 - "Community 80"
-Cohesion: 0.17
-Nodes (11): load_contract(), main(), Tests for scripts/generate_woodpecker_yml.py pipeline contract generator.  Valid, Create a temporary .fawkespipe.yml contract file., Test contract loading and validation., Acceptance: Missing contract file raises ContractError., Acceptance: Invalid YAML raises ContractError., Acceptance: Missing app.language raises ContractError. (+3 more)
+Cohesion: 0.15
+Nodes (12): load_contract(), main(), Path, Tests for scripts/generate_woodpecker_yml.py pipeline contract generator.  Valid, Create a temporary .fawkespipe.yml contract file., Test contract loading and validation., Acceptance: Missing contract file raises ContractError., Acceptance: Invalid YAML raises ContractError. (+4 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.20
@@ -635,7 +635,7 @@ Nodes (7): Test edge cases in pipeline generation., Acceptance: Empty stages dic
 
 ### Community 120 - "Community 120"
 Cohesion: 0.13
-Nodes (12): Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract., render(), Test deploy stage generation for each target., Regression: deploy.target: ssh previously raised NameError on every         call, P3-10: dependency_scan.tools selects the scanning tool used., Regression: run the generated osv-scanner command for real against         a sma, P2-1/P3-8/P3-9: DefectDojo ingestion of Trivy/Bandit/ZAP findings., Each upload is `[ -f path ] && curl ... || true` so a report a         given pip (+4 more)
+Nodes (14): Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract., render(), Test deploy stage generation for each target., Regression: deploy.target: ssh previously raised NameError on every         call, P3-10: dependency_scan.tools selects the scanning tool used., Regression: run the generated osv-scanner command for real against         a sma, P2-1/P3-8/P3-9: DefectDojo ingestion of Trivy/Bandit/ZAP findings., Each upload is `[ -f path ] && curl ... || true` so a report a         given pip (+6 more)
 
 ### Community 121 - "Community 121"
 Cohesion: 0.14
@@ -694,8 +694,8 @@ Cohesion: 0.44
 Nodes (12): check_clean_git_state(), check_release_blockers(), create_git_tag(), create_github_release(), log_error(), log_info(), log_warn(), main() (+4 more)
 
 ### Community 135 - "Community 135"
-Cohesion: 0.18
-Nodes (7): Path, Test Bandit Python security linting in SAST stage., Acceptance: bandit.enabled adds bandit commands to SAST., Acceptance: bandit.enabled: false omits bandit commands., Acceptance: Custom bandit severity/confidence used in commands., Regression: the generated bandit gate command must be accepted by         real b, TestBanditInSast
+Cohesion: 0.20
+Nodes (6): Test Bandit Python security linting in SAST stage., Acceptance: bandit.enabled adds bandit commands to SAST., Acceptance: bandit.enabled: false omits bandit commands., Acceptance: Custom bandit severity/confidence used in commands., Regression: the generated bandit gate command must be accepted by         real b, TestBanditInSast
 
 ### Community 136 - "Community 136"
 Cohesion: 0.17
@@ -746,7 +746,7 @@ Cohesion: 0.40
 Nodes (3): P3-4: OTEL span emission wired into curl-capable steps only., docker:24-cli, aquasec/trivy and python:3.12-slim have neither         curl nor, TestOtelTracing
 
 ## Knowledge Gaps
-- **692 isolated node(s):** `P0 — Blocks Release (Must complete before any v0.x tag)`, `P1 — This Sprint (Week of 2026-09-14)`, `P2 — Next Sprint (Week of 2026-09-21)`, `P3 — Backlog (Post v0.3 / H2)`, `Scope-Drift Protection` (+687 more)
+- **693 isolated node(s):** `$schema`, `$id`, `title`, `description`, `type` (+688 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **18 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -759,11 +759,11 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **Why does `uFawkesPipe — Architecture` connect `Community 49` to `Community 53`?**
   _High betweenness centrality (0.002) - this node is a cross-community bridge._
-- **Are the 43 inferred relationships involving `render()` (e.g. with `.test_bandit_custom_severity_confidence()` and `.test_bandit_disabled_omits_bandit_commands()`) actually correct?**
-  _`render()` has 43 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 13 inferred relationships involving `ContractError` (e.g. with `TestBanditInSast` and `TestDastStage`) actually correct?**
-  _`ContractError` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `P0 — Blocks Release (Must complete before any v0.x tag)`, `P1 — This Sprint (Week of 2026-09-14)`, `P2 — Next Sprint (Week of 2026-09-21)` to the rest of the system?**
-  _1117 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Are the 46 inferred relationships involving `render()` (e.g. with `.test_bandit_custom_severity_confidence()` and `.test_bandit_disabled_omits_bandit_commands()`) actually correct?**
+  _`render()` has 46 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 14 inferred relationships involving `ContractError` (e.g. with `TestBanditInSast` and `TestDastStage`) actually correct?**
+  _`ContractError` has 14 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `$schema`, `$id`, `title` to the rest of the system?**
+  _1120 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Pipeline Structure Tests` be split into smaller, more focused modules?**
   _Cohesion score 0.05 - nodes in this community are weakly interconnected._

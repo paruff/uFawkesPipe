@@ -12,6 +12,13 @@ services:
       - WOODPECKER_SERVER=woodpecker-server:9000
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
       - WOODPECKER_BACKEND=docker
+      # Shared across every step container (same volume, every pipeline run)
+      # so `mvn test` and Trivy's Maven dependency-tree resolution both hit
+      # a warm ~/.m2 instead of hammering Maven Central twice per run —
+      # confirmed live: back-to-back cold runs reliably 429 Maven Central
+      # ("populate the local Maven cache before scanning" is Trivy's own
+      # error message).
+      - WOODPECKER_BACKEND_DOCKER_VOLUMES=maven-cache:/root/.m2
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -30,6 +37,10 @@ services:
     environment:
       - WOODPECKER_OPEN=true
       - WOODPECKER_HOST=${WOODPECKER_HOST:-http://localhost:8000}
+      # Optional: a publicly reachable URL (e.g. a cloudflared/ngrok tunnel)
+      # for GitHub to deliver webhooks to, when WOODPECKER_HOST itself is
+      # localhost and thus unreachable from GitHub. Empty by default.
+      - WOODPECKER_EXPERT_WEBHOOK_HOST=${WOODPECKER_EXPERT_WEBHOOK_HOST:-}
       - WOODPECKER_GITHUB=true
       - WOODPECKER_GITHUB_CLIENT=${WOODPECKER_GITHUB_CLIENT}
       - WOODPECKER_GITHUB_SECRET=${WOODPECKER_GITHUB_SECRET}
@@ -287,6 +298,7 @@ secrets:
 
 volumes:
   woodpecker_data:
+  maven-cache:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
