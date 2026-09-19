@@ -96,8 +96,8 @@ class TestLanguageImage:
         assert _language_image("python") == "python:3.12-slim"
 
     def test_java_image(self):
-        """Acceptance: java maps to maven:3.9-eclipse-temurin-17."""
-        assert _language_image("java") == "maven:3.9-eclipse-temurin-17"
+        """Acceptance: java maps to maven:3.9-eclipse-temurin-21."""
+        assert _language_image("java") == "maven:3.9-eclipse-temurin-21"
 
     def test_go_image(self):
         """Acceptance: go maps to golang:1.22."""
@@ -980,3 +980,59 @@ class TestOtelTracing:
         for name in ("lint", "test", "build"):
             step = next(s for s in parsed["steps"] if s["name"] == name)
             assert "otel-trace.sh" not in " ".join(step["commands"])
+
+
+@pytest.mark.unit
+class TestImageReferenceConsistency:
+    """Regression: build/image-scan/push previously all hardcoded
+    $CI_REPO_NAME, silently ignoring build.image.namespace/name from the
+    contract — and reproduced live that $CI_REPO_NAME isn't reliably
+    populated outside a real Woodpecker-server-triggered run, breaking
+    `docker build -t $CI_REPO_NAME` outright. All three must reference the
+    exact same image, whichever it is."""
+
+    def _contract(self, image_cfg=None):
+        build = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        if image_cfg is not None:
+            build["image"] = image_cfg
+        return {
+            "app": {"name": "test", "language": "python"},
+            "build": build,
+            "stages": {
+                "test": {
+                    "enabled": True,
+                    "commands": [{"language": "python", "cmd": "pytest"}],
+                },
+                "build": {"enabled": True},
+                "image_scan": {"enabled": True},
+                "push": {"enabled": True},
+            },
+        }
+
+    def test_falls_back_to_ci_repo_name_when_no_image_config(self):
+        result = render(self._contract())
+        parsed = yaml.safe_load(result)
+        for name in ("build", "image-scan", "push"):
+            step = next(s for s in parsed["steps"] if s["name"] == name)
+            assert "$CI_REPO_NAME" in " ".join(step["commands"])
+
+    def test_uses_contract_image_namespace_and_name_consistently(self):
+        result = render(
+            self._contract({"namespace": "paruff", "name": "java-fawkes-path"})
+        )
+        parsed = yaml.safe_load(result)
+        for name in ("build", "image-scan", "push"):
+            step = next(s for s in parsed["steps"] if s["name"] == name)
+            commands_str = " ".join(step["commands"])
+            assert "paruff/java-fawkes-path" in commands_str, (
+                f"{name} step must use the contract's image ref, not $CI_REPO_NAME"
+            )
+            assert "$CI_REPO_NAME" not in commands_str
+
+    def test_cnb_builder_also_uses_image_ref(self):
+        contract = self._contract({"namespace": "paruff", "name": "java-fawkes-path"})
+        contract["build"] = {"builder": "cnb", "image": contract["build"]["image"]}
+        result = render(contract)
+        parsed = yaml.safe_load(result)
+        build_step = next(s for s in parsed["steps"] if s["name"] == "build")
+        assert "pack build paruff/java-fawkes-path" in build_step["commands"][0]

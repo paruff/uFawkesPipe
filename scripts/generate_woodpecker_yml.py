@@ -39,7 +39,7 @@ STAGE_ORDER = (
 ARTIFACTS_DIR = "artifacts/security"
 
 _LANGUAGE_IMAGES = {
-    "java": "maven:3.9-eclipse-temurin-17",
+    "java": "maven:3.9-eclipse-temurin-21",
     "python": "python:3.12-slim",
     "nodejs": "node:20-slim",
     "go": "golang:1.22",
@@ -218,19 +218,35 @@ def _dependency_scan_step(contract: dict) -> dict:
     )
 
 
+def _image_ref(contract: dict) -> str:
+    """The image reference build/image-scan/push must all agree on. Uses
+    the contract's build.image.namespace/name when given — previously
+    every one of these steps hardcoded $CI_REPO_NAME instead, silently
+    ignoring that config, and $CI_REPO_NAME isn't always populated
+    (confirmed: empty under `woodpecker-cli exec --local` even with
+    --repo set, breaking `docker build -t $CI_REPO_NAME` outright)."""
+    image_cfg = contract.get("build", {}).get("image", {})
+    namespace = image_cfg.get("namespace")
+    name = image_cfg.get("name")
+    if namespace and name:
+        return f"{namespace}/{name}"
+    return "$CI_REPO_NAME"
+
+
 def _build_step(contract: dict) -> dict:
     build_cfg = contract.get("build", {})
     builder = build_cfg.get("builder", "cnb")
+    image_ref = _image_ref(contract)
     if builder == "cnb":
         cnb_builder = build_cfg.get("cnb", {}).get(
             "builder", "paketobuildpacks/builder:base"
         )
-        cmd = f"pack build $CI_REPO_NAME --builder {cnb_builder}"
+        cmd = f"pack build {image_ref} --builder {cnb_builder}"
     elif builder == "docker":
         docker_cfg = build_cfg.get("docker", {})
         dockerfile = docker_cfg.get("dockerfile", "Dockerfile")
         context = docker_cfg.get("context", ".")
-        cmd = f"docker build -f {dockerfile} -t $CI_REPO_NAME {context}"
+        cmd = f"docker build -f {dockerfile} -t {image_ref} {context}"
     else:
         raise ContractError(
             f"unsupported build.builder '{builder}' — supported: cnb, docker"
@@ -245,7 +261,7 @@ def _image_scan_step(contract: dict) -> dict:
         "commands": [
             f"mkdir -p {ARTIFACTS_DIR}",
             "trivy image --exit-code 1 --format json "
-            f"--output {ARTIFACTS_DIR}/trivy-image.json $CI_REPO_NAME",
+            f"--output {ARTIFACTS_DIR}/trivy-image.json {_image_ref(contract)}",
         ],
     }
 
@@ -341,7 +357,7 @@ def _push_step(contract: dict) -> dict:
     return {
         "name": "push",
         "image": "docker:24-cli",
-        "commands": ["docker push $CI_REPO_NAME"],
+        "commands": [f"docker push {_image_ref(contract)}"],
     }
 
 
