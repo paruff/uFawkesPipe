@@ -5,6 +5,13 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.0-beta.1...v1.7.1-beta.1) (2026-09-19)
+
+
+### Chores
+
+* stop tracking graphify-out/ ([#93](https://github.com/paruff/uFawkesPipe/issues/93)) ([554a16d](https://github.com/paruff/uFawkesPipe/commit/554a16d54ebbba747c111af8371ce60122e828ac))
+
 ## [1.7.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.6.0-beta.1...v1.7.0-beta.1) (2026-09-19)
 
 
