@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.6.0-beta.1...v1.7.0-beta.1) (2026-09-19)
+
+
+### Added
+
+* **woodpecker:** persistent Maven cache for the CI agent ([#91](https://github.com/paruff/uFawkesPipe/issues/91)) ([13cf78b](https://github.com/paruff/uFawkesPipe/commit/13cf78baecd8ed11d70203ac07261ef15a847e1d))
+
+
+### Fixed
+
+* **generator:** Java 21 test image + consistent build image reference ([#90](https://github.com/paruff/uFawkesPipe/issues/90)) ([0271408](https://github.com/paruff/uFawkesPipe/commit/0271408620337cc9cc5ba28ed6d3ea298e7ced21))
+
 ## [1.6.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.5.0-beta.1...v1.6.0-beta.1) (2026-09-18)
 
 
