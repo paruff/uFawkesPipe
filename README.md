@@ -4,6 +4,8 @@
 
 **Integration & Delivery Plane of the Fawkes IDP Family**
 
+**Start here:** [INTENT.md](INTENT.md). Covers standalone vs. suite mode, the contracts other repos depend on, and non-goals.
+
 uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQube, Trivy, Gitleaks), Cloud Native Buildpacks, and DefectDojo security scan ingestion — the CI/CD plane of the Fawkes IDP.
 
 ## 🚀 Features

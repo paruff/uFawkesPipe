@@ -18,7 +18,7 @@ Get uFawkesPipe v0.2 up and running in 5 minutes.
 |---|---|
 | DefectDojo instance | Security scan ingestion (API token) |
 | `pack` CLI | Cloud Native Buildpacks for local builds |
-| uFawkesRes + uFawkesObs | Suite mode with PostgreSQL, OTEL telemetry |
+| uFawkesObs | Suite mode (OTEL telemetry). Suite mode also still needs the deprecated uFawkesRes, so it's unsupported until #97 |
 
 **GitHub OAuth App setup:**
 
@@ -47,6 +47,10 @@ make up            # start the stack
 ```
 
 ### Suite Mode
+
+> **Not supported right now:** suite mode still depends on uFawkesRes, which is
+> deprecated ([#97](https://github.com/paruff/uFawkesPipe/issues/97)). Use
+> standalone mode (`make up`) above, which embeds its own Postgres and Valkey.
 
 Connects to uFawkesRes (shared PostgreSQL, Valkey, Traefik) and uFawkesObs (OTEL Collector).
 
@@ -85,7 +89,7 @@ All settings live in `.env` (created from `.env.example` by `make init`).
 
 | Variable | Source | Description |
 |---|---|---|
-| `POSTGRES_PASSWORD` | Must match uFawkesRes | Shared PostgreSQL password |
+| `POSTGRES_PASSWORD` | Suite mode only (deprecated uFawkesRes, #97) | Shared PostgreSQL password |
 | `WOODPECKER_METRICS_TOKEN` | Your choice | Prometheus `/metrics` endpoint token |
 | `UFAWKES_ENVIRONMENT` | Your choice | Environment label for OTEL events (default: `development`) |
 | `OTEL_ENDPOINT` | uFawkesObs | OTEL Collector URL (e.g. `http://otel-collector:4318`) |

@@ -505,7 +505,7 @@ Tests validate:
 | Path | Language | Purpose |
 | ---- | -------- | ------- |
 | `compose.yaml` | YAML | Service orchestration — standalone mode (Woodpecker, SonarQube, Portainer) |
-| `compose.suite.yaml` | YAML | Suite mode overlay — connects to uFawkesObs (uFawkesRes is decommissioned, §12.2) |
+| `compose.suite.yaml` | YAML | Suite mode overlay — connects to uFawkesObs, but still points Woodpecker at uFawkesRes's `fawkes-postgres` on `fawkes-backbone-net` although uFawkesRes is decommissioned (§12.2); unsupported until #97 |
 | `.woodpecker.yml` | YAML | Pipeline definition for uFawkesPipe's own CI |
 | `.fawkespipe.yml.example` | YAML | Pipeline contract template for app teams |
 | `Makefile` | Make | `make up`, `make validate`, `make test-*` targets |

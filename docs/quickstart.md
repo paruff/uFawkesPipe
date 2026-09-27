@@ -1,5 +1,12 @@
 # uFawkesSec Quickstart — v0.2
 
+> **Superseded (2026-09-27).** This is the pre-merge uFawkesSec quickstart. It
+> refers to a `compose-standalone.yaml` that no longer exists, and it describes
+> `compose.yaml` as requiring uFawkesRes. Today `compose.yaml` is the
+> self-contained standalone stack (embedded Postgres and Valkey), and uFawkesRes
+> is deprecated. Use [`QUICKSTART.md`](../QUICKSTART.md). Merging the two
+> quickstarts is tracked in #96; suite mode's uFawkesRes dependency in #97.
+
 Follow this guide to get the uFawkesSec security plane running in your local
 environment.
 
