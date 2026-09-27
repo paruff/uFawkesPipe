@@ -36,10 +36,10 @@
 
 | If you change...                                   | You must also update...                                                |
 | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| External network name (`fawkes-backbone-net`)      | Must match uFawkesRes `compose.yaml` network name                     |
+| External network name (`fawkes-backbone-net`)      | Suite mode only: was created by uFawkesRes, now deprecated (#97)      |
 | External network name (`observability-lab`)         | Must match uFawkesObs `compose.yaml` network name                     |
-| PostgreSQL connection string for Woodpecker        | Must match uFawkesRes `compose.yaml` credentials                      |
-| PostgreSQL connection string for SonarQube         | Must match uFawkesRes `compose.yaml` credentials                      |
+| PostgreSQL connection string for Woodpecker        | Suite mode only: deprecated uFawkesRes credentials (#97)              |
+| PostgreSQL connection string for SonarQube         | Suite mode only: deprecated uFawkesRes credentials (#97)              |
 | OTEL exporter endpoint                            | Must match uFawkesObs `compose.yaml` OTEL collector address          |
 | OTEL exporter protocol                            | Must match uFawkesObs collector receiver config                       |
 | `WOODPECKER_PROMETHEUS_AUTH_TOKEN` format          | Must match Prometheus scrape config in uFawkesObs                     |
@@ -64,10 +64,10 @@
 | ----------------------------------- | ------------------------------------------------------------------ |
 | OTEL exporter endpoint format       | **uFawkesObs**: pipeline traces/metrics/logs may stop arriving     |
 | OTEL exporter protocol (gRPC→HTTP)  | **uFawkesObs**: collector receiver config must match               |
-| Shared network name (`fawkes-backbone-net`) | **uFawkesRes**: must create network; **uFawkesSec**, **uFawkesDevX**: must attach |
+| Shared network name (`fawkes-backbone-net`) | **uFawkesRes** (deprecated): created this network; suite mode still attaches (#97) |
 | Shared network name (`observability-lab`)    | **uFawkesObs**: must create network; telemetry won't flow          |
-| Woodpecker PostgreSQL connection     | **uFawkesRes**: `fawkes-postgres:5432` must accept the connection  |
-| SonarQube PostgreSQL connection       | **uFawkesRes**: `fawkes-postgres:5432` must have `sonar` database  |
+| Woodpecker PostgreSQL connection     | Suite mode only: deprecated uFawkesRes `fawkes-postgres` (#97)     |
+| SonarQube PostgreSQL connection       | Suite mode only: deprecated uFawkesRes `fawkes-postgres` (#97)     |
 | `.fawkespipe.yml` contract           | **developerd**: developer tooling that reads pipeline status       |
 | Pipeline stage names                 | **uFawkesObs**: Grafana dashboards that filter by stage name       |
 | Deployment event format              | **uFawkesObs**: DORA metrics pipeline that consumes deployment events |

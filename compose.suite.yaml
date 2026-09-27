@@ -1,7 +1,7 @@
 # uFawkesPipe — Suite Mode Overlay
 # ==============================================================================
 # Extends compose.yaml to connect uFawkesPipe to the full uFawkesAI suite:
-#   - uFawkesRes: shared PostgreSQL, Valkey cache, Traefik ingress, Authelia SSO
+#   - uFawkesRes: shared PostgreSQL (DEPRECATED; suite mode is unsupported until #97)
 #   - uFawkesObs: OTEL Collector for metrics/traces/logs, Grafana dashboards
 #
 # Usage:
