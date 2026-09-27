@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.1-beta.1...v1.7.2-beta.1) (2026-09-27)
+
+
+### Docs
+
+* add INTENT.md; mark suite mode's uFawkesRes dependency unsupported ([#98](https://github.com/paruff/uFawkesPipe/issues/98)) ([a6a6a9b](https://github.com/paruff/uFawkesPipe/commit/a6a6a9ba97387771a1b91b1bbd2e7eecf8f4e7ef)), closes [#96](https://github.com/paruff/uFawkesPipe/issues/96)
+
+
+### Chores
+
+* **deps:** bump trufflesecurity/trufflehog from 3.97.4 to 3.97.6 ([#95](https://github.com/paruff/uFawkesPipe/issues/95)) ([00780ce](https://github.com/paruff/uFawkesPipe/commit/00780ce7b81c44c6379deacc8a8a7cd7b09eb29d))
+
 ## [1.7.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.0-beta.1...v1.7.1-beta.1) (2026-09-19)
 
 
