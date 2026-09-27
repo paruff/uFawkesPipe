@@ -1,5 +1,9 @@
 # Design — CONSOLIDATE-SEC
 
+> **Historical note (2026-09-27):** uFawkesRes, referenced below for suite mode,
+> is **deprecated**; suite mode is unsupported until #97. This pre-convention
+> design doc moves into `docs/ai-sdlc/v2.0.0/` with the #96 consolidation.
+
 ## 1. Constraint Check
 
 The only architectural judgment call is *how* to bring in uFawkesSec's
