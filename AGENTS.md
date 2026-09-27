@@ -274,14 +274,14 @@ See `docs/KNOWN_LIMITATIONS.md` for the full list. Key items agents should be aw
 uFawkesPipe is part of the **uFawkesAI** suite of IDP planes. It supports two modes:
 
 - **Standalone** (`make up`) — runs independently with SQLite/H2 storage, no external dependencies
-- **Suite** (`make up-suite`) — connects to uFawkesRes + uFawkesObs for shared PostgreSQL, OTEL telemetry, and Traefik ingress
+- **Suite** (`make up-suite`) — **unsupported until #97**: connects to uFawkesObs, but still depends on the deprecated uFawkesRes for PostgreSQL and Traefik
 
 | Plane | Relationship |
 | ----- | ------------ |
-| **uFawkesRes** | Suite mode: shared PostgreSQL (fawkes-postgres:5432), Valkey cache, Traefik ingress, Authelia SSO. Connect via `fawkes-backbone-net`. |
+| **uFawkesRes** | **Deprecated.** Suite mode still points at its `fawkes-postgres:5432` on `fawkes-backbone-net`; removing that dependency is #97. |
 | **uFawkesObs** | Suite mode: OTEL Collector (otel-collector:4317 gRPC, :4318 HTTP) for traces, metrics, logs, and deployment events. Connect via `observability-lab`. Alloy scrapes Docker logs. |
 | **developerd** | Developer tooling triggered by uFawkesPipe pipeline events. Changes to `.fawkespipe.yml` contract or pipeline stage names may affect developer tooling. |
-| **fawkes** | Full IDP uses uFawkesPipe as its CI/CD engine. Woodpecker webhook/port changes affect GitHub webhook config. Check `docs/CHANGE_IMPACT_MAP.md` before modifying anything with cross-plane impact. |
+| **fawkes** | Kubernetes graduation track. It runs its own in-cluster Tekton CI (fawkes ADR-036), not uFawkesPipe. Woodpecker webhook/port changes affect GitHub webhook config. Check `docs/CHANGE_IMPACT_MAP.md` before modifying anything with cross-plane impact. |
 
 ---
 
@@ -301,7 +301,7 @@ the `policy-check` step in `.woodpecker.yml`.
   Section 4).
 - Standalone mode (`compose.yaml`) embeds its own `postgres`/`valkey` for the
   security services; suite mode (`compose.suite.yaml`) redirects them to
-  uFawkesRes's shared `fawkes-postgres`/`fawkes-cache` instead.
+  the deprecated uFawkesRes's `fawkes-postgres`/`fawkes-cache` instead (unsupported until #97).
 - `fawkes-net` in `compose.suite.yaml` is an internal Compose network owned by
   this repo (not external) — both sides of what used to be a cross-repo
   network now live in one compose deployment.

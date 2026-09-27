@@ -17,7 +17,7 @@ uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQ
 - **DefectDojo Integration** - Automated security scan result ingestion post-build
 - **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration with GitHub OAuth
 - **DORA Observability** - Structured JSON logging, OTEL deployment event emission, Prometheus metrics
-- **Standalone + Suite Mode** - Run independently or connect to uFawkesRes (PostgreSQL/Traefik) and uFawkesObs (OTEL/Loki)
+- **Standalone mode** - Runs self-contained, with embedded Postgres and Valkey. Suite mode (adding uFawkesObs) is unsupported until [#97](https://github.com/paruff/uFawkesPipe/issues/97): it still depends on the deprecated uFawkesRes.
 - **Security Plane (merged from uFawkesSec)** - DefectDojo, Infisical, Trivy server, and Falco run alongside the CI/CD stack, plus a Conftest/Rego `policy-check` pipeline step — see [Security Plane](#-security-plane) below
 
 ## 📋 Pipeline Stages
@@ -80,15 +80,17 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 │                  └─────────────────┘                        │
 │                                                               │
 │  Suite mode: ┌────────────┐   ┌───────────────────┐         │
-│              │ uFawkesRes │   │   uFawkesObs      │         │
+│              │ uFawkesRes*│   │   uFawkesObs      │         │
 │              │ (Postgres, │◄──│ (OTEL, Loki,      │         │
 │              │  Traefik)  │   │  Prometheus)      │         │
 │              └────────────┘   └───────────────────┘         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
+\* uFawkesRes is deprecated; suite mode is unsupported until [#97](https://github.com/paruff/uFawkesPipe/issues/97).
+
 - **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
-- **Suite mode** (`make up-suite`): Adds uFawkesRes PostgreSQL, Valkey, Traefik ingress and uFawkesObs OTEL Collector, Alloy, Loki, Prometheus
+- **Suite mode** (`make up-suite`): **unsupported until #97**. It adds uFawkesObs's OTEL Collector, Alloy, Loki, and Prometheus, but still points databases at the deprecated uFawkesRes.
 
 ## 🔐 Security Plane
 
@@ -112,8 +114,8 @@ pipeline itself uses it for image/fs scanning.
 | `falco`                      | `falcosecurity/falco-no-driver:0.39.2`  | Runtime container security monitoring    |
 
 Standalone mode embeds its own `postgres`/`valkey`; suite mode (`compose.suite.yaml`)
-redirects these services to uFawkesRes's shared `fawkes-postgres`/`fawkes-cache`
-instead. Rego policies live in `policy/` and run as the `policy-check` pipeline
+redirects these services to the deprecated uFawkesRes's `fawkes-postgres`/`fawkes-cache`
+instead (unsupported until #97). Rego policies live in `policy/` and run as the `policy-check` pipeline
 step (see [docs/policy-guide.md](docs/policy-guide.md)).
 
 ## 🛠️ Quick Start
@@ -149,8 +151,8 @@ step (see [docs/policy-guide.md](docs/policy-guide.md)).
    # Standalone mode (Woodpecker + SonarQube + Portainer)
    make up
 
-   # Or suite mode (connects to uFawkesRes + uFawkesObs)
-   make up-suite
+   # Suite mode is unsupported until #97 (it still needs the deprecated uFawkesRes)
+   # make up-suite
    ```
 
 4. **Access the platform**
@@ -444,7 +446,7 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 
 | Stack           | Description                                          | Link                                            |
 | --------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| **uFawkesRes**  | Resource plane — PostgreSQL, Valkey, Traefik, Authelia | [GitHub](https://github.com/paruff/uFawkesRes)  |
+| **uFawkesRes**  | Deprecated — was the resource plane (PostgreSQL, Valkey, Traefik, Authelia) | [GitHub](https://github.com/paruff/uFawkesRes)  |
 | **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
 | **uFawkesObs**  | Observability — Prometheus, Grafana, Loki, OTEL      | [GitHub](https://github.com/paruff/uFawkesObs)  |
 | **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
