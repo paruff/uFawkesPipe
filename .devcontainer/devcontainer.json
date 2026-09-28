@@ -25,4 +25,3 @@
   "remoteUser": "dev",
   "postCreateCommand": "echo 'uFawkesPipe devcontainer ready — all tools pre-installed'"
 }
-
