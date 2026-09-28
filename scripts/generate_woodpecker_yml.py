@@ -196,9 +196,11 @@ def _dependency_scan_step(contract: dict) -> dict:
             "image": "ghcr.io/google/osv-scanner:latest",
             "commands": [
                 f"mkdir -p {ARTIFACTS_DIR}",
-                "osv-scanner scan source --recursive --format=json "
-                f"--output-file={ARTIFACTS_DIR}/osv.json --all-packages"
-                f"{license_flag} -- .",
+                (
+                    "osv-scanner scan source --recursive --format=json "
+                    f"--output-file={ARTIFACTS_DIR}/osv.json --all-packages"
+                    f"{license_flag} -- ."
+                ),
             ],
         }
 
@@ -208,8 +210,10 @@ def _dependency_scan_step(contract: dict) -> dict:
             "image": "aquasec/trivy:latest",
             "commands": [
                 f"mkdir -p {ARTIFACTS_DIR}",
-                "trivy fs --exit-code 1 --format json "
-                f"--output {ARTIFACTS_DIR}/trivy-repo.json .",
+                (
+                    "trivy fs --exit-code 1 --format json "
+                    f"--output {ARTIFACTS_DIR}/trivy-repo.json ."
+                ),
             ],
         }
 
@@ -260,8 +264,10 @@ def _image_scan_step(contract: dict) -> dict:
         "image": "aquasec/trivy:latest",
         "commands": [
             f"mkdir -p {ARTIFACTS_DIR}",
-            "trivy image --exit-code 1 --format json "
-            f"--output {ARTIFACTS_DIR}/trivy-image.json {_image_ref(contract)}",
+            (
+                "trivy image --exit-code 1 --format json "
+                f"--output {ARTIFACTS_DIR}/trivy-image.json {_image_ref(contract)}"
+            ),
         ],
     }
 
@@ -295,11 +301,15 @@ def _dast_step(contract: dict) -> dict:
     commands = [
         _otel_trace_prefix("dast"),
         f"mkdir -p {ARTIFACTS_DIR}",
-        f"zap-baseline.py -t {target_url} -T {timeout_mins} "
-        f"-r {ARTIFACTS_DIR}/zap-baseline.html -x {ARTIFACTS_DIR}/zap-baseline.xml"
-        f"{ignore_warn_flag}",
-        f"zap-api-scan.py -t {target_url}/openapi.json -f openapi -T {timeout_mins} "
-        f"-r {ARTIFACTS_DIR}/zap-api.html -x {ARTIFACTS_DIR}/zap-api.xml{ignore_warn_flag}",
+        (
+            f"zap-baseline.py -t {target_url} -T {timeout_mins} "
+            f"-r {ARTIFACTS_DIR}/zap-baseline.html -x {ARTIFACTS_DIR}/zap-baseline.xml"
+            f"{ignore_warn_flag}"
+        ),
+        (
+            f"zap-api-scan.py -t {target_url}/openapi.json -f openapi -T {timeout_mins} "
+            f"-r {ARTIFACTS_DIR}/zap-api.html -x {ARTIFACTS_DIR}/zap-api.xml{ignore_warn_flag}"
+        ),
     ]
 
     return {
@@ -371,12 +381,14 @@ def _deploy_step(contract: dict) -> dict:
         env_file = deploy_cfg.get("env_file", "")
         env_file_flag = f" --env-file {env_file}" if env_file else ""
         commands = [
-            f"docker run -d --name $CI_REPO_NAME "
-            f"--network {network} "
-            f"-p {port}:8000 "
-            f"--restart unless-stopped "
-            f"{env_file_flag} "
-            f"${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}",
+            (
+                f"docker run -d --name $CI_REPO_NAME "
+                f"--network {network} "
+                f"-p {port}:8000 "
+                f"--restart unless-stopped "
+                f"{env_file_flag} "
+                f"${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}"
+            ),
         ]
     elif target == "compose":
         compose_file = deploy_cfg.get("compose_file", "docker-compose.yml")
@@ -401,12 +413,14 @@ def _deploy_step(contract: dict) -> dict:
         # shell to expand (single braces here previously raised NameError:
         # name 'REGISTRY_USERNAME' is not defined on every call).
         commands = [
-            f"ssh -i {ssh_key} -p {port} {user}@{host} "
-            f'"docker pull ${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}} && '
-            f"docker stop ${{CI_REPO_NAME}} 2>/dev/null || true && "
-            f"docker rm ${{CI_REPO_NAME}} 2>/dev/null || true && "
-            f"docker run -d --name ${{CI_REPO_NAME}} -p 8000:8000 --restart unless-stopped "
-            f'${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}"',
+            (
+                f"ssh -i {ssh_key} -p {port} {user}@{host} "
+                f'"docker pull ${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}} && '
+                f"docker stop ${{CI_REPO_NAME}} 2>/dev/null || true && "
+                f"docker rm ${{CI_REPO_NAME}} 2>/dev/null || true && "
+                f"docker run -d --name ${{CI_REPO_NAME}} -p 8000:8000 --restart unless-stopped "
+                f'${{REGISTRY_USERNAME}}/${{CI_REPO_NAME}}:${{CI_COMMIT_SHA:0:7}}"'
+            ),
         ]
     else:
         raise ContractError(

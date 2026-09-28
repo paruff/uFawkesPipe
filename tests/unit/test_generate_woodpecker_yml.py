@@ -12,7 +12,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
-import generate_woodpecker_yml as gen  # noqa: E402
+import generate_woodpecker_yml as gen
 
 
 def _contract(**overrides):

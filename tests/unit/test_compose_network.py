@@ -8,9 +8,8 @@ Validates the standalone/suite split:
   since uFawkesSec was merged in)
 """
 
-import yaml
 import pytest
-
+import yaml
 
 # ---------------------------------------------------------------------------
 # Fixtures

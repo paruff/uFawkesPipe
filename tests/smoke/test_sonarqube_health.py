@@ -1,7 +1,8 @@
 """Smoke tests for SonarQube health verification."""
 
-import pytest
 import subprocess
+
+import pytest
 
 
 @pytest.mark.smoke
@@ -26,8 +27,8 @@ class TestSonarQubeHealth:
         """SonarQube /api/system/status must return UP."""
         if not compose_running:
             pytest.skip("Compose stack not running")
-        import urllib.request
         import json
+        import urllib.request
 
         try:
             resp = urllib.request.urlopen(

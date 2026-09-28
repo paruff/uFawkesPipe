@@ -90,11 +90,7 @@ class TestNetwork:
         services = suite_compose_data.get("services", {})
         for svc_name, svc_config in services.items():
             svc_networks = svc_config.get("networks", [])
-            if isinstance(svc_networks, list):
-                assert "fawkes-net" in svc_networks, (
-                    f"Service '{svc_name}' is not on fawkes-net"
-                )
-            elif isinstance(svc_networks, dict):
+            if isinstance(svc_networks, list) or isinstance(svc_networks, dict):
                 assert "fawkes-net" in svc_networks, (
                     f"Service '{svc_name}' is not on fawkes-net"
                 )

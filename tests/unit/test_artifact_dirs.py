@@ -5,8 +5,8 @@ Validates that the pipeline's first step creates the required artifact directori
 as specified in the acceptance criteria.
 """
 
-import yaml
 import pytest
+import yaml
 
 
 @pytest.mark.unit

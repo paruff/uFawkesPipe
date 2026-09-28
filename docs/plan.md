@@ -312,6 +312,7 @@ pass against the complete file, and removes any dead steps from the v0.1 version
    string matching is brittle. Example:
    ```python
    import yaml
+
    with open(".woodpecker.yml") as f:
        config = yaml.safe_load(f)
    steps = {s["name"]: s for s in config["steps"]}

@@ -18,7 +18,6 @@ shared http_session.
 
 import pytest
 
-
 TEST_PROJECT_NAME = "acceptance_test_proj"
 TEST_PROJECT_KEY = "acceptance_test_proj"
 

@@ -10,8 +10,9 @@ New acceptance tests should be added to the numbered test files
 See docs/acceptance-criteria.md for the full AC-to-test mapping.
 """
 
-import pytest
 import subprocess
+
+import pytest
 
 
 @pytest.mark.acceptance

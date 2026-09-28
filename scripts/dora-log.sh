@@ -54,7 +54,7 @@ dora_start() {
   # shell session (separate steps run in separate containers and don't
   # share this)
   export _DORA_START_MS
-  _DORA_START_MS=$(( $(date +%s%N) / 1000000 ))
+  _DORA_START_MS=$(($(date +%s%N) / 1000000))
   dora_emit "info" "$1" "Starting ${1}"
 }
 
@@ -63,7 +63,7 @@ dora_end() {
   local status="${2:-success}"
   local duration_ms=0
   if [[ -n "${_DORA_START_MS:-}" ]]; then
-    duration_ms=$(( $(date +%s%N) / 1000000 - _DORA_START_MS ))
+    duration_ms=$(($(date +%s%N) / 1000000 - _DORA_START_MS))
   fi
   dora_emit "info" "${logger}" "Completed ${logger}" \
     ",\"status\":\"${status}\",\"duration_ms\":${duration_ms}"
