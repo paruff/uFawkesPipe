@@ -23,6 +23,11 @@ on:
         required: false
         type: number
         default: 2
+      skip-hooks:
+        description: "Comma-separated list of pre-commit hook IDs to skip"
+        required: false
+        type: string
+        default: ""
     outputs:
       result:
         description: "Preflight result (pass/fail)"
@@ -89,6 +94,8 @@ jobs:
 
       - name: Run pre-commit hooks
         if: steps.bypass.outputs.skipped != 'true'
+        env:
+          SKIP: ${{ inputs.skip-hooks }}
         run: pre-commit run --all-files
 
       # ── Local Preflight Script ──────────────────────────────────────────────
