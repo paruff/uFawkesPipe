@@ -12,7 +12,6 @@ structure is verified by parsing .woodpecker.yml directly
 
 import pytest
 
-
 # ── Expected pipeline structure ─────────────────────────────────────────
 
 EXPECTED_STEPS = [

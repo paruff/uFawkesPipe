@@ -1,8 +1,9 @@
 """Shared test fixtures for all uFawkesPipe test types."""
 
+from pathlib import Path
+
 import pytest
 import yaml
-from pathlib import Path
 
 
 @pytest.fixture

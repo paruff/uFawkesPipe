@@ -8,9 +8,10 @@ Validates that the release script correctly:
 - Generates release notes
 """
 
-import pytest
 import subprocess
 from pathlib import Path
+
+import pytest
 
 
 @pytest.mark.unit

@@ -1,0 +1,13 @@
+# Ruff configuration — uFawkesPipe
+#
+# Production code is held to the full default rule set. Test code gets
+# targeted per-file ignores: suite tests assert on subprocess returncodes
+# rather than using check=True, and keep deliberately flat control flow.
+
+[lint.per-file-ignores]
+"tests/**" = [
+  "PLW1510",  # subprocess.run without check — tests assert on returncode
+  "SIM101",   # duplicate isinstance — clarity in fixtures
+  "SIM102",   # collapsible if — kept flat for readability
+  "PERF102",  # incorrect dict iterator — test fixtures
+]

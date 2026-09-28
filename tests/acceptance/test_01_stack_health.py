@@ -121,4 +121,3 @@ class TestStackHealthEdgeCases:
         This test verifies the fixture works — if we reach here,
         the stack is running.
         """
-        pass

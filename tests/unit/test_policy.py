@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 
-
 POLICY_DIR = Path(__file__).parent.parent.parent / "policy"
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 CONFTEST_IMAGE = "openpolicyagent/conftest:v0.57.0"

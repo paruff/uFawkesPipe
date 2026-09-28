@@ -35,7 +35,7 @@
 # OTLP/HTTP JSON, not gRPC/protobuf. Silently no-ops (never fails the
 # build) if that var is unset, or if curl isn't on PATH.
 
-set -uo pipefail  # deliberately no -e: tracing must never fail the pipeline
+set -uo pipefail # deliberately no -e: tracing must never fail the pipeline
 
 _otel_hex16() {
   # 64-bit deterministic hex id from a string.
@@ -57,8 +57,8 @@ _otel_http_endpoint() {
 
 _otel_now_ns() {
   local raw
-  raw=$(date +%s%N 2>/dev/null || echo "")
-  if [[ "$raw" =~ ^[0-9]+$ ]] && (( ${#raw} > 10 )); then
+  raw=$(date +%s%N 2> /dev/null || echo "")
+  if [[ "$raw" =~ ^[0-9]+$ ]] && ((${#raw} > 10)); then
     echo "$raw"
   else
     # busybox `date` silently drops %N — fall back to second precision.
@@ -78,7 +78,7 @@ otel_span_end() {
   local name="$1"
   local status="${2:-ok}"
 
-  command -v curl >/dev/null 2>&1 || return 0
+  command -v curl > /dev/null 2>&1 || return 0
   local endpoint
   endpoint=$(_otel_http_endpoint) || return 0
 
@@ -96,5 +96,5 @@ otel_span_end() {
     "${_OTEL_START_NS:-${end_ns}}" "${end_ns}" "${status_code}")
 
   curl -sf -m 5 -X POST "${endpoint}/v1/traces" \
-    -H "Content-Type: application/json" -d "${payload}" >/dev/null 2>&1 || true
+    -H "Content-Type: application/json" -d "${payload}" > /dev/null 2>&1 || true
 }

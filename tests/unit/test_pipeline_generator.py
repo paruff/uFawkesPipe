@@ -4,20 +4,20 @@ Validates edge cases: empty stages, custom builders, missing required fields,
 minimal valid config, and error handling.
 """
 
-import pytest
-import yaml
+import sys
 from pathlib import Path
 
-import sys
+import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 
 from generate_woodpecker_yml import (
     ContractError,
+    _language_image,
+    _stage_enabled,
     load_contract,
     render,
-    _stage_enabled,
-    _language_image,
 )
 
 

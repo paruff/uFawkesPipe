@@ -1,7 +1,8 @@
 """Smoke tests for Woodpecker CI health verification."""
 
-import pytest
 import subprocess
+
+import pytest
 
 
 @pytest.mark.smoke

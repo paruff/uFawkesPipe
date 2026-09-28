@@ -66,17 +66,33 @@ test_06 (suite behavior) ──► meta-tests: verifies skip-safety and idempote
 def compose_running():
     """Check if all compose services are running. Session-scoped — checked once."""
     result = subprocess.run(
-        ["docker", "compose", "-f", "compose.yaml", "ps", "--services", "--status", "running"],
-        capture_output=True, text=True, timeout=10
+        [
+            "docker",
+            "compose",
+            "-f",
+            "compose.yaml",
+            "ps",
+            "--services",
+            "--status",
+            "running",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     services = result.stdout.strip().split("\n") if result.returncode == 0 else []
-    return len(services) >= 4  # All services: woodpecker-server, woodpecker-agent, sonarqube, portainer
+    return (
+        len(services) >= 4
+    )  # All services: woodpecker-server, woodpecker-agent, sonarqube, portainer
+
 
 @pytest.fixture(autouse=True)
 def skip_if_stack_down(compose_running):
     """Auto-skip all acceptance tests when stack is not running."""
     if not compose_running:
-        pytest.skip("Compose stack not running — acceptance tests require all services up")
+        pytest.skip(
+            "Compose stack not running — acceptance tests require all services up"
+        )
 ```
 
 ### 3.2 HTTP Helper Fixtures
@@ -86,21 +102,26 @@ def skip_if_stack_down(compose_running):
 def http_session():
     """Shared HTTP session with retry and timeout defaults."""
     import requests
+
     session = requests.Session()
     session.verify = False  # localhost self-signed certs
     return session
+
 
 @pytest.fixture
 def woodpecker_url():
     return "http://localhost:8000"
 
+
 @pytest.fixture
 def sonarqube_url():
     return "http://localhost:9000"  # Internal port (compose network)
 
+
 @pytest.fixture
 def sonarqube_external_url():
     return "http://localhost:9001"  # External mapped port
+
 
 @pytest.fixture
 def portainer_url():
@@ -115,10 +136,11 @@ def sonarqube_token(http_session, sonarqube_url):
     """Authenticate with SonarQube default admin credentials. Session-scoped."""
     resp = http_session.post(
         f"{sonarqube_url}/api/authentication/login",
-        data={"login": "admin", "password": "admin"}  # pragma: allowlist secret
+        data={"login": "admin", "password": "admin"},  # pragma: allowlist secret
     )
     assert resp.status_code == 200, f"SonarQube login failed: {resp.status_code}"
     return resp.cookies  # SonarQube uses cookie-based auth
+
 
 @pytest.fixture(scope="session")
 def portainer_token(http_session, portainer_url):
@@ -127,7 +149,7 @@ def portainer_token(http_session, portainer_url):
     test_password = "acceptance-test-pass-123!"  # pragma: allowlist secret
     init_resp = http_session.post(
         f"{portainer_url}/api/users/admin/init",
-        json={"Username": "admin", "Password": test_password}
+        json={"Username": "admin", "Password": test_password},
     )
     # If already initialized (HTTP 409), authenticate with known admin password
     if init_resp.status_code == 409:
@@ -139,9 +161,11 @@ def portainer_token(http_session, portainer_url):
     # Authenticate to get JWT
     auth_resp = http_session.post(
         f"{portainer_url}/api/auth",
-        json={"Username": "admin", "Password": test_password}
+        json={"Username": "admin", "Password": test_password},
     )
-    assert auth_resp.status_code == 200, f"Portainer auth failed: {auth_resp.status_code}"
+    assert auth_resp.status_code == 200, (
+        f"Portainer auth failed: {auth_resp.status_code}"
+    )
     data = auth_resp.json()
     assert "jwt" in data, "Portainer auth response missing JWT"
     return data["jwt"]
@@ -156,6 +180,7 @@ def woodpecker_config():
     # Reuses existing fixture from tests/conftest.py
     import yaml
     from pathlib import Path
+
     project_root = Path(__file__).parent.parent.parent
     with open(project_root / ".woodpecker.yml") as f:
         return yaml.safe_load(f)
