@@ -192,15 +192,6 @@ repos:
         files: ^(scripts/(test-.*|emit-dora-event|check-secret-detection|check-ai-stance|check-dora-vocabulary|run-unit-tests).*|templates/.*\.py)$
         pass_filenames: false
 
-      # 4 execution-boundary agents must be valid AND dispatchable
-      - id: agent-dispatch
-        name: Agent dispatch
-        entry: scripts/check-agents.sh
-        language: script
-        stages: [pre-commit]
-        files: ^(\.agents/agents/|\.opencode/agents/)
-        pass_filenames: false
-
       # Every harness symlink must resolve
       - id: harness-parity
         name: Harness parity

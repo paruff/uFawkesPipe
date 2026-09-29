@@ -124,10 +124,16 @@ echo ""
 
 # 5. Check agent registry matches actual files
 echo "🔍 Checking agent registry completeness..."
-agent_files=$(ls .agents/agents/*.md 2> /dev/null | wc -l)
-skill_files=$(ls .agents/skills/*.md 2> /dev/null | wc -l)
-spec_files=$(ls .agents/specs/*.md 2> /dev/null | wc -l)
-echo -e "${GREEN}✅ Found $agent_files agents, $skill_files skills, $spec_files specs${NC}"
+# nullglob, not `ls | wc -l`: under pipefail an empty dir made ls fail and
+# set -e killed the script silently (exit 1, no message). The four
+# execution-boundary agents now come from the shared devcontainer image
+# (uFawkesAI), so 0 repo-local agents is expected.
+shopt -s nullglob
+agent_list=(.agents/agents/*.md)
+skill_list=(.agents/skills/*.md)
+spec_list=(.agents/specs/*.md)
+shopt -u nullglob
+echo -e "${GREEN}✅ Found ${#agent_list[@]} repo agents (+4 shared from the devcontainer image), ${#skill_list[@]} skills, ${#spec_list[@]} specs${NC}"
 
 echo ""
 
