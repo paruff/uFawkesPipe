@@ -5,6 +5,25 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.4-beta.1...v1.8.0-beta.1) (2026-10-02)
+
+
+### Added
+
+* **ci:** unified pre-commit, unit-test suites, ruff config, harness parity ([#104](https://github.com/paruff/uFawkesPipe/issues/104)) ([a4a8b37](https://github.com/paruff/uFawkesPipe/commit/a4a8b3710d25acffb90585e6436b2d4dd1aa9ddf))
+* **devcontainer:** use unified GHCR image ghcr.io/paruff/ufawkesai-devcontainer:latest ([#106](https://github.com/paruff/uFawkesPipe/issues/106)) ([7167fbc](https://github.com/paruff/uFawkesPipe/commit/7167fbcaaaefd8724f55eeb4ce2110e986dab203))
+
+
+### Fixed
+
+* **ci:** check only pushed commits in the push-time format check ([#109](https://github.com/paruff/uFawkesPipe/issues/109)) ([336143e](https://github.com/paruff/uFawkesPipe/commit/336143e97b29ed56a7d272508e0c28232a6406df))
+* **ci:** main-ci-guard skips cancelled/skipped runs on main ([#107](https://github.com/paruff/uFawkesPipe/issues/107)) ([b71b8da](https://github.com/paruff/uFawkesPipe/commit/b71b8da36353bf4de534ce2e8bf7709e39c22c96))
+
+
+### Chores
+
+* **agents:** use the shared uFawkesAI agents instead of local copies ([#108](https://github.com/paruff/uFawkesPipe/issues/108)) ([4f892f2](https://github.com/paruff/uFawkesPipe/commit/4f892f2b817bd22989812725681df7e7d5eae6d3))
+
 ## [1.7.4-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.3-beta.1...v1.7.4-beta.1) (2026-09-28)
 
 
