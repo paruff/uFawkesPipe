@@ -449,7 +449,7 @@ uFawkesPipe is part of the [uFawkes](https://ufawkes.dev) platform engineering e
 | **uFawkesRes**  | Deprecated — was the resource plane (PostgreSQL, Valkey, Traefik, Authelia) | [GitHub](https://github.com/paruff/uFawkesRes)  |
 | **uFawkesPipe** | CI/CD — Woodpecker, Buildpacks, DevSecOps            | [GitHub](https://github.com/paruff/uFawkesPipe) |
 | **uFawkesObs**  | Observability — Prometheus, Grafana, Loki, OTEL      | [GitHub](https://github.com/paruff/uFawkesObs)  |
-| **uFawkesDORA** | DORA metrics — dashboards, VSM, delivery performance | [GitHub](https://github.com/paruff/uFawkesDORA) |
+| **uFawkesDORA** | DORA metrics — merged into uFawkesObs | _merged_ |
 | **uFawkesSec**  | Security — merged into uFawkesPipe (DefectDojo, Infisical, Trivy, Falco) | _merged_ |
 | **uFawkesDevX** | Developer experience — golden paths, IDP templates   | [GitHub](https://github.com/paruff/uFawkesDevX) |
 | **uFawkesAI**   | AI agent templates — golden path scaffolding         | [GitHub](https://github.com/paruff/uFawkesAI)   |
