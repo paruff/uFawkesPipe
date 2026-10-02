@@ -427,6 +427,12 @@ docker pull paketobuildpacks/builder:base
 
 Contributions are welcome! Please read our contributing guidelines and submit pull requests.
 
+## Design and brand
+
+This repo follows the shared Fawkes and uFawkes design reference:
+[DESIGN.md](https://github.com/paruff/uFawkes.dev/blob/main/DESIGN.md), with tokens at <https://ufawkes.dev/design/tokens.json>. It is owned by
+[uFawkes.dev](https://github.com/paruff/uFawkes.dev).
+
 ## 📄 License
 
 Apache License 2.0 — see [LICENSE](LICENSE) for details.
