@@ -5,6 +5,13 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.3-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.8.2-beta.1...v1.8.3-beta.1) (2026-10-03)
+
+
+### Chores
+
+* **devcontainer:** declare hostRequirements (2 CPUs, 4 GB) ([#130](https://github.com/paruff/uFawkesPipe/issues/130)) ([b1b0446](https://github.com/paruff/uFawkesPipe/commit/b1b044639f768a8cd7b97e796c8c39d39f32c867))
+
 ## [1.8.2-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.8.1-beta.1...v1.8.2-beta.1) (2026-10-03)
 
 
