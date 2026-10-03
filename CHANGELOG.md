@@ -5,6 +5,14 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.8.0-beta.1...v1.8.1-beta.1) (2026-10-03)
+
+
+### Docs
+
+* **design:** point to the suite design reference ([#124](https://github.com/paruff/uFawkesPipe/issues/124)) ([588489a](https://github.com/paruff/uFawkesPipe/commit/588489afa22cb322dba2fafad437609c5598715b))
+* stop naming retired planes and Jenkins as current in the README ([#116](https://github.com/paruff/uFawkesPipe/issues/116)) ([5081ba0](https://github.com/paruff/uFawkesPipe/commit/5081ba0d7d876deb1101634cc2dbb348fbec81ea))
+
 ## [1.8.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.7.4-beta.1...v1.8.0-beta.1) (2026-10-02)
 
 
