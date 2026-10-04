@@ -27,4 +27,5 @@ via `scripts/shift-left/shift-left.sh`, the one file a consumer copies.
 | Each tool behaves as in uFawkes.dev       | Its test suite, moved unchanged apart from paths, in `scripts/run-unit-tests.sh`      |
 | The shim finds the pinned clone           | `scripts/shift-left/test-shift-left-shim.sh`: args and stdin pass through; loud fails |
 | The hooks work from a consumer repo       | `pre-commit try-repo <this repo> <hook>` from a throwaway repo, per hook              |
+| A repo calling the reusable Pre-flight passes parity | `test-shift-left-parity.sh`: a `uses:` of it counts as every stage; another reusable doesn't |
 | The manifest is valid                     | `pre-commit validate-manifest .pre-commit-hooks.yaml`                                 |
