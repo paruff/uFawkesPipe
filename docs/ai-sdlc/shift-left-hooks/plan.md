@@ -26,6 +26,7 @@ via `scripts/shift-left/shift-left.sh`, the one file a consumer copies.
 | ----------------------------------------- | ------------------------------------------------------------------------------------- |
 | Each tool behaves as in uFawkes.dev       | Its test suite, moved unchanged apart from paths, in `scripts/run-unit-tests.sh`      |
 | The shim finds the pinned clone           | `scripts/shift-left/test-shift-left-shim.sh`: args and stdin pass through; loud fails |
+| The semgrep hook installs and scans      | `try-repo` from a consumer: a seeded `run:` injection fails, the `env:` form passes |
 | The hooks work from a consumer repo       | `pre-commit try-repo <this repo> <hook>` from a throwaway repo, per hook              |
 | The manifest is valid                     | `pre-commit validate-manifest .pre-commit-hooks.yaml`                                 |
 | The doctor finds what it should, and only that | `scripts/shift-left/test-doctor.sh`: 12 fault-injection scenarios, incl. a remote hook's missing tool |
