@@ -22,6 +22,7 @@ SUITES=(
   scripts/test-dojo-feedback-intent.sh
   scripts/shift-left/test-require-tool.sh
   scripts/shift-left/test-shift-left-parity.sh
+  scripts/shift-left/test-semgrep-scan.sh
   scripts/shift-left/test-shift-left-triage.sh
   scripts/shift-left/test-shift-left-shim.sh
 )
