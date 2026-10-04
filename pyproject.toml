@@ -1,0 +1,17 @@
+# Only so pre-commit can install the shared semgrep hook
+# (.pre-commit-hooks.yaml): a `language: python` hook's repo must be
+# pip-installable. It packages no Python, just the hook's wrapper script.
+# uFawkesPipe's own tooling is configured in ruff.toml and pytest.ini, which
+# take precedence over this file.
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ufawkespipe-shift-left-hooks"
+version = "0.0.0"
+requires-python = ">=3.9"
+
+[tool.setuptools]
+packages = []
+script-files = ["scripts/shift-left/semgrep-scan.sh"]

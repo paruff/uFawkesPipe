@@ -254,3 +254,15 @@
   always_run: true
   pass_filenames: false
   stages: [pre-push]
+
+# SAST at pre-push with the registry's p/ci ruleset: online when it can be,
+# from the last fetched copy when not (scripts/shift-left/semgrep-scan.sh).
+# semgrep is pinned here, so every repo on this tag scans with the same one.
+- id: semgrep
+  name: SAST (semgrep p/ci)
+  entry: semgrep-scan.sh
+  language: python
+  additional_dependencies: ["semgrep==1.179.0"]
+  require_serial: true
+  stages: [pre-push]
+  types_or: [python, shell, javascript, ts, ruby, go, yaml, json, html, dockerfile, terraform]
