@@ -28,5 +28,6 @@ via `scripts/shift-left/shift-left.sh`, the one file a consumer copies.
 | The shim finds the pinned clone           | `scripts/shift-left/test-shift-left-shim.sh`: args and stdin pass through; loud fails |
 | The semgrep hook installs and scans      | `try-repo` from a consumer: a seeded `run:` injection fails, the `env:` form passes |
 | The hooks work from a consumer repo       | `pre-commit try-repo <this repo> <hook>` from a throwaway repo, per hook              |
+| A repo calling the reusable Pre-flight passes parity | `test-shift-left-parity.sh`: a `uses:` of it counts as every stage; another reusable doesn't |
 | The manifest is valid                     | `pre-commit validate-manifest .pre-commit-hooks.yaml`                                 |
 | The doctor finds what it should, and only that | `scripts/shift-left/test-doctor.sh`: 12 fault-injection scenarios, incl. a remote hook's missing tool; its template disables git auto-maintenance, which raced the parallel copies in CI |

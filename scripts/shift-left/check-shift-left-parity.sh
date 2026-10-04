@@ -7,7 +7,8 @@
 # drift is the set of stages CI runs: a hook whose stages CI never runs, and
 # that isn't in .shift-left.yml, fails here. The stages CI runs are read from
 # the `pre-commit run` lines in .github/workflows/*.yml (--all-files required;
-# commit-msg needs --commit-msg-filename instead).
+# commit-msg needs --commit-msg-filename instead). A call to uFawkesPipe's
+# reusable-preflight.yml counts as all three stages: that is what it runs.
 #
 # .shift-left.yml:
 #   local-only: [{id, reason}]  runs on a laptop, skipped in CI
@@ -53,9 +54,13 @@ for kind in ("local-only", "ci-only"):
 local_only, ci_only = lists["local-only"], lists["ci-only"]
 
 ci_stages = set()
+REUSABLE = re.compile(r"uses:\s*paruff/ufawkespipe/\.github/workflows/reusable-preflight\.ya?ml@", re.I)
 for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
     for line in open(wf):
         line = line.split("#", 1)[0]
+        if REUSABLE.search(line):
+            ci_stages |= {"pre-commit", "pre-push", "commit-msg"}
+            continue
         if "pre-commit run" not in line:
             continue
         m = re.search(r"--hook-stage[ =](\S+)", line)
