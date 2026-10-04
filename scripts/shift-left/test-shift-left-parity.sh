@@ -134,6 +134,23 @@ YML
 parity "$R"
 check "a call to another reusable workflow doesn't count" test "$rc" -eq 1
 
+echo "CI that runs single hooks on a commit range (fawkes's design):"
+scenario per-hook
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  hooks:
+    steps:
+      - run: |
+          pre-commit run lint --from-ref "$BASE" --to-ref HEAD
+          pre-commit run remote-lint --all-files
+          pre-commit run sast --hook-stage pre-push --from-ref "$BASE" --to-ref HEAD
+      - run: pre-commit run --hook-stage commit-msg --commit-msg-filename "$f"
+YML
+parity "$R"
+check "hooks CI runs by id count as covered" bash -c '! grep -qE "FAIL.*(lint|remote-lint|sast)" <<< "$0"' "$out"
+check "a hook CI never runs by id or by stage still fails" says "FAIL.*tests"
+check "an id without --all-files or a range doesn't count" bash -c 'printf "jobs:\n  a:\n    steps:\n      - run: pre-commit run tests\n" > "$1/.github/workflows/x.yml"; cd "$1" && bash "$2/scripts/shift-left/check-shift-left-parity.sh" 2>&1 | grep -q "FAIL.*tests"' _ "$R" "$HERE"
+
 echo ".shift-left.yml itself:"
 scenario no-reason
 printf 'local-only:\n  - id: stamp\n' > "$R/.shift-left.yml"

@@ -9,6 +9,9 @@
 # the `pre-commit run` lines in .github/workflows/*.yml (--all-files required;
 # commit-msg needs --commit-msg-filename instead). A call to uFawkesPipe's
 # reusable-preflight.yml counts as all three stages: that is what it runs.
+# A line that names a hook (`pre-commit run <id> --all-files`, or on a
+# --from-ref/--to-ref range, as a repo that checks only changed files does)
+# covers that hook alone, never its whole stage.
 #
 # .shift-left.yml:
 #   local-only: [{id, reason}]  runs on a laptop, skipped in CI
@@ -54,6 +57,7 @@ for kind in ("local-only", "ci-only"):
 local_only, ci_only = lists["local-only"], lists["ci-only"]
 
 ci_stages = set()
+ci_hooks = set()  # hooks CI runs by id
 REUSABLE = re.compile(r"uses:\s*paruff/ufawkespipe/\.github/workflows/reusable-preflight\.ya?ml@", re.I)
 for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
     for line in open(wf):
@@ -65,6 +69,11 @@ for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
             continue
         m = re.search(r"--hook-stage[ =](\S+)", line)
         stage = LEGACY.get(m.group(1), m.group(1)) if m else "pre-commit"
+        named = re.search(r"pre-commit run\s+([A-Za-z0-9_.-]+)", line)
+        if named and not named.group(1).startswith("-"):
+            if "--all-files" in line or "--from-ref" in line:
+                ci_hooks.add(named.group(1))
+            continue
         if stage == "commit-msg" and "--commit-msg-filename" in line:
             ci_stages.add(stage)
         elif stage != "commit-msg" and "--all-files" in line:
@@ -88,7 +97,7 @@ for i, stages in hooks:
         elif "manual" not in ci_stages:
             errors.append(f"{i}: ci-only, but no workflow runs pre-commit --hook-stage manual --all-files")
         continue
-    if not set(stages) & ci_stages:
+    if i not in ci_hooks and not set(stages) & ci_stages:
         errors.append(
             f"hook {i} ({', '.join(stages)}) never runs in CI: run that stage in CI "
             f"(pre-commit run --all-files --hook-stage <stage>), or list it in .shift-left.yml "
