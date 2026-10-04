@@ -1,4 +1,4 @@
-.PHONY: help init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help doctor init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -176,3 +176,6 @@ check-env: ## Validate required environment variables
 	else \
 		echo "✅ All required environment variables are set."; \
 	fi
+
+doctor: ## Are this clone's checks actually running? (hooks installed, tools, stamps, CI parity)
+	@bash scripts/shift-left/doctor.sh
