@@ -23,7 +23,7 @@
   },
   "forwardPorts": [],
   "remoteUser": "dev",
-  "postCreateCommand": "echo 'uFawkesPipe devcontainer ready — all tools pre-installed'",
+  "postCreateCommand": "pre-commit install && pre-commit install-hooks && bash scripts/shift-left/doctor.sh",
   "hostRequirements": {
     "cpus": 2,
     "memory": "4gb"
