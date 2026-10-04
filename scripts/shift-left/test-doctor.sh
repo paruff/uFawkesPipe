@@ -121,6 +121,11 @@ YML
 (
   cd "$T"
   git init -q -b main
+  # No background maintenance or gc: after a commit git may start one that
+  # holds .git/objects/maintenance.lock, and the scenarios' parallel `cp -R`
+  # of this template fails when the lock vanishes mid-copy (seen in CI).
+  git config maintenance.auto false
+  git config gc.auto 0
   pre-commit install > /dev/null
   git add -A
   git_q commit -qm "chore: init" > /dev/null 2>&1
