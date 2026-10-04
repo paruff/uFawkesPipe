@@ -19,10 +19,10 @@ on:
         type: boolean
         default: false
       timeout-minutes:
-        description: "Job timeout in minutes"
+        description: "Job timeout in minutes (the pre-push hooks run here too)"
         required: false
         type: number
-        default: 2
+        default: 8
       skip-hooks:
         description: "Comma-separated list of pre-commit hook IDs to skip"
         required: false
@@ -92,11 +92,42 @@ jobs:
           restore-keys: |
             pre-commit-${{ runner.os }}-
 
-      - name: Run pre-commit hooks
+      # The same hooks a laptop runs, stage by stage (uFawkes.dev shift-left
+      # spec R3). Skipped: the skip-hooks input, the repo's .shift-left.yml
+      # local-only hooks, and at pre-push the hooks that already ran at
+      # pre-commit. The parity check runs from uFawkesPipe itself or through a
+      # repo's shim (scripts/shift-left.sh); a repo with neither skips by input only.
+      - name: Work out which hooks to skip
+        id: skip
         if: steps.bypass.outputs.skipped != 'true'
         env:
-          SKIP: ${{ inputs.skip-hooks }}
-        run: pre-commit run --all-files
+          SKIP_INPUT: ${{ inputs.skip-hooks }}
+        run: |
+          parity() {
+            if [[ -x scripts/shift-left/check-shift-left-parity.sh ]]; then
+              bash scripts/shift-left/check-shift-left-parity.sh "$@"
+            elif [[ -f scripts/shift-left.sh ]]; then
+              bash scripts/shift-left.sh check-shift-left-parity "$@"
+            else
+              echo "::notice::No shift-left parity check in this repo; skipping only the skip-hooks input"
+            fi
+          }
+          for stage in pre-commit pre-push; do
+            list="$(parity --skip-list "$stage" | grep -v '^::notice' || true)"
+            echo "${stage//-/_}=${SKIP_INPUT}${SKIP_INPUT:+${list:+,}}${list}" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Run pre-commit hooks (pre-commit stage)
+        if: steps.bypass.outputs.skipped != 'true'
+        env:
+          SKIP: ${{ steps.skip.outputs.pre_commit }}
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      - name: Run pre-commit hooks (pre-push stage)
+        if: steps.bypass.outputs.skipped != 'true'
+        env:
+          SKIP: ${{ steps.skip.outputs.pre_push }}
+        run: pre-commit run --all-files --show-diff-on-failure --hook-stage pre-push
 
       # ── Local Preflight Script ──────────────────────────────────────────────
       - name: Run local preflight checks
@@ -173,51 +204,32 @@ jobs:
       # ── Commit Format Check ─────────────────────────────────────────────────
       # Only enforced on pull_request events: on push to main the commits are
       # merge commits that follow GitHub's PR title format, not conventional.
-      - name: Check commit messages
+      - name: Check commit messages (the same hook as a local commit)
         if: |
           steps.bypass.outputs.skipped != 'true' &&
           inputs.commit-format == 'conventional' &&
           github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
-        with:
-          script: |
-            const conventionalRegex = /^(feat|fix|docs|style|refactor|test|chore|ci|perf|build|revert)(\(.+\))?: .{1,72}$/;
-            const mergeCommitRegex = /^Merge /;
-
-            let commits;
-            if (context.eventName === 'pull_request') {
-              const { data: prCommits } = await github.rest.pulls.listCommits({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.issue.number,
-                per_page: 100
-              });
-              commits = prCommits.map(c => ({ message: c.commit.message.split('\n')[0], sha: c.sha }));
-            } else {
-              // Only the commits in this push. Re-checking the last N commits on the
-              // branch kept main red for N pushes after one bad merged title.
-              // ponytail: the push payload lists at most 20 commits; use compareCommits if pushes get bigger
-              commits = (context.payload.commits || []).map(c => ({ message: c.message.split('\n')[0], sha: c.id }));
-            }
-
-            let failures = 0;
-            for (const commit of commits) {
-              if (mergeCommitRegex.test(commit.message)) continue;
-              if (!conventionalRegex.test(commit.message)) {
-                core.error(`❌ Commit ${commit.sha.slice(0, 7)}: "${commit.message}"`);
-                failures++;
-              }
-            }
-
-            if (failures > 0) {
-              core.setFailed(
-                `❌ ${failures} commit(s) don't follow Conventional Commits format.\n` +
-                `Expected: type(scope): description\n` +
-                `Types: feat, fix, docs, style, refactor, test, chore, ci, perf, build, revert`
-              );
-            } else {
-              console.log(`✅ All ${commits.length} commit(s) follow Conventional Commits format`);
-            }
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # A repo with no commit-msg hook would "pass" with nothing to run: fail instead.
+          python3 -c '
+          import sys, yaml
+          cfg = yaml.safe_load(open(".pre-commit-config.yaml")) or {}
+          stages = [s for r in cfg.get("repos") or [] for h in r.get("hooks") or [] for s in h.get("stages") or []]
+          sys.exit(0 if "commit-msg" in stages else "No commit-msg stage hook in .pre-commit-config.yaml (e.g. conventional-commit), so commit messages cannot be checked.")
+          '
+          msg="$(mktemp)"
+          failed=0
+          for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
+            git log -1 --format=%B "$sha" > "$msg"
+            if ! pre-commit run --hook-stage commit-msg --commit-msg-filename "$msg"; then
+              echo "::error::Commit ${sha:0:7}: $(head -1 "$msg")"
+              failed=1
+            fi
+          done
+          exit "$failed"
 
       # ── Secret Detection ────────────────────────────────────────────────────
       - name: Verify .env.example has no concrete secrets
