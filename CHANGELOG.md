@@ -5,6 +5,13 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.11.0-beta.1...v1.11.1-beta.1) (2026-10-04)
+
+
+### Fixed
+
+* **shift-left:** parity counts a single-hook CI run for that hook only (P6) ([#143](https://github.com/paruff/uFawkesPipe/issues/143)) ([9732fe1](https://github.com/paruff/uFawkesPipe/commit/9732fe18d211cbbe3a15f2e649adbeef175edd99))
+
 ## [1.11.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.10.0-beta.1...v1.11.0-beta.1) (2026-10-04)
 
 
