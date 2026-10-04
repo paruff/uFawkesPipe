@@ -6,6 +6,7 @@
     ":enableVulnerabilityAlerts"
   ],
   "timezone": "UTC",
+  "minimumReleaseAge": "7 days",
   "schedule": ["after 2am on monday"],
   "automerge": false,
   "labels": ["dependencies", "renovate"],
@@ -24,7 +25,8 @@
       "matchManagers": ["github-actions"],
       "matchDatasources": ["docker"],
       "matchPackageNames": ["pre-commit/pre-commit"],
-      "groupName": "pre-commit-tool"
+      "groupName": "pre-commit-tool",
+      "minimumReleaseAge": "7 days"
     }
   ],
   "pre-commit": {
