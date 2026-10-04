@@ -54,10 +54,13 @@ jobs:
       - name: Determine refs
         id: refs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          BASE_REF: ${{ inputs.base-ref }}
+          HEAD_REF: ${{ inputs.head-ref }}
         with:
           script: |
-            let baseRef = '${{ inputs.base-ref }}';
-            let headRef = '${{ inputs.head-ref }}';
+            let baseRef = process.env.BASE_REF;
+            let headRef = process.env.HEAD_REF;
 
             // Auto-detect for PRs
             if (!baseRef || !headRef) {
@@ -95,9 +98,11 @@ jobs:
       - name: Deny specific licenses
         if: inputs.deny-licenses != '' && steps.refs.outputs.skip != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          DENY_LICENSES: ${{ inputs.deny-licenses }}
         with:
           script: |
-            const denyLicenses = '${{ inputs.deny-licenses }}'.split(',').map(l => l.trim()).filter(Boolean);
+            const denyLicenses = process.env.DENY_LICENSES.split(',').map(l => l.trim()).filter(Boolean);
             if (denyLicenses.length === 0) return;
 
             console.log(`Checking for denied licenses: ${denyLicenses.join(', ')}`);
@@ -130,16 +135,22 @@ jobs:
 
       - name: Generate summary
         if: always()
+        env:
+          FAIL_ON_SEVERITY: ${{ inputs.fail-on-severity }}
+          DENY_LICENSES_OR_NONE: ${{ inputs.deny-licenses || 'none' }}
+          BASE_REF_OR_NONE: ${{ steps.refs.outputs.base-ref || 'none' }}
+          HEAD_REF_OR_NONE: ${{ steps.refs.outputs.head-ref || 'none' }}
+          REFS_SKIP: ${{ steps.refs.outputs.skip }}
         run: |
           echo "### Dependency Review Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Fail on Severity | ${{ inputs.fail-on-severity }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deny Licenses | ${{ inputs.deny-licenses || 'none' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Base Ref | ${{ steps.refs.outputs.base-ref || 'none' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Head Ref | ${{ steps.refs.outputs.head-ref || 'none' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Skipped | ${{ steps.refs.outputs.skip }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fail on Severity | ${FAIL_ON_SEVERITY} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deny Licenses | ${DENY_LICENSES_OR_NONE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Base Ref | ${BASE_REF_OR_NONE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Head Ref | ${HEAD_REF_OR_NONE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skipped | ${REFS_SKIP} |" >> $GITHUB_STEP_SUMMARY
 
       - name: DORA job finish
         if: always()

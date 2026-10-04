@@ -93,8 +93,10 @@ jobs:
       # ─── Supply Chain ────────────────────────────────────────────────────
       - name: Fail if ':latest' is used
         if: inputs.fail-on-latest
+        env:
+          ALLOW_LATEST: ${{ inputs.allow-latest }}
         run: |
-          ALLOW_LIST="${{ inputs.allow-latest }}"
+          ALLOW_LIST="${ALLOW_LATEST}"
           IFS=',' read -ra ALLOWED <<< "$ALLOW_LIST"
           ALLOW_PATTERN=""
           for a in "${ALLOWED[@]}"; do
@@ -123,34 +125,40 @@ jobs:
       # ─── Config Validation: Prometheus ──────────────────────────────────
       - name: Validate Prometheus config
         if: inputs.validate-prometheus && hashFiles('config/prometheus/prometheus.yaml') != ''
+        env:
+          PROMETHEUS_IMAGE: ${{ inputs.prometheus-image }}
         run: |
           echo "Validating Prometheus config..."
           docker run --rm \
             -v $PWD/config/prometheus:/etc/prometheus \
             --entrypoint promtool \
-            ${{ inputs.prometheus-image }} \
+            "$PROMETHEUS_IMAGE" \
             check config /etc/prometheus/prometheus.yaml
           echo "✅ Prometheus config valid"
 
       # ─── Config Validation: OTel Collector ──────────────────────────────
       - name: Validate OTel config
         if: inputs.validate-otel && hashFiles('config/otel/collector.yaml') != ''
+        env:
+          OTEL_IMAGE: ${{ inputs.otel-image }}
         run: |
           echo "Validating OTel Collector config..."
           docker run --rm \
             -v $PWD/config/otel/collector.yaml:/etc/otel/config.yaml \
-            ${{ inputs.otel-image }} \
+            "$OTEL_IMAGE" \
             validate --config=/etc/otel/config.yaml
           echo "✅ OTel Collector config valid"
 
       # ─── Config Validation: Tempo ───────────────────────────────────────
       - name: Validate Tempo config
         if: inputs.validate-tempo && hashFiles('config/tempo/tempo.yaml') != ''
+        env:
+          TEMPO_IMAGE: ${{ inputs.tempo-image }}
         run: |
           echo "Validating Tempo config..."
           docker run --rm \
             -v $PWD/config/tempo/tempo.yaml:/etc/tempo.yaml \
-            ${{ inputs.tempo-image }} \
+            "$TEMPO_IMAGE" \
             -config.file=/etc/tempo.yaml -config.verify=true
           echo "✅ Tempo config valid"
 
@@ -185,9 +193,12 @@ jobs:
         if: inputs.enable-coverage-gate
         id: coverage
         continue-on-error: true
+        env:
+          COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
+          COVERAGE_PATHS: ${{ inputs.coverage-paths }}
         run: |
-          THRESHOLD=${{ inputs.coverage-threshold }}
-          PATHS="${{ inputs.coverage-paths }}"
+          THRESHOLD="$COVERAGE_THRESHOLD"
+          PATHS="${COVERAGE_PATHS}"
           COV_ARGS=""
           IFS=',' read -ra PKG <<< "$PATHS"
           for pkg in "${PKG[@]}"; do
@@ -212,44 +223,56 @@ jobs:
 
       - name: Check coverage result
         if: inputs.enable-coverage-gate && steps.coverage.outputs.coverage_result == 'failure'
+        env:
+          COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
         run: |
-          echo "::error::Coverage gate FAILED — below ${{ inputs.coverage-threshold }}% threshold"
+          echo "::error::Coverage gate FAILED — below ${COVERAGE_THRESHOLD}% threshold"
           exit 1
 
       # ─── Build Summary ──────────────────────────────────────────────────
       - name: Generate build summary
         if: always()
+        env:
+          FAIL_ON_LATEST: ${{ inputs.fail-on-latest }}
+          ALLOW_LATEST: ${{ inputs.allow-latest }}
+          VALIDATE_PROMETHEUS: ${{ inputs.validate-prometheus }}
+          VALIDATE_OTEL: ${{ inputs.validate-otel }}
+          VALIDATE_TEMPO: ${{ inputs.validate-tempo }}
+          VALIDATE_GRAFANA: ${{ inputs.validate-grafana }}
+          ENABLE_COVERAGE_GATE: ${{ inputs.enable-coverage-gate }}
+          COVERAGE_RESULT: ${{ steps.coverage.outputs.coverage_result }}
+          COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
         run: |
           echo "### Build & Validate Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ inputs.fail-on-latest }}" == "true" ]; then
-            if [ -n "${{ inputs.allow-latest }}" ]; then
-              echo "- ✅ Supply chain: No :latest tags (allow: ${{ inputs.allow-latest }})" >> $GITHUB_STEP_SUMMARY
+          if [ "${FAIL_ON_LATEST}" == "true" ]; then
+            if [ -n "${ALLOW_LATEST}" ]; then
+              echo "- ✅ Supply chain: No :latest tags (allow: ${ALLOW_LATEST})" >> $GITHUB_STEP_SUMMARY
             else
               echo "- ✅ Supply chain: No :latest tags" >> $GITHUB_STEP_SUMMARY
             fi
           fi
 
-          if [ "${{ inputs.validate-prometheus }}" == "true" ]; then
+          if [ "${VALIDATE_PROMETHEUS}" == "true" ]; then
             echo "- ✅ Prometheus config validated" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.validate-otel }}" == "true" ]; then
+          if [ "${VALIDATE_OTEL}" == "true" ]; then
             echo "- ✅ OTel Collector config validated" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.validate-tempo }}" == "true" ]; then
+          if [ "${VALIDATE_TEMPO}" == "true" ]; then
             echo "- ✅ Tempo config validated" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.validate-grafana }}" == "true" ]; then
+          if [ "${VALIDATE_GRAFANA}" == "true" ]; then
             echo "- ✅ Grafana provisioning validated" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ "${{ inputs.enable-coverage-gate }}" == "true" ]; then
-            if [ "${{ steps.coverage.outputs.coverage_result }}" == "pass" ]; then
-              echo "- ✅ Coverage gate: ${{ inputs.coverage-threshold }}% threshold met" >> $GITHUB_STEP_SUMMARY
-            elif [ "${{ steps.coverage.outputs.coverage_result }}" == "skip" ]; then
+          if [ "${ENABLE_COVERAGE_GATE}" == "true" ]; then
+            if [ "${COVERAGE_RESULT}" == "pass" ]; then
+              echo "- ✅ Coverage gate: ${COVERAGE_THRESHOLD}% threshold met" >> $GITHUB_STEP_SUMMARY
+            elif [ "${COVERAGE_RESULT}" == "skip" ]; then
               echo "- ⏭️ Coverage gate: skipped (no unit tests)" >> $GITHUB_STEP_SUMMARY
             else
-              echo "- ❌ Coverage gate: BELOW ${{ inputs.coverage-threshold }}% threshold" >> $GITHUB_STEP_SUMMARY
+              echo "- ❌ Coverage gate: BELOW ${COVERAGE_THRESHOLD}% threshold" >> $GITHUB_STEP_SUMMARY
             fi
           fi
 

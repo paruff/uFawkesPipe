@@ -118,13 +118,19 @@ jobs:
 
       - name: Run setup command
         if: inputs.setup-command != ''
-        run: ${{ inputs.setup-command }}
+        env:
+          SETUP_COMMAND: ${{ inputs.setup-command }}
+        run: eval "$SETUP_COMMAND"
 
       - name: Run unit tests
+        env:
+          COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
+          COVERAGE_PATHS: ${{ inputs.coverage-paths }}
+          UNIT_TEST_COMMAND: ${{ inputs.unit-test-command }}
         run: |
           COV_ARGS=""
-          THRESHOLD="${{ inputs.coverage-threshold }}"
-          PATHS="${{ inputs.coverage-paths }}"
+          THRESHOLD="${COVERAGE_THRESHOLD}"
+          PATHS="${COVERAGE_PATHS}"
           if [ -n "$THRESHOLD" ] && [ "$THRESHOLD" != "0" ] && [ -n "$PATHS" ]; then
             IFS=',' read -ra PKG <<< "$PATHS"
             for pkg in "${PKG[@]}"; do
@@ -133,7 +139,7 @@ jobs:
             done
             COV_ARGS="$COV_ARGS --cov-report=term-missing --cov-fail-under=$THRESHOLD"
           fi
-          ${{ inputs.unit-test-command }} $COV_ARGS
+          eval "$UNIT_TEST_COMMAND $COV_ARGS"
 
       - name: Upload test results
         if: always()
@@ -175,20 +181,25 @@ jobs:
           chmod -R 777 data/
 
       - name: Build and start stack
+        env:
+          COMPOSE_PROFILE: ${{ inputs.compose-profile }}
+          STACK_COMPOSE_FILE: ${{ inputs.compose-file }}
         run: |
-          PROFILE="${{ inputs.compose-profile }}"
+          PROFILE="${COMPOSE_PROFILE}"
           if [ -n "$PROFILE" ]; then
-            docker compose -f ${{ inputs.compose-file }} --profile "$PROFILE" up -d --build
+            docker compose -f "$STACK_COMPOSE_FILE" --profile "$PROFILE" up -d --build
           else
-            docker compose -f ${{ inputs.compose-file }} up -d --build
+            docker compose -f "$STACK_COMPOSE_FILE" up -d --build
           fi
 
       - name: Wait for services
         run: sleep 90
 
       - name: Verify health endpoints
+        env:
+          HEALTH_ENDPOINTS: ${{ inputs.health-endpoints }}
         run: |
-          ENDPOINTS="${{ inputs.health-endpoints }}"
+          ENDPOINTS="${HEALTH_ENDPOINTS}"
           if [ -z "$ENDPOINTS" ] || [ "$ENDPOINTS" == "" ]; then
             echo "No health endpoints configured, skipping verification"
             exit 0
@@ -204,18 +215,23 @@ jobs:
 
       - name: Show logs on failure
         if: failure()
+        env:
+          STACK_COMPOSE_FILE: ${{ inputs.compose-file }}
         run: |
-          docker compose -f ${{ inputs.compose-file }} ps
-          docker compose -f ${{ inputs.compose-file }} logs --tail=50
+          docker compose -f "$STACK_COMPOSE_FILE" ps
+          docker compose -f "$STACK_COMPOSE_FILE" logs --tail=50
 
       - name: Shutdown
         if: always()
+        env:
+          COMPOSE_PROFILE: ${{ inputs.compose-profile }}
+          STACK_COMPOSE_FILE: ${{ inputs.compose-file }}
         run: |
-          PROFILE="${{ inputs.compose-profile }}"
+          PROFILE="${COMPOSE_PROFILE}"
           if [ -n "$PROFILE" ]; then
-            docker compose -f ${{ inputs.compose-file }} --profile "$PROFILE" down -v
+            docker compose -f "$STACK_COMPOSE_FILE" --profile "$PROFILE" down -v
           else
-            docker compose -f ${{ inputs.compose-file }} down -v
+            docker compose -f "$STACK_COMPOSE_FILE" down -v
           fi
 
       - name: DORA job finish

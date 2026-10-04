@@ -28,12 +28,15 @@ jobs:
 
       - name: Check latest ${{ inputs.workflow-name }} run on main
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          WORKFLOW_ID: ${{ inputs.workflow-id }}
+          WORKFLOW_NAME: ${{ inputs.workflow-name }}
         with:
           script: |
             const { data: runs } = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: "${{ inputs.workflow-id }}",
+              workflow_id: process.env.WORKFLOW_ID,
               branch: "main",
               status: "completed",
               per_page: 20
@@ -46,7 +49,7 @@ jobs:
             );
 
             if (!latest) {
-              core.setFailed("No finished ${{ inputs.workflow-name }} runs found on main in the last 20 completed");
+              core.setFailed(`No finished ${process.env.WORKFLOW_NAME} runs found on main in the last 20 completed`);
               return;
             }
             core.info(`Latest main CI run: ${latest.html_url}`);
@@ -54,7 +57,7 @@ jobs:
 
             if (latest.conclusion !== "success") {
               core.setFailed(
-                `${{ inputs.workflow-name }} on main is ${latest.conclusion}. ` +
+                `${process.env.WORKFLOW_NAME} on main is ${latest.conclusion}. ` +
                 `Fix main CI before merging PRs. ${latest.html_url}`
               );
             }
