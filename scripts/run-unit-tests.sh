@@ -16,6 +16,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
 SUITES=(
+  scripts/shift-left/test-doctor.sh
   scripts/test-check-secret-detection.sh
   scripts/test-emit-dora-event.sh
   scripts/test-artifact-chain.sh
