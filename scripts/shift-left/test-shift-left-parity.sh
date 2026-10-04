@@ -116,6 +116,24 @@ parity "$R"
 check "a hook at a stage CI never runs: fails" says "FAIL.*on-checkout.*post-checkout"
 check "and says how to fix it" says "\.shift-left\.yml"
 
+echo "Calling uFawkesPipe's reusable Pre-flight:"
+scenario reusable
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  preflight:
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@v1.9.0
+YML
+parity "$R"
+check "a call to Pipe's reusable Pre-flight runs every stage" test "$rc" -eq 0
+scenario other-reusable
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  lint:
+    uses: paruff/ufawkespipe/.github/workflows/reusable-lint.yml@v1.9.0
+YML
+parity "$R"
+check "a call to another reusable workflow doesn't count" test "$rc" -eq 1
+
 echo ".shift-left.yml itself:"
 scenario no-reason
 printf 'local-only:\n  - id: stamp\n' > "$R/.shift-left.yml"
