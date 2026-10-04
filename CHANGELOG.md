@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.10.0-beta.1...v1.11.0-beta.1) (2026-10-04)
+
+
+### Added
+
+* **shift-left:** uFawkesPipe runs its own shift-left hooks (P5a) ([#142](https://github.com/paruff/uFawkesPipe/issues/142)) ([acc95ef](https://github.com/paruff/uFawkesPipe/commit/acc95eff323748cef9ae18451d17b814d36132c4))
+
+
+### Fixed
+
+* **ci:** clear what Pipe's first SAST and pin checks find (P5b) ([#140](https://github.com/paruff/uFawkesPipe/issues/140)) ([64a8ca1](https://github.com/paruff/uFawkesPipe/commit/64a8ca180d75f9377d52e4917b4f9f5dae952f26))
+
 ## [1.10.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.9.0-beta.1...v1.10.0-beta.1) (2026-10-04)
 
 
