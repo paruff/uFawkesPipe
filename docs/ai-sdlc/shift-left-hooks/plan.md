@@ -15,7 +15,7 @@ via `scripts/shift-left/shift-left.sh`, the one file a consumer copies.
 | Step | What                                                                                                          |
 | ---- | ------------------------------------------------------------------------------------------------------------- |
 | P1   | `require-tool`, the stamps, the parity check, triage, and the consumer shim; the manifest's first hooks       |
-| P2   | The doctor and the agent gate (and their fault-injection tests), run through the shim                         |
+| P2   | The doctor and the agent gate (and their fault-injection tests), run through the shim. Gate: P2a; doctor: P2b |
 | P3   | The semgrep hook: needs packaging so pre-commit can install semgrep (a dependency, so it asks first)          |
 | P4   | `reusable-preflight.yml` runs every hook stage and the commit-msg hook (a change for every caller, so it asks) |
 | P5   | uFawkesPipe uses its own hooks; then each suite repo switches to the shared source, one PR each               |

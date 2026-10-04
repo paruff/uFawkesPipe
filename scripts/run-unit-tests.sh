@@ -24,6 +24,7 @@ SUITES=(
   scripts/shift-left/test-shift-left-parity.sh
   scripts/shift-left/test-shift-left-triage.sh
   scripts/shift-left/test-shift-left-shim.sh
+  scripts/shift-left/test-agent-gate.sh
 )
 
 failed=0
