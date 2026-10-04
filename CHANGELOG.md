@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.9.0-beta.1...v1.10.0-beta.1) (2026-10-04)
+
+
+### Added
+
+* **shift-left:** the semgrep hook, pinned and pip-installable (P3) ([#136](https://github.com/paruff/uFawkesPipe/issues/136)) ([483697a](https://github.com/paruff/uFawkesPipe/commit/483697a1ae0ce4fd191c088b64e8d924967e8162))
+
+
+### Fixed
+
+* **shift-left:** stop git maintenance racing the doctor tests' copies ([#139](https://github.com/paruff/uFawkesPipe/issues/139)) ([8c2631f](https://github.com/paruff/uFawkesPipe/commit/8c2631f943b996b8f3daf186fa48bc85833e536c))
+
 ## [1.9.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.8.3-beta.1...v1.9.0-beta.1) (2026-10-04)
 
 
