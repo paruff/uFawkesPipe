@@ -27,6 +27,7 @@ SUITES=(
   scripts/shift-left/test-shift-left-triage.sh
   scripts/shift-left/test-shift-left-shim.sh
   scripts/shift-left/test-agent-gate.sh
+  scripts/shift-left/test-opencode-plugin.sh
 )
 
 failed=0
