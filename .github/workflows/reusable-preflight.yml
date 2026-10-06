@@ -28,6 +28,11 @@ on:
         required: false
         type: string
         default: ""
+      runner:
+        description: "runs-on label for the job (e.g. self-hosted during a hosted-runner incident)"
+        required: false
+        type: string
+        default: "ubuntu-latest"
     outputs:
       result:
         description: "Preflight result (pass/fail)"
@@ -41,7 +46,10 @@ jobs:
       contents: read
       pull-requests: read
     name: Pre-flight Checks
-    runs-on: ubuntu-latest
+    # Caller-selectable so a suite repo can route to a self-hosted runner
+    # during a hosted-runner incident; default keeps every existing caller
+    # on GitHub-hosted runners unchanged.
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
       result: ${{ steps.outcome.outputs.result }}
