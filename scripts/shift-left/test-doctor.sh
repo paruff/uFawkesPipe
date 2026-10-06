@@ -323,12 +323,62 @@ YML
   check "only D2 fails" fails_only D2
 }
 
+# A gh that answers D7's two calls from $GH_MODE: unauth, ok, none, unrelated, error.
+make_gh() { # make_gh <dir>
+  mkdir -p "$1"
+  cat > "$1/gh" << 'STUB'
+#!/usr/bin/env bash
+if [[ "$1 $2" == "auth status" ]]; then [[ "$GH_MODE" != unauth ]]; exit; fi
+[[ "$1" == api ]] || exit 1
+case "$GH_MODE" in
+  ok) echo '[{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"Pre-flight / Pre-flight Checks"},{"context":"Security"}]}}]' ;;
+  none) echo '[{"type":"non_fast_forward"}]' ;;
+  unrelated) echo '[{"type":"required_status_checks","parameters":{"required_status_checks":[{"context":"Security"}]}}]' ;;
+  *) echo "gh: HTTP 404" >&2; exit 1 ;;
+esac
+STUB
+  chmod +x "$1/gh"
+}
+
+s13() {
+  echo "D7 the hook job is a required check:"
+  make_gh "$TMP/gh-bin"
+  scenario no-remote
+  doctor "$R"
+  check "no GitHub remote: D7 is skipped, not failed" test "$rc" -eq 0
+  scenario d7
+  git -C "$R" remote add origin https://github.com/o/r.git
+  d7() { # d7 <GH_MODE> [args]
+    local mode="$1"
+    shift
+    out="$(cd "$R" && PATH="$TMP/gh-bin:$PATH" GH_MODE="$mode" bash scripts/shift-left/doctor.sh "$@" 2>&1)" && rc=0 || rc=$?
+  }
+  d7 ok
+  check "a required Pre-flight check passes D7" says "ok +D7"
+  check "and the doctor exits 0" test "$rc" -eq 0
+  d7 none
+  check "rules with no required checks fail D7" says "FAIL +D7"
+  check "only D7 fails" fails_only D7
+  check "and the fix names the check to add" says "fix: .*required"
+  d7 unrelated
+  check "required checks that aren't the hook job fail D7" says "FAIL +D7"
+  d7 unauth
+  check "gh not authenticated: a note, not a failure" says "note +D7 .*gh"
+  check "and exit 0" test "$rc" -eq 0
+  d7 error
+  check "an API error is a note, not a failure (no false alarm)" says "note +D7"
+  d7 none --quiet
+  check "--quiet still prints the failure" says "FAIL +D7"
+  d7 ok --quiet
+  check "--quiet prints nothing when D7 passes" test -z "$out"
+}
+
 # A scenario that dies part-way (a failed git step, set -u) is a failure, not
 # a pass with fewer checks. The scenario runs under set -e and its exit status
 # goes to a file. Two shapes that look right and aren't: `( set -e; "$s" ) ||`
 # makes bash ignore set -e inside the scenario, and without the group's set +e
 # the script's own set -e ends the group before it records the status.
-SCENARIOS=(s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12)
+SCENARIOS=(s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13)
 for s in "${SCENARIOS[@]}"; do
   {
     set +e
