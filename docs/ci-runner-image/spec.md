@@ -1,9 +1,8 @@
 # Specification (v1) — uFawkes CI Runner Image (`ufawkes-ci`)
 
-Status: **Draft** — the design itself (goals/non-goals, image, suite wiring, host unit,
-verification plan — rendered here as §1–§4) was approved in session 2026-10-06; what **awaits
-owner review is the AC list (§5), sequencing (§7), and OQ1 (§9)** — settled decisions are in §8;
-please re-litigate only those.
+Status: **Approved by owner 2026-10-06** (reviewed on PR #146: ACs, sequencing, and the former
+OQ1 all approved; OQ1 resolved **semgrep IN** — decision 7). Implementation proceeds per §7:
+`plan.md` next, then the phased PRs.
 Date: 2026-10-06
 Owner: uFawkesPipe (image build, wiring, runbook) · Pilot consumer: uFawkesDojo
 Design record: in-session design review 2026-10-06 — approaches considered: (A) extend the
@@ -75,9 +74,12 @@ re-pinned here):
 |---|---|
 | `actions-runner` (v2.337.0 or newer current, linux-x64 + linux-arm64 tarballs) | version + per-arch SHA-256 in `runner.lock` |
 | docker CLI (static) + compose v2 plugin | version + SHA-256 in `runner.lock` (exact source chosen in plan; snapshot-apt equivalent acceptable if equally pinned) |
+| **semgrep** engine | version + hash-locked pip install into the layer (same discipline as core's `requirements.lock`: `uv pip install --require-hashes`) |
+| **semgrep ruleset** (vendored — the `p/ci` pack Pipe's pre-push hook already uses) | pinned source commit + archive SHA-256, installed to `/opt/ufawkes/semgrep-rules/` so `pipe-ci security` is offline-capable |
 
-**Deliberately excluded:** `semgrep` — core excludes it by decision (245 MB engine; its comment
-says CI installs it with pipx at job time). See OQ1.
+**Divergence from core, deliberate:** core excludes semgrep (245 MB engine; its comment says it
+"only serves CI" and installs it with pipx at job time). This layer **is** the CI image, so the
+exclusion's premise inverts here (decision 7, §8). The general-purpose core image is untouched.
 
 ## 4. Design
 
@@ -134,7 +136,7 @@ exit codes verbatim (R8):
 | `pipe-ci pre-commit [--stages s1,s2]` | `pre-commit run --all-files` for the given stages (default: repo default stages) |
 | `pipe-ci pre-push [base]` | pre-commit over the changed range (`--from-ref <base> --to-ref HEAD`, default `origin/main`), mirroring the pre-push hook |
 | `pipe-ci preflight` | the repo's required pre-flight stages + `commit-msg` check via the workspace's own scripts |
-| `pipe-ci lint` / `pipe-ci security` | lint stage subset / `gitleaks` + `trivy fs .` over the workspace |
+| `pipe-ci lint` / `pipe-ci security` | lint stage subset / `gitleaks` + `trivy fs .` + `semgrep scan --config /opt/ufawkes/semgrep-rules --error` over the workspace (local ruleset → runs offline) |
 | `pipe-ci unit` | passthrough to the repo's test entrypoint (`make test` etc.), documented per-repo |
 | `pipe-ci exec <cmd…>` | run any command inside the image environment (escape hatch, e.g. `make verify-labs`) |
 
@@ -200,7 +202,7 @@ for runs that actually executed.
   keep the path open).
 - Retiring GitHub-hosted as the default path (dispatch-only trust gate).
 - The Obs `[self-hosted, synology]` deploy host (separate mechanism, untouched).
-- semgrep baking (see OQ1); arm64 runtime e2e (amd64-only verification this phase).
+- arm64 runtime e2e (amd64-only verification this phase).
 
 ## 7. Sequencing
 
@@ -227,19 +229,26 @@ for runs that actually executed.
 6. Design approved in session (goals/non-goals, image, wiring, host unit, verification plan —
    this document's §1–§4; the AC list at §5 remains under review per the status line); spec
    location `docs/ci-runner-image/` approved.
+7. **semgrep is baked in** (resolved during owner review of PR #146, 2026-10-06): engine
+   hash-lock installed in the layer + a pinned, vendored ruleset so `pipe-ci security` stays
+   offline-capable. Core's exclusion stands for the general image — the CI layer inverts its
+   premise. Cost accepted: ≈ +245 MB (§10).
 
 ## 9. Open questions
 
-- **OQ1 — semgrep in the layer?** Default: **no** (matches core's decision; +245 MB; the scanners
-  in §3 already cover the SAST/security need). Owner may flip during spec review; flipping adds a
-  pinned install to `runner.lock` and +245 MB to the image.
+None open — **OQ1 (semgrep) was resolved IN** during owner review of PR #146 (recorded as
+decision 7 in §8).
 
 ## 10. Risks / remaining concerns
 
 - **Publish-machinery duplication** (accepted cost of approach C): our workflow mirrors the
   devsecops one rather than sharing it. Mitigation: copy their structure, do not invent ours.
-- **Image size ≈ 1.8 GB** (core 1.61 GB + ~200 MB layer): first pull on the MBP and colima disk
-  usage; measured as part of AC1 and noted in the verification log.
+- **Image size ≈ 2.0 GB** (core 1.61 GB + ~245 MB semgrep engine + ~200 MB runner/docker layer):
+  first pull on the MBP and colima disk usage; measured as part of AC1 and noted in the
+  verification log.
+- **Vendored semgrep ruleset staleness:** the ruleset only updates when the lock-bump discipline
+  (§4.7) bumps it — new rule packs wait for that bump, the same trade-off core accepts for every
+  locked tool.
 - **Registration token lifecycle**: 1 h expiry, first-boot-only; state volume makes this a
   non-issue day-to-day, but a lost volume mid-incident needs the runbook's re-register flow
   (AC7 exercises it).
