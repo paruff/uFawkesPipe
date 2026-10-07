@@ -15,7 +15,10 @@
 #       revert run no commit hooks, and the commits they replay already did.
 #   D6  every hook runs in CI, or .shift-left.yml says why not
 #       (check-shift-left-parity.sh, beside this script)
-# D7 (required checks) arrives with phase E1.
+#   D7  the hook job is a required check on the default branch, so a red hook
+#       run blocks the merge. Read from the repo's effective rules through gh;
+#       skipped, with a note, when there's no GitHub remote, gh isn't
+#       authenticated, or the API can't be read (a laptop offline is not a fault).
 #
 # One line per check, a fix under each failure. --quiet prints only failures,
 # so it can run at every session start without noise. Exit 1 on any failure.
@@ -194,6 +197,36 @@ else
   while read -r line; do
     fail D6 "${line#FAIL }" "run that stage in CI, or list the hook in .shift-left.yml with a reason"
   done < <(grep '^FAIL' <<< "$parity" || echo "FAIL $parity")
+fi
+
+# --- D7: the hook job is a required check -------------------------------------
+# The check is named after the Pre-flight / pre-commit job, whatever the repo
+# calls it (e.g. "Pre-flight / Pre-flight Checks", "Pre-commit hooks / ...").
+d7_note() { note D7 "skipped: $1"; }
+slug="$(git remote get-url origin 2> /dev/null | sed -nE 's#^(https://github\.com/|git@github\.com:)##p' | sed -E 's#/$##; s#\.git$##')"
+if [[ -z "$slug" ]]; then
+  d7_note "no GitHub origin remote"
+elif ! command -v gh > /dev/null || ! gh auth status > /dev/null 2>&1; then
+  d7_note "gh isn't authenticated, so required checks can't be read (gh auth login)"
+else
+  branch="$(gh api "repos/$slug" --jq .default_branch 2> /dev/null || true)"
+  branch="${branch:-main}"
+  if ! rules="$(gh api "repos/$slug/rules/branches/$branch" 2> /dev/null)"; then
+    d7_note "couldn't read the rules of $slug@$branch"
+  else
+    required="$(python3 -c '
+import json, sys
+for rule in json.load(sys.stdin):
+    if rule.get("type") == "required_status_checks":
+        for c in rule["parameters"]["required_status_checks"]:
+            print(c["context"])
+' <<< "$rules" 2> /dev/null)"
+    if grep -qiE 'pre-?flight|pre-?commit' <<< "$required"; then
+      ok D7 "$slug@$branch requires the hook job ($(grep -iE 'pre-?flight|pre-?commit' <<< "$required" | head -1))"
+    else
+      fail D7 "$slug@$branch doesn't require the hook job, so a red hook run doesn't block a merge" "add the Pre-flight / pre-commit job to the required status checks of the $branch ruleset (Settings > Rules)"
+    fi
+  fi
 fi
 
 finish
