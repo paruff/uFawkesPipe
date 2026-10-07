@@ -28,6 +28,7 @@ SUITES=(
   scripts/shift-left/test-shift-left-shim.sh
   scripts/shift-left/test-agent-gate.sh
   scripts/shift-left/test-opencode-plugin.sh
+  scripts/shift-left/test-reinstall-hooks.sh
 )
 
 failed=0
