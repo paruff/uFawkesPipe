@@ -144,6 +144,24 @@ repos:
         exclude: ^(\.github/|\.pre-commit-config\.yaml|\.yamllint|platform/apps/.*/upstream/|examples/)
 
   # ============================================================================
+  # GitHub Actions and config schemas (shift-left spec R2): a workflow typo or
+  # an invalid dependabot.yml fails here, not in a red run weeks later.
+  # ============================================================================
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+        name: Lint GitHub Actions workflows (actionlint)
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.38.2
+    hooks:
+      - id: check-github-workflows
+        name: Validate workflow schemas
+      - id: check-dependabot
+        name: Validate dependabot.yml schema
+
+  # ============================================================================
   # Commit Message Validation (commit-msg stage)
   # ============================================================================
   - repo: local

@@ -48,7 +48,6 @@ jobs:
     uses: ./.github/workflows/reusable-dependency-review.yml
     with:
       fail-on-severity: high
-      comment-summary-in-pr: "true"
 
   # ─── Stage 3: Build & Validate ─────────────────────────────────────────
   build:
