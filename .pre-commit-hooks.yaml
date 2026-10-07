@@ -239,6 +239,20 @@
   stages: [pre-push]
   files: (^|/)(Gemfile\.lock|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|requirements[^/]*\.txt|poetry\.lock|uv\.lock|go\.sum|Cargo\.lock)$
 
+# Reinstall the git hooks when a checkout or merge brings in a config that lists a
+# stage that isn't installed: `pre-commit install` is never re-run when the config
+# changes, so a stage added later stays uninstalled in every existing clone (plan G).
+# A repo lists post-checkout and post-merge in default_install_hook_types and this
+# id under local-only in .shift-left.yml (CI never runs a post-checkout hook).
+- id: shift-left-reinstall
+  name: Reinstall git hooks when the hook config adds a stage
+  entry: scripts/shift-left/reinstall-hooks.sh
+  language: script
+  always_run: true
+  pass_filenames: false
+  verbose: true
+  stages: [post-checkout, post-merge]
+
 # Record the tree each stage ran on, for the doctor (D5). Keep these last in a
 # repo's config: a stamp says every hook above ran on that content.
 - id: shift-left-stamp
