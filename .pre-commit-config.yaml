@@ -144,6 +144,38 @@ repos:
         exclude: ^(\.github/|\.pre-commit-config\.yaml|\.yamllint|platform/apps/.*/upstream/|examples/)
 
   # ============================================================================
+  # Type-check Pipe's own code (shift-left spec R2, decided 2026-10-06): mypy for
+  # the Python script, tsc for the OpenCode plugin. Both run without the project's
+  # dependencies (mypy in its own env, tsc from pre-commit's node environment).
+  # ============================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.4.0
+    hooks:
+      - id: mypy
+        name: Type-check Python (mypy)
+        args: ["--ignore-missing-imports"]
+        files: ^scripts/.*\.py$
+
+  - repo: local
+    hooks:
+      - id: tsc
+        name: Type-check JavaScript (tsc)
+        # An unresolved import of the OpenCode SDK's types (TS2307) is expected here
+        # and ignored. Any other type error fails, and so does tsc failing without
+        # reporting one.
+        entry: |
+          bash -c '
+            out="$(tsc --ignoreConfig --strict false --noEmit --allowJs --checkJs --target es2022 --module esnext --moduleResolution bundler --typeRoots "$NODE_PATH/@types" --types node "$@" 2>&1)" && exit 0
+            rest="$(printf "%s\n" "$out" | grep "error TS" | grep -v "TS2307")"
+            if [ -n "$rest" ]; then printf "%s\n" "$rest"; exit 1; fi
+            printf "%s\n" "$out" | grep -q "error TS" && exit 0
+            printf "%s\n" "$out"; exit 1
+          ' --
+        language: node
+        additional_dependencies: ["typescript@7.0.2", "@types/node"]
+        files: ^scripts/shift-left/opencode-plugin\.js$
+
+  # ============================================================================
   # GitHub Actions and config schemas (shift-left spec R2): a workflow typo or
   # an invalid dependabot.yml fails here, not in a red run weeks later.
   # ============================================================================
