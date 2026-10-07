@@ -5,6 +5,23 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.11.1-beta.1...v1.12.0-beta.1) (2026-10-07)
+
+
+### Added
+
+* **shift-left:** doctor D7 and the OpenCode plugin ([#149](https://github.com/paruff/uFawkesPipe/issues/149)) ([09ba84f](https://github.com/paruff/uFawkesPipe/commit/09ba84f84ef8cd4fae0f4646e81b87b5ccdfe2cf))
+* **shift-left:** lint Pipe's own workflows and config schemas ([#151](https://github.com/paruff/uFawkesPipe/issues/151)) ([46d5e41](https://github.com/paruff/uFawkesPipe/commit/46d5e419cdd99d80ad002024fec8c31efbfde674))
+* **shift-left:** reinstall git hooks when the hook config adds a stage ([#154](https://github.com/paruff/uFawkesPipe/issues/154)) ([312fa48](https://github.com/paruff/uFawkesPipe/commit/312fa4870b698081fb5d4bd96c48e91be04faf74))
+* **types:** type-check Pipe's Python script and OpenCode plugin ([#153](https://github.com/paruff/uFawkesPipe/issues/153)) ([80d4f36](https://github.com/paruff/uFawkesPipe/commit/80d4f366cec3afe5e90e3d731f8dc9de37f93cad))
+
+
+### Docs
+
+* **ci-runner-image:** add ufawkes-ci implementation plan ([#156](https://github.com/paruff/uFawkesPipe/issues/156)) ([ef719be](https://github.com/paruff/uFawkesPipe/commit/ef719bedd0b9ebc8ae5dfc942e6ace89691b2b7a))
+* **ci-runner-image:** add ufawkes-ci runner image spec ([#146](https://github.com/paruff/uFawkesPipe/issues/146)) ([3033420](https://github.com/paruff/uFawkesPipe/commit/3033420852f2c51336df8e5109ebd0fa86d5f4cf))
+* **ci-runner-image:** resolve OQ1 - bake semgrep in the CI layer ([#148](https://github.com/paruff/uFawkesPipe/issues/148)) ([2a62c5c](https://github.com/paruff/uFawkesPipe/commit/2a62c5c27295ab5158fafde01ac7c9612e3009a0))
+
 ## [1.11.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.11.0-beta.1...v1.11.1-beta.1) (2026-10-04)
 
 
