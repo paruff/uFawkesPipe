@@ -278,7 +278,7 @@ jobs:
           done
           echo "TimescaleDB ready"
           echo "Waiting for API..."
-          for i in $(seq 1 15); do
+          for _ in $(seq 1 15); do
             if curl -s -o /dev/null -w '%{http_code}' http://localhost:8088/health \
               2>/dev/null | grep -q 200; then
               echo "API ready"
@@ -347,7 +347,7 @@ jobs:
 
       - name: Wait for E2E stack
         run: |
-          for i in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl -s -o /dev/null -w '%{http_code}' http://localhost:8089/health \
               2>/dev/null | grep -q 200; then
               echo "E2E stack ready"
@@ -403,7 +403,7 @@ jobs:
       - name: Wait for API health
         run: |
           echo "Waiting for API health check..."
-          for i in $(seq 1 20); do
+          for _ in $(seq 1 20); do
             if curl -s -o /dev/null -w '%{http_code}' http://localhost:8089/health \
               2>/dev/null | grep -q 200; then
               echo "API responded with 200 OK"
