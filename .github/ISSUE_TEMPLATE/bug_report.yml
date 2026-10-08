@@ -2,7 +2,7 @@
 name: 🐛 Bug Report
 description: Report a bug in uFawkesPipe (Woodpecker CI, Docker, reusable workflows)
 title: "[Bug]: "
-labels: ["bug", "needs-triage"]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
