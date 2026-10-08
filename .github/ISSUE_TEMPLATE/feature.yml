@@ -1,0 +1,44 @@
+# .github/ISSUE_TEMPLATE/feature.yml
+name: ✨ Feature Request
+description: Propose a new feature for uFawkesPipe
+title: "[Feature]: "
+labels: ["enhancement", "area:unknown"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Summary & Motivation
+        Briefly describe the feature and why it's needed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this solve?
+      validations:
+        required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution or implementation approach.
+      validations:
+        required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Target Component
+      options:
+        - Woodpecker CI
+        - Docker Compose / Images
+        - Reusable Workflows
+        - Makefile / Scripts
+        - Documentation
+      validations:
+        required: true
+  - type: checkboxes
+    id: copilot
+    attributes:
+      label: Copilot Readiness
+      options:
+        - label: Ready for Copilot agent (clear scope, tests defined)
+          required: false
