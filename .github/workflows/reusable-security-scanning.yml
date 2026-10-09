@@ -78,7 +78,6 @@ jobs:
       - name: Run secret scanning (Gitleaks)
         id: gitleaks
         if: inputs.scan-type == 'all' || inputs.scan-type == 'secrets'
-        continue-on-error: true
         env:
           GITLEAKS_CONFIG: ${{ inputs.gitleaks-config }}
         run: |
@@ -90,18 +89,18 @@ jobs:
             --report-path=gitleaks-results.sarif
 
       - name: Upload Gitleaks results to GitHub Security
-        if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'secrets')
+        if: always() && inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'secrets')
         uses: github/codeql-action/upload-sarif@411bbbe57033eedfc1a82d68c01345aa96c737d7  # v4.2.5
         with:
           sarif_file: "gitleaks-results.sarif"
           category: "gitleaks"
 
-      - name: Check gitleaks results
-        if: steps.gitleaks.outcome == 'failure'
+      # The gitleaks step above already failed the job; this says why.
+      - name: Explain a gitleaks failure
+        if: failure() && steps.gitleaks.outcome == 'failure'
         run: |
           echo "::error::Gitleaks detected potential secrets that are not in the allowlist."
           echo "::error::Review findings in the Security tab or update .gitleaks.toml to allowlist false positives."
-          exit 1
 
       # ─── Secret Scanning (TruffleHog) ──────────────────────────────────
       # Complements Gitleaks with verified-secret detection (live-checks
@@ -138,21 +137,19 @@ jobs:
       # ─── Dependency Scanning ────────────────────────────────────────────
       - name: Check Python dependencies
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'dependencies')
-        continue-on-error: true
         run: |
           if [ -f "requirements.txt" ]; then
             echo "📦 Found requirements.txt — scanning dependencies..."
             pip install safety
-            safety check --file=requirements.txt || true
+            safety check --file=requirements.txt
           fi
 
       - name: Check Node dependencies
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'dependencies')
-        continue-on-error: true
         run: |
           if [ -f "package.json" ]; then
             echo "📦 Found package.json — running npm audit..."
-            npm audit --audit-level=moderate || true
+            npm audit --audit-level=moderate
           fi
 
       # ─── Container Scanning ─────────────────────────────────────────────
