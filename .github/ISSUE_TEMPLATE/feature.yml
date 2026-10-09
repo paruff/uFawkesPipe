@@ -14,15 +14,15 @@ body:
     attributes:
       label: Problem Statement
       description: What problem does this solve?
-      validations:
-        required: true
+    validations:
+      required: true
   - type: textarea
     id: solution
     attributes:
       label: Proposed Solution
       description: Describe your proposed solution or implementation approach.
-      validations:
-        required: true
+    validations:
+      required: true
   - type: dropdown
     id: component
     attributes:
@@ -33,8 +33,8 @@ body:
         - Reusable Workflows
         - Makefile / Scripts
         - Documentation
-      validations:
-        required: true
+    validations:
+      required: true
   - type: checkboxes
     id: copilot
     attributes:
@@ -42,3 +42,18 @@ body:
       options:
         - label: Ready for Copilot agent (clear scope, tests defined)
           required: false
+
+  - type: checkboxes
+    id: dora
+    attributes:
+      label: DORA Capability Impact
+      description: Which DORA capabilities does this feature improve? (Check all that apply)
+      options:
+        - label: Continuous Integration — faster, more reliable builds
+        - label: Continuous Delivery — automated deployments
+        - label: Architecture — loosely coupled services
+        - label: Product & Process — working in small batches
+        - label: Lean Management — visualizing work, limiting WIP
+        - label: Cultural — generative culture, learning from failure
+        - label: Technical Practices — test automation, trunk-based development
+        - label: AI-Assisted Development — AI tooling for delivery

@@ -15,8 +15,8 @@ body:
       label: Bug Description
       description: A clear and concise description of what the bug is.
       placeholder: e.g., Woodpecker pipeline fails on commit
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: dropdown
     id: component
@@ -28,16 +28,16 @@ body:
         - Reusable Workflows
         - Makefile / Scripts
         - Documentation
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: textarea
     id: steps
     attributes:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior.
-      validations:
-        required: true
+    validations:
+      required: true
 
   - type: input
     id: version
@@ -50,3 +50,14 @@ body:
     attributes:
       label: Relevant Logs / Output
       render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Docker / Docker Compose versions, and run mode.
+      placeholder: |
+        - OS: Ubuntu 22.04 / macOS 14 / Windows 11
+        - Docker: 24.0.7
+        - Docker Compose: v2.24.0
+        - Mode: Standalone / Suite
