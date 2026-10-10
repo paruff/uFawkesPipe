@@ -5,6 +5,25 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.13.0-beta.1...v1.13.1-beta.1) (2026-10-10)
+
+
+### Fixed
+
+* **ci:** remove silent passes from the security and coverage gates ([#180](https://github.com/paruff/uFawkesPipe/issues/180)) ([#167](https://github.com/paruff/uFawkesPipe/issues/167)) ([c9c7b3b](https://github.com/paruff/uFawkesPipe/commit/c9c7b3bf9fc10e059a2ed66a31d573ef6e62d1b0))
+* **templates:** repair issue-form schema and PR gate commands ([#164](https://github.com/paruff/uFawkesPipe/issues/164)) ([8c8595a](https://github.com/paruff/uFawkesPipe/commit/8c8595a9e3a220cb7b03b639423d07ff67c3345b))
+
+
+### Docs
+
+* **issue-templates:** add bug_report, feature, security templates ([#161](https://github.com/paruff/uFawkesPipe/issues/161)) ([aafadf4](https://github.com/paruff/uFawkesPipe/commit/aafadf41da9fc65317244d5bc267e87d37a610a3))
+* **pr-template:** add standardized PR template ([#160](https://github.com/paruff/uFawkesPipe/issues/160)) ([0e0f21a](https://github.com/paruff/uFawkesPipe/commit/0e0f21a26b1a0d5e68cc00ab25efdfc7b782e0a7))
+
+
+### Chores
+
+* **templates:** drop dangling label references from issue templates ([#163](https://github.com/paruff/uFawkesPipe/issues/163)) ([88c908a](https://github.com/paruff/uFawkesPipe/commit/88c908aba37caef2feff0317b45f411ae1fe9870))
+
 ## [1.13.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.12.0-beta.1...v1.13.0-beta.1) (2026-10-07)
 
 
