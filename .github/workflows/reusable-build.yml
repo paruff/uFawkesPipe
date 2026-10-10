@@ -192,7 +192,6 @@ jobs:
       - name: Run coverage quality gate
         if: inputs.enable-coverage-gate
         id: coverage
-        continue-on-error: true
         env:
           COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
           COVERAGE_PATHS: ${{ inputs.coverage-paths }}
@@ -215,19 +214,20 @@ jobs:
               echo "coverage_result=pass" >> $GITHUB_OUTPUT
             else
               echo "coverage_result=failure" >> $GITHUB_OUTPUT
+              exit 1
             fi
           else
             echo "No unit tests found, skipping coverage gate"
             echo "coverage_result=skip" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check coverage result
-        if: inputs.enable-coverage-gate && steps.coverage.outputs.coverage_result == 'failure'
+      # The coverage step above already failed the job; this says why.
+      - name: Explain a coverage failure
+        if: failure() && inputs.enable-coverage-gate && steps.coverage.outputs.coverage_result == 'failure'
         env:
           COVERAGE_THRESHOLD: ${{ inputs.coverage-threshold }}
         run: |
           echo "::error::Coverage gate FAILED — below ${COVERAGE_THRESHOLD}% threshold"
-          exit 1
 
       # ─── Build Summary ──────────────────────────────────────────────────
       - name: Generate build summary

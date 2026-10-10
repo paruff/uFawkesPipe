@@ -56,7 +56,7 @@ jobs:
 
       - name: Run make validate-agents
         run: |
-          pip3 install pyyaml || true
+          pip3 install pyyaml
           make validate-agents
 
       - name: Check required files exist
