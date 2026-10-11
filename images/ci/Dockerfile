@@ -71,3 +71,16 @@ jq --arg sv "$(semgrep --version)" --arg sg "$sg" --arg rv "${rules% *}" --arg r
 chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
 mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
 SH
+
+# The Actions runner: unpacked from the verified tarball. config.sh and run.sh sit at
+# the tarball's root, so .runner and _work land under /opt/ufawkes-runner.
+RUN --mount=type=bind,from=fetch,source=/out/actions-runner,target=/in <<'SH'
+set -euxo pipefail
+mkdir -p /opt/ufawkes-runner /opt/hostedtoolcache
+tar -xzf /in/runner.tgz -C /opt/ufawkes-runner
+# The .NET runtime's own OS dependencies (ICU, OpenSSL, ...), then drop apt's lists.
+apt-get update
+/opt/ufawkes-runner/bin/installdependencies.sh
+rm -rf /var/lib/apt/lists/*
+SH
+COPY entrypoints/runner.sh /usr/local/bin/runner.sh
