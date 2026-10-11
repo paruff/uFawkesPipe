@@ -30,6 +30,44 @@ fetch actions-runner "$TARGETARCH" "https://github.com/actions/runner/releases/d
 fetch semgrep-rules any "https://github.com/semgrep/semgrep-rules/archive/@V@.tar.gz" /out/semgrep-rules/rules.tgz
 SH
 
-# Task 5 assembles the final image from /out; until then, building it proves the verify stage.
 FROM base AS final
-COPY --from=fetch /out /opt/ufawkes-ci/verified
+SHELL ["/bin/bash", "-euxo", "pipefail", "-c"]
+COPY runner.lock /tmp/runner.lock
+COPY python/requirements.lock /tmp/requirements.lock
+
+# semgrep: hash-locked into core's venv (spec R3; same discipline as core's lock).
+RUN uv pip install --python /opt/ufawkes/venv/bin/python --require-hashes -r /tmp/requirements.lock \
+ && ln -s /opt/ufawkes/venv/bin/semgrep /usr/local/bin/semgrep
+
+# Vendored ruleset, offline (spec §3): the CI-themed directories of the pinned
+# semgrep-rules commit. The registry's p/ci pack is defined server-side and
+# cannot be rebuilt from the repository, so this approximates it.
+RUN --mount=type=bind,from=fetch,source=/out/semgrep-rules,target=/in <<'SH'
+set -euxo pipefail
+mkdir -p /opt/ufawkes/semgrep-rules
+# curl-eval.yaml: its Bash pattern does not parse under the pinned engine (1.179.0),
+# and with --error one unparseable rule makes every scan exit 2. Re-test on each bump.
+tar -xzf /in/rules.tgz -C /opt/ufawkes/semgrep-rules --strip-components=1 \
+  --exclude='*/yaml/github-actions/security/curl-eval.yaml' \
+  --wildcards '*/generic/ci' '*/yaml/github-actions' '*/dockerfile' '*/bash'
+find /opt/ufawkes/semgrep-rules -name '*.yaml' | grep -q .
+# A clean file must scan to exit 0 offline: catches a ruleset the engine cannot load.
+mkdir -p /tmp/clean/.github/workflows
+printf 'on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n' > /tmp/clean/.github/workflows/x.yml
+semgrep scan --config /opt/ufawkes/semgrep-rules --error --metrics=off --disable-version-check --quiet /tmp/clean
+rm -rf /tmp/clean
+SH
+
+# Append to core's manifest (an array of {name, version, sha256, variant}); core's
+# entries stay untouched (spec R3). The runner and docker tooling are appended in
+# the task that installs them.
+RUN <<'SH'
+set -euxo pipefail
+rules="$(jq -r '.tools["semgrep-rules"] | .version + " " + .sha256.any' /tmp/runner.lock)"
+sg="$(sha256sum /tmp/requirements.lock | cut -d' ' -f1)"
+jq --arg sv "$(semgrep --version)" --arg sg "$sg" --arg rv "${rules% *}" --arg rs "${rules#* }" \
+  '. + [{name: "semgrep", version: $sv, sha256: $sg, variant: "ci"}, {name: "semgrep-rules", version: $rv, sha256: $rs, variant: "ci"}]' \
+  /etc/ufawkes/tools.json > /etc/ufawkes/tools.json.new
+chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
+mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
+SH
