@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# pipe-ci — local outage CLI of ufawkes-ci (spec §4.4). Thin wrappers over the
+# preinstalled toolchain, run from the mounted workspace (-v "$PWD:/src" -w /src).
+# Each subcommand exits with the underlying tool's code; nothing is swallowed.
+#
+# Exit codes of its own: 64 unknown subcommand, 66 no unit-test entrypoint found.
+set -euo pipefail
+
+RULES=/opt/ufawkes/semgrep-rules
+
+usage() {
+  cat >&2 << 'USAGE'
+usage: pipe-ci <subcommand> [args]
+  pre-commit [--stages s1,s2]  pre-commit run --all-files (default: the repo's default stages)
+  pre-push [base]              pre-commit over base..HEAD (default base: origin/main)
+  preflight                    pre-commit --all-files, then the commit-msg check on HEAD
+  lint                         actionlint, shellcheck, hadolint, ruff on the files that exist
+  security                     gitleaks + trivy fs + semgrep (local ruleset, offline)
+  unit                         make test, or scripts/run-unit-tests.sh
+  exec <cmd...>                run any command in the image environment
+USAGE
+}
+
+run_pre_commit() { # run_pre_commit [stage...] -> pre-commit once per stage (once if none)
+  if [[ $# -eq 0 ]]; then
+    pre-commit run --all-files
+    return
+  fi
+  local stage
+  for stage in "$@"; do
+    pre-commit run --all-files --hook-stage "${stage}"
+  done
+}
+
+cmd_pre_commit() {
+  local stages=()
+  if [[ "${1:-}" == "--stages" ]]; then
+    IFS=',' read -r -a stages <<< "${2:?--stages needs a comma-separated list}"
+  fi
+  run_pre_commit "${stages[@]}"
+}
+
+cmd_preflight() {
+  pre-commit run --all-files
+  local msg
+  msg="$(mktemp)"
+  git log -1 --format=%B > "${msg}"
+  pre-commit run --hook-stage commit-msg --commit-msg-filename "${msg}"
+}
+
+cmd_lint() { # every linter runs; the exit code is non-zero if any failed
+  local rc=0 files
+  files="$(git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml')"
+  if [[ -n "${files}" ]]; then
+    # shellcheck disable=SC2086  # one argument per file; paths have no spaces
+    actionlint ${files} || rc=1
+  fi
+  files="$(git ls-files '*.sh')"
+  if [[ -n "${files}" ]]; then
+    # shellcheck disable=SC2086
+    shellcheck --severity=warning ${files} || rc=1
+  fi
+  files="$(git ls-files '*Dockerfile' 'Dockerfile*')"
+  if [[ -n "${files}" ]]; then
+    # shellcheck disable=SC2086
+    hadolint ${files} || rc=1
+  fi
+  if [[ -n "$(git ls-files '*.py')" ]]; then
+    ruff check . || rc=1
+  fi
+  return "${rc}"
+}
+
+cmd_security() {
+  gitleaks detect --no-banner --redact
+  # Offline by design: the vulnerability DB was baked into the image at build time.
+  trivy fs --skip-db-update --skip-java-db-update --exit-code 1 --severity HIGH,CRITICAL .
+  semgrep scan --config "${RULES}" --error --metrics=off --disable-version-check .
+}
+
+cmd_unit() {
+  if [[ -f Makefile ]] && make -n test > /dev/null 2>&1; then
+    make test
+  elif [[ -x scripts/run-unit-tests.sh ]]; then
+    scripts/run-unit-tests.sh
+  else
+    echo "pipe-ci: no unit-test entrypoint (a 'test' make target or scripts/run-unit-tests.sh)" >&2
+    return 66
+  fi
+}
+
+sub="${1:-}"
+[[ $# -gt 0 ]] && shift
+case "${sub}" in
+  pre-commit) cmd_pre_commit "$@" ;;
+  pre-push) pre-commit run --from-ref "${1:-origin/main}" --to-ref HEAD ;;
+  preflight) cmd_preflight ;;
+  lint) cmd_lint ;;
+  security) cmd_security ;;
+  unit) cmd_unit ;;
+  exec)
+    [[ $# -gt 0 ]] || {
+      usage
+      exit 64
+    }
+    exec "$@"
+    ;;
+  *)
+    usage
+    exit 64
+    ;;
+esac

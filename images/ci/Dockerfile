@@ -84,3 +84,8 @@ apt-get update
 rm -rf /var/lib/apt/lists/*
 SH
 COPY entrypoints/runner.sh /usr/local/bin/runner.sh
+
+# Trivy's vulnerability DB, baked in so `pipe-ci security` works with no network
+# (spec AC2). It is as old as the image: a rebuild refreshes it. Java DB is not baked.
+RUN trivy image --download-db-only
+COPY entrypoints/pipe-ci /usr/local/bin/pipe-ci
