@@ -89,3 +89,19 @@ COPY entrypoints/runner.sh /usr/local/bin/runner.sh
 # (spec AC2). It is as old as the image: a rebuild refreshes it. Java DB is not baked.
 RUN trivy image --download-db-only
 COPY entrypoints/pipe-ci /usr/local/bin/pipe-ci
+
+# docker CLI and compose from the verified downloads, then the rest of the manifest.
+RUN --mount=type=bind,from=fetch,source=/out,target=/in <<'SH'
+set -euxo pipefail
+tar -xzf /in/docker-cli/docker.tgz -C /usr/local/bin --strip-components=1 docker/docker
+mkdir -p /usr/local/lib/docker/cli-plugins
+install -m 0755 /in/docker-compose/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+jq -c --argjson lock "$(cat /tmp/runner.lock)" --arg arch "$(dpkg --print-architecture)" '
+  def entry($n): {name: $n, version: $lock.tools[$n].version, sha256: $lock.tools[$n].sha256[$arch], variant: "ci"};
+  . + [entry("actions-runner"), entry("docker-cli"), entry("docker-compose")]' \
+  /etc/ufawkes/tools.json > /etc/ufawkes/tools.json.new
+chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
+mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
+SH
+
+CMD ["bash"]

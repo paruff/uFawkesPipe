@@ -7,11 +7,14 @@
 set -euo pipefail
 
 RULES=/opt/ufawkes/semgrep-rules
+BASELINE=/opt/ufawkes/pre-commit/baseline.yaml
 
 usage() {
   cat >&2 << 'USAGE'
 usage: pipe-ci <subcommand> [args]
-  pre-commit [--stages s1,s2]  pre-commit run --all-files (default: the repo's default stages)
+  pre-commit [--baseline] [--stages s1,s2]
+                               pre-commit run --all-files (default: the repo's default stages).
+                               --baseline: core's baseline hooks (language: system), no network needed
   pre-push [base]              pre-commit over base..HEAD (default base: origin/main)
   preflight                    pre-commit --all-files, then the commit-msg check on HEAD
   lint                         actionlint, shellcheck, hadolint, ruff on the files that exist
@@ -21,23 +24,38 @@ usage: pipe-ci <subcommand> [args]
 USAGE
 }
 
-run_pre_commit() { # run_pre_commit [stage...] -> pre-commit once per stage (once if none)
+run_pre_commit() { # run_pre_commit <config-args> [stage...] -> once per stage (once if none)
+  local config="$1"
+  shift
+  local -a args=()
+  [[ -n "${config}" ]] && args=(-c "${config}")
   if [[ $# -eq 0 ]]; then
-    pre-commit run --all-files
+    pre-commit run "${args[@]}" --all-files
     return
   fi
   local stage
   for stage in "$@"; do
-    pre-commit run --all-files --hook-stage "${stage}"
+    pre-commit run "${args[@]}" --all-files --hook-stage "${stage}"
   done
 }
 
 cmd_pre_commit() {
-  local stages=()
-  if [[ "${1:-}" == "--stages" ]]; then
-    IFS=',' read -r -a stages <<< "${2:?--stages needs a comma-separated list}"
-  fi
-  run_pre_commit "${stages[@]}"
+  local config="" stages=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --baseline) config="${BASELINE}" ;;
+      --stages)
+        IFS=',' read -r -a stages <<< "${2:?--stages needs a comma-separated list}"
+        shift
+        ;;
+      *)
+        usage
+        return 64
+        ;;
+    esac
+    shift
+  done
+  run_pre_commit "${config}" "${stages[@]}"
 }
 
 cmd_preflight() {
