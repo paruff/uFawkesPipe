@@ -233,7 +233,8 @@ jobs:
       # ── Cleanup ───────────────────────────────────────────────────────────
       - name: Stop nim-proxy
         if: always() && steps.nim_proxy.outputs.started == 'true'
-        run: docker stop nim-proxy && docker rm nim-proxy || true
+        # -f stops it and ignores a container that is already gone
+        run: docker rm -f nim-proxy
 
       - name: "job-finish"
         if: always()
