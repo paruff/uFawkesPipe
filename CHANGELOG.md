@@ -5,6 +5,26 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.13.1-beta.1...v1.14.0-beta.1) (2026-10-12)
+
+
+### Added
+
+* **ci-image:** ufawkes-ci image with verified fetch, semgrep, runner and pipe-ci (PR A of [#166](https://github.com/paruff/uFawkesPipe/issues/166)) ([#170](https://github.com/paruff/uFawkesPipe/issues/170)) ([bcb03f4](https://github.com/paruff/uFawkesPipe/commit/bcb03f4a358dceacf17a26fb37945ff753b47aa1))
+* **ci:** dispatch-gated runner input for reusable pre-flight ([#171](https://github.com/paruff/uFawkesPipe/issues/171)) ([ea5ef23](https://github.com/paruff/uFawkesPipe/commit/ea5ef232e49dc1667142400326a473f1e32e743c))
+* **ci:** publish ufawkes-ci image with signing and gates ([#172](https://github.com/paruff/uFawkesPipe/issues/172)) ([b47e8b0](https://github.com/paruff/uFawkesPipe/commit/b47e8b017266932a529cdbcaf6892b02cd86dbb6))
+
+
+### Fixed
+
+* **ci-image:** gate what the image adds, report fawkes-core's findings ([#175](https://github.com/paruff/uFawkesPipe/issues/175)) ([634c8ad](https://github.com/paruff/uFawkesPipe/commit/634c8add503be11a16c9ebef856496aa604e8d2a))
+* **ci:** stop the nim-proxy with docker rm -f instead of || true ([#180](https://github.com/paruff/uFawkesPipe/issues/180)) ([#168](https://github.com/paruff/uFawkesPipe/issues/168)) ([bd29634](https://github.com/paruff/uFawkesPipe/commit/bd29634985cbd78128cc80ce2e75819218e807fe))
+
+
+### Chores
+
+* **deps:** bump trufflesecurity/trufflehog from 3.97.9 to 3.98.0 ([#174](https://github.com/paruff/uFawkesPipe/issues/174)) ([129c58a](https://github.com/paruff/uFawkesPipe/commit/129c58ace20e8b1061ed41327f231dd441978191))
+
 ## [1.13.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.13.0-beta.1...v1.13.1-beta.1) (2026-10-10)
 
 
