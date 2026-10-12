@@ -17,3 +17,13 @@ updates:
         patterns: ["*"]
     cooldown:
       default-days: 7
+  # ufawkes-ci is built FROM a fawkes-core digest; Dependabot proposes newer digests.
+  # Merge only after the build-ci-image workflow's verify job passes.
+  - package-ecosystem: "docker"
+    directory: "/images/ci"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    cooldown:
+      default-days: 7
