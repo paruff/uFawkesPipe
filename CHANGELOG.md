@@ -5,6 +5,20 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.14.0-beta.1...v1.15.0-beta.1) (2026-10-12)
+
+
+### Added
+
+* **ci-image:** record the fawkes-core digest; add pipe-ci release-match ([#178](https://github.com/paruff/uFawkesPipe/issues/178)) ([1d6309b](https://github.com/paruff/uFawkesPipe/commit/1d6309b0ce23f4a61e550a8bb81f626a3b19cf78))
+* **ci:** check CI image and devcontainer are from one release ([#180](https://github.com/paruff/uFawkesPipe/issues/180)) ([cc2c171](https://github.com/paruff/uFawkesPipe/commit/cc2c171f2db533ece05355ce586f85040e302cbc))
+* **ci:** run pre-flight's hook stages in the digest-pinned CI image ([#176](https://github.com/paruff/uFawkesPipe/issues/176)) ([f2ccc88](https://github.com/paruff/uFawkesPipe/commit/f2ccc88f5c715259259bce7e67c1c4040e3924c3))
+
+
+### Docs
+
+* **ci:** the released reusables' contract; scripts/suite-bump.sh ([#179](https://github.com/paruff/uFawkesPipe/issues/179)) ([b78bd82](https://github.com/paruff/uFawkesPipe/commit/b78bd824a80df470042d1ffbf33a595ae1ee43bf))
+
 ## [1.14.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.13.1-beta.1...v1.14.0-beta.1) (2026-10-12)
 
 
