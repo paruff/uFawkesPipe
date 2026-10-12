@@ -50,7 +50,9 @@ mkdir -p /opt/ufawkes/semgrep-rules
 tar -xzf /in/rules.tgz -C /opt/ufawkes/semgrep-rules --strip-components=1 \
   --exclude='*/yaml/github-actions/security/curl-eval.yaml' \
   --wildcards '*/generic/ci' '*/yaml/github-actions' '*/dockerfile' '*/bash'
-find /opt/ufawkes/semgrep-rules -name '*.yaml' | grep -q .
+# -quit, not `| grep -q .`: grep exits at the first match, find can then die of SIGPIPE, and
+# pipefail turns that into a build failure that depends on timing.
+test -n "$(find /opt/ufawkes/semgrep-rules -name '*.yaml' -print -quit)"
 # A clean file must scan to exit 0 offline: catches a ruleset the engine cannot load.
 mkdir -p /tmp/clean/.github/workflows
 printf 'on: push\njobs:\n  j:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello\n' > /tmp/clean/.github/workflows/x.yml
