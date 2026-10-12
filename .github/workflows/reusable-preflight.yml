@@ -46,6 +46,15 @@ on:
         required: false
         type: string
         default: ""
+      check-release-match:
+        description: >-
+          With ci-image set, fail unless the CI image and the repo's devcontainer come
+          from one uFawkesAI release: the fawkes-core the image is built on must be the
+          fawkes-core of the fawkes-space the devcontainer pins (ci-pipeline spec R4).
+          A repo with no devcontainer must set this to false.
+        required: false
+        type: boolean
+        default: true
     outputs:
       result:
         description: "Preflight result (pass/fail)"
@@ -99,6 +108,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+
+      # ── One uFawkesAI release for CI and for development (spec R4) ───────────
+      - name: CI image and devcontainer come from one release
+        if: inputs.ci-image != '' && inputs.check-release-match
+        run: pipe-ci release-match
 
       # ── Emergency Bypass Check ──────────────────────────────────────────────
       - name: Check emergency bypass
