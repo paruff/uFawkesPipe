@@ -91,6 +91,10 @@ class TestWorkflowValidation:
             "hadolint/",
             "lycheeverse/",
             "trufflesecurity/",
+            # build-ci-image.yml: Docker's own build/login/metadata actions and
+            # sigstore's cosign installer, as in uFawkesAI's image workflow.
+            "docker/",
+            "sigstore/",
         ]
         for f in workflow_files:
             with open(f) as fh:
