@@ -25,6 +25,9 @@ core="$(names "${base}")"
 img="$(names "${IMAGE}")"
 missing="$(comm -23 <(echo "${core}") <(echo "${img}") | tr '\n' ' ')"
 [[ -z "${missing}" ]] && ok "no core entry missing" || bad "core entries missing: ${missing}"
+want="$(sed -n 's/^FROM ghcr.io\/paruff\/fawkes-core@\(sha256:[0-9a-f]\{64\}\) AS base$/\1/p' "${HERE}/../Dockerfile")"
+got="$(docker run --rm "${IMAGE}" cat /etc/ufawkes/ci-base-digest)"
+[[ -n "${want}" && "${got}" == "${want}" ]] && ok "ci-base-digest is the Dockerfile's FROM digest" || bad "ci-base-digest '${got}' != FROM '${want}'"
 for n in actions-runner docker-cli docker-compose semgrep semgrep-rules; do
   grep -qx "${n}" <<< "${img}" && ok "manifest has ${n}" || bad "manifest lacks ${n}"
 done

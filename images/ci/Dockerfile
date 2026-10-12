@@ -104,4 +104,16 @@ chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
 mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
 SH
 
+# The fawkes-core digest this image is built FROM, readable at run time so a caller's
+# Pre-flight can check it against the release its devcontainer pins (ci-pipeline R4).
+# Read from the FROM line above, so it cannot drift from it.
+COPY Dockerfile /tmp/Dockerfile
+RUN <<'SH'
+set -euxo pipefail
+d="$(sed -n 's/^FROM ghcr.io\/paruff\/fawkes-core@\(sha256:[0-9a-f]\{64\}\) AS base$/\1/p' /tmp/Dockerfile)"
+test -n "${d}"
+printf '%s\n' "${d}" > /etc/ufawkes/ci-base-digest
+rm /tmp/Dockerfile
+SH
+
 CMD ["bash"]
