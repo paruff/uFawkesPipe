@@ -43,7 +43,9 @@ class TestSuiteBumpRewrite:
         )
         assert f"@{NEW} # v9.9.9" in text
 
-    def test_adds_a_comment_where_there_was_none_and_keeps_wide_spacing_out(self, tmp_path):
+    def test_adds_a_comment_where_there_was_none_and_keeps_wide_spacing_out(
+        self, tmp_path
+    ):
         _, text = rewrite(
             tmp_path,
             f"    uses: paruff/uFawkesPipe/.github/workflows/reusable-tests.yml@{OLD}  # v1.2.1\n",
