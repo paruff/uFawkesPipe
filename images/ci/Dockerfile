@@ -37,6 +37,10 @@ fetch kubectl "$TARGETARCH" "https://dl.k8s.io/release/v@V@/bin/linux/${TARGETAR
 fetch helm "$TARGETARCH" "https://get.helm.sh/helm-v@V@-linux-${TARGETARCH}.tar.gz" /out/helm/helm.tgz
 fetch kubeconform "$TARGETARCH" "https://github.com/yannh/kubeconform/releases/download/v@V@/kubeconform-linux-${TARGETARCH}.tar.gz" /out/kubeconform/kubeconform.tgz
 fetch kustomize "$TARGETARCH" "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv@V@/kustomize_v@V@_linux_${TARGETARCH}.tar.gz" /out/kustomize/kustomize.tgz
+# Supply-chain tools for the SBOM, image-signing and policy reusables (they run in this image).
+fetch syft "$TARGETARCH" "https://github.com/anchore/syft/releases/download/v@V@/syft_@V@_linux_${TARGETARCH}.tar.gz" /out/syft/syft.tgz
+fetch conftest "$TARGETARCH" "https://github.com/open-policy-agent/conftest/releases/download/v@V@/conftest_@V@_Linux_$([[ "$TARGETARCH" == amd64 ]] && echo x86_64 || echo arm64).tar.gz" /out/conftest/conftest.tgz
+fetch cosign "$TARGETARCH" "https://github.com/sigstore/cosign/releases/download/v@V@/cosign-linux-${TARGETARCH}" /out/cosign/cosign
 fetch argocd "$TARGETARCH" "https://github.com/argoproj/argo-cd/releases/download/v@V@/argocd-linux-${TARGETARCH}" /out/argocd/argocd
 SH
 
@@ -123,13 +127,16 @@ set -euxo pipefail
 /opt/ufawkes/venv/bin/python -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extract(sys.argv[2], "/usr/local/bin")' /in/tflint/tflint.zip tflint
 install -m 0755 /in/kubectl/kubectl /usr/local/bin/kubectl
 install -m 0755 /in/argocd/argocd /usr/local/bin/argocd
+install -m 0755 /in/cosign/cosign /usr/local/bin/cosign
+tar -xzf /in/syft/syft.tgz -C /usr/local/bin syft
+tar -xzf /in/conftest/conftest.tgz -C /usr/local/bin conftest
 tar -xzf /in/helm/helm.tgz -C /usr/local/bin --strip-components=1 "linux-$(dpkg --print-architecture)/helm"
 tar -xzf /in/kubeconform/kubeconform.tgz -C /usr/local/bin kubeconform
 tar -xzf /in/kustomize/kustomize.tgz -C /usr/local/bin kustomize
-chmod 0755 /usr/local/bin/terraform /usr/local/bin/tflint /usr/local/bin/helm /usr/local/bin/kubeconform /usr/local/bin/kustomize
+chmod 0755 /usr/local/bin/syft /usr/local/bin/conftest /usr/local/bin/terraform /usr/local/bin/tflint /usr/local/bin/helm /usr/local/bin/kubeconform /usr/local/bin/kustomize
 jq -c --argjson lock "$(cat /tmp/runner.lock)" --arg arch "$(dpkg --print-architecture)" '
   def entry($n): {name: $n, version: $lock.tools[$n].version, sha256: $lock.tools[$n].sha256[$arch], variant: "ci"};
-  . + [entry("terraform"), entry("tflint"), entry("kubectl"), entry("helm"), entry("kubeconform"), entry("kustomize"), entry("argocd")]' \
+  . + [entry("terraform"), entry("tflint"), entry("kubectl"), entry("helm"), entry("kubeconform"), entry("kustomize"), entry("argocd"), entry("syft"), entry("conftest"), entry("cosign")]' \
   /etc/ufawkes/tools.json > /etc/ufawkes/tools.json.new
 chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
 mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json

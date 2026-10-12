@@ -28,14 +28,14 @@ missing="$(comm -23 <(echo "${core}") <(echo "${img}") | tr '\n' ' ')"
 want="$(sed -n 's/^FROM ghcr.io\/paruff\/fawkes-core@\(sha256:[0-9a-f]\{64\}\) AS base$/\1/p' "${HERE}/../Dockerfile")"
 got="$(docker run --rm "${IMAGE}" cat /etc/ufawkes/ci-base-digest)"
 [[ -n "${want}" && "${got}" == "${want}" ]] && ok "ci-base-digest is the Dockerfile's FROM digest" || bad "ci-base-digest '${got}' != FROM '${want}'"
-for n in actions-runner docker-cli docker-compose semgrep semgrep-rules terraform tflint kubectl helm kubeconform kustomize argocd; do
+for n in actions-runner docker-cli docker-compose semgrep semgrep-rules terraform tflint kubectl helm kubeconform kustomize argocd syft conftest cosign; do
   grep -qx "${n}" <<< "${img}" && ok "manifest has ${n}" || bad "manifest lacks ${n}"
 done
 
 echo "Infrastructure tools run"
 rc=0
-docker run --rm "${IMAGE}" bash -c 'terraform version && tflint --version && kubectl version --client && helm version --short && kubeconform -v && kustomize version && argocd version --client --short' > /dev/null 2>&1 || rc=$?
-expect "terraform, tflint, kubectl, helm, kubeconform, kustomize and argocd run" 0 "${rc}"
+docker run --rm "${IMAGE}" bash -c 'terraform version && tflint --version && kubectl version --client && helm version --short && kubeconform -v && kustomize version && argocd version --client --short && syft version && conftest --version && cosign version' > /dev/null 2>&1 || rc=$?
+expect "terraform, tflint, kubectl, helm, kubeconform, kustomize, argocd, syft, conftest and cosign run" 0 "${rc}"
 
 echo "Runner entrypoint (AC9)"
 rc=0

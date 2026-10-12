@@ -7,7 +7,8 @@
 #
 # Gated: docker CLI, docker compose, the Actions runner, and the Python
 # packages in the semgrep lock. Reported, not gated: the infrastructure tools (terraform,
-# tflint, kubectl, helm, kubeconform, kustomize, argocd). They are third-party Go binaries kept
+# tflint, kubectl, helm, kubeconform, kustomize, argocd) and the supply-chain tools (syft,
+# conftest, cosign). They are third-party Go binaries kept
 # at their newest release, and what remains is upstream's to fix. A finding there fails unless exceptions.json
 # lists its CVE and target with an `expires` date that has not passed; an
 # expired exception stops covering, so the gate comes back on by itself.
