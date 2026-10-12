@@ -172,6 +172,44 @@ step (see [docs/policy-guide.md](docs/policy-guide.md)).
 
 Full details: [QUICKSTART.md](QUICKSTART.md)
 
+## 🔗 The Released Reusable Workflows (the suite contract)
+
+uFawkesPipe owns every reusable workflow the suite shares and publishes them under a release tag
+(cut by release-please; tags are currently pre-releases, `v1.x.y-beta.N`). A suite repo **calls them
+at the commit SHA of a release tag, with the tag as a comment**, and keeps no copy of them:
+
+```yaml
+jobs:
+  preflight:
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@<40-hex SHA of the tag> # v1.14.0-beta.1
+```
+
+| Reusable | Does | Inputs |
+| --- | --- | --- |
+| `reusable-preflight.yml` | The repo's pre-commit hooks at the `pre-commit` and `pre-push` stages, PR size, commit format | `pr-size-limit`, `commit-format`, `emergency-bypass`, `timeout-minutes`, `skip-hooks`, `runner`, `ci-image` |
+| `reusable-lint.yml` | Language linters | `languages`, `auto-detect`, `fail-on-warning`, `emergency-bypass`, `timeout-minutes` |
+| `reusable-security-scanning.yml` | Secret scanning, Trivy, dependency scans, SARIF upload | `scan-type`, `scan-path`, `severity-threshold`, `fail-on-critical`, `upload-sarif`, `gitleaks-config` |
+| `reusable-dependency-review.yml` | Dependency review on pull requests | `fail-on-severity`, `comment-summary-in-pr`, `base-ref`, `head-ref`, `deny-licenses` |
+| `reusable-build.yml` | Build and validate (observability stack config, image pins, coverage gate) | `validate-*`, `*-image`, `fail-on-latest`, `allow-latest`, `enable-coverage-gate`, `coverage-threshold`, `python-version`, `coverage-paths` |
+| `reusable-tests.yml` | Test tiers (unit, integration, health checks) | `test-tiers`, `python-version`, `run-unit`, `unit-test-command`, `integration-test-command`, `compose-profile`, `compose-file`, `health-endpoints`, `coverage-threshold`, `coverage-paths`, `setup-command` |
+| `reusable-rollback.yml` | Roll a deploy back | `deploy-path`, `restart-command` |
+| `reusable-main-ci-guard.yml` | Fails a PR while `main`'s last CI run is red | `workflow-id`, `workflow-name` |
+
+Read the `workflow_call` block of a reusable for the exact types and defaults; they are the contract.
+Every reusable's gate steps fail when their check fails (ci-pipeline spec R5).
+
+**Hook stages in the CI image.** Pass `ci-image: ghcr.io/paruff/ufawkes-ci@sha256:<digest>` to
+`reusable-preflight.yml` and its hook stages run in that container, with the same toolchain as a laptop
+(spec R4). The ref must be this repo's image **by digest**; anything else fails the job. The image is
+signed (cosign, keyless): `cosign verify ghcr.io/paruff/ufawkes-ci@<digest> --certificate-identity-regexp '^https://github.com/paruff/uFawkesPipe/' --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
+
+**Self-hosted runner.** `runner` is honoured only when the caller was triggered by `workflow_dispatch`;
+every other event runs on `ubuntu-latest`, whatever is passed.
+
+**Moving the suite to a new release.** `scripts/suite-bump.sh <tag> [--dry-run] [repo...]` rewrites every
+Pipe call in each suite repo to the tag's SHA and opens one PR per repo; `--dry-run` shows the diff and
+pushes nothing.
+
 ## 📖 Pipeline Contract Reference
 
 The `.fawkespipe.yml` file is the standard pipeline contract that defines how your application is built, tested, scanned, and deployed. It is placed at the root of your application repository.
