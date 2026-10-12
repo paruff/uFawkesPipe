@@ -54,6 +54,10 @@ expect "an exception is for one target: same CVE elsewhere is not covered" 1 \
   "$(report "$(result usr/local/bin/docker gobinary "$(vuln CVE-1 stdlib)")" && gate X=1)"
 report "$(result usr/local/bin/gitleaks gobinary "$(vuln CVE-9 stdlib)")" "$(result "ufawkes-ci:ci (debian 13.7)" debian "$(vuln CVE-8 openssl)")"
 expect "findings in fawkes-core's tools and the Debian base are reported, not gated" 0 "$(gate X=1)"
+for tool in terraform tflint kubectl helm kubeconform kustomize argocd; do
+  report "$(result "usr/local/bin/${tool}" gobinary "$(vuln CVE-7 stdlib)")"
+  expect "a finding in ${tool} is reported, not gated" 0 "$(gate X=1)"
+done
 report "$(result "Python" python-pkg "$(vuln CVE-2 semgrep)")"
 expect "a Python package in semgrep's lock is gated" 1 "$(gate X=1)"
 report "$(result "Python" python-pkg "$(vuln CVE-3 pre-commit)")"
