@@ -67,6 +67,11 @@ jobs:
     # leaves the job on the host, where the first step fails it loudly rather than
     # pulling and running an image nobody vetted.
     container: ${{ startsWith(inputs.ci-image, 'ghcr.io/paruff/ufawkes-ci@sha256:') && inputs.ci-image || null }}
+    # A host runner runs `run:` steps with `bash -e {0}`; a job container defaults to
+    # `sh`, which has no [[ ]]. Spell out the host default so both behave the same.
+    defaults:
+      run:
+        shell: bash -e {0}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
       result: ${{ steps.outcome.outputs.result }}
