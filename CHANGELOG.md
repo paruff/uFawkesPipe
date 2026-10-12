@@ -5,6 +5,13 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.15.0-beta.1...v1.15.1-beta.1) (2026-10-12)
+
+
+### Chores
+
+* **ci:** call the released reusables at v1.15.0-beta.1 ([#181](https://github.com/paruff/uFawkesPipe/issues/181)) ([#181](https://github.com/paruff/uFawkesPipe/issues/181)) ([110a55d](https://github.com/paruff/uFawkesPipe/commit/110a55d0b8bcc617228e0458344269f1a49203d5))
+
 ## [1.15.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.14.0-beta.1...v1.15.0-beta.1) (2026-10-12)
 
 
