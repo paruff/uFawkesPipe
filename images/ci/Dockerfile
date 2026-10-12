@@ -28,6 +28,16 @@ fetch docker-cli "$TARGETARCH" "https://download.docker.com/linux/static/stable/
 fetch docker-compose "$TARGETARCH" "https://github.com/docker/compose/releases/download/v@V@/docker-compose-linux-${docker_arch}" /out/docker-compose/docker-compose
 fetch actions-runner "$TARGETARCH" "https://github.com/actions/runner/releases/download/v@V@/actions-runner-linux-${runner_arch}-@V@.tar.gz" /out/actions-runner/runner.tgz
 fetch semgrep-rules any "https://github.com/semgrep/semgrep-rules/archive/@V@.tar.gz" /out/semgrep-rules/rules.tgz
+# Infrastructure tools (fawkes's Terraform, Kubernetes and ArgoCD hooks). Each publisher's own
+# checksum file was compared with the pins in runner.lock when they were added. No tfsec: it
+# joined Trivy, which the image already has (`trivy config`).
+fetch terraform "$TARGETARCH" "https://releases.hashicorp.com/terraform/@V@/terraform_@V@_linux_${TARGETARCH}.zip" /out/terraform/terraform.zip
+fetch tflint "$TARGETARCH" "https://github.com/terraform-linters/tflint/releases/download/v@V@/tflint_linux_${TARGETARCH}.zip" /out/tflint/tflint.zip
+fetch kubectl "$TARGETARCH" "https://dl.k8s.io/release/v@V@/bin/linux/${TARGETARCH}/kubectl" /out/kubectl/kubectl
+fetch helm "$TARGETARCH" "https://get.helm.sh/helm-v@V@-linux-${TARGETARCH}.tar.gz" /out/helm/helm.tgz
+fetch kubeconform "$TARGETARCH" "https://github.com/yannh/kubeconform/releases/download/v@V@/kubeconform-linux-${TARGETARCH}.tar.gz" /out/kubeconform/kubeconform.tgz
+fetch kustomize "$TARGETARCH" "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv@V@/kustomize_v@V@_linux_${TARGETARCH}.tar.gz" /out/kustomize/kustomize.tgz
+fetch argocd "$TARGETARCH" "https://github.com/argoproj/argo-cd/releases/download/v@V@/argocd-linux-${TARGETARCH}" /out/argocd/argocd
 SH
 
 FROM base AS final
@@ -101,6 +111,25 @@ install -m 0755 /in/docker-compose/docker-compose /usr/local/lib/docker/cli-plug
 jq -c --argjson lock "$(cat /tmp/runner.lock)" --arg arch "$(dpkg --print-architecture)" '
   def entry($n): {name: $n, version: $lock.tools[$n].version, sha256: $lock.tools[$n].sha256[$arch], variant: "ci"};
   . + [entry("actions-runner"), entry("docker-cli"), entry("docker-compose")]' \
+  /etc/ufawkes/tools.json > /etc/ufawkes/tools.json.new
+chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
+mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
+SH
+
+# The infrastructure tools, from the verified downloads, and their manifest entries.
+RUN --mount=type=bind,from=fetch,source=/out,target=/in <<'SH'
+set -euxo pipefail
+/opt/ufawkes/venv/bin/python -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extract(sys.argv[2], "/usr/local/bin")' /in/terraform/terraform.zip terraform
+/opt/ufawkes/venv/bin/python -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extract(sys.argv[2], "/usr/local/bin")' /in/tflint/tflint.zip tflint
+install -m 0755 /in/kubectl/kubectl /usr/local/bin/kubectl
+install -m 0755 /in/argocd/argocd /usr/local/bin/argocd
+tar -xzf /in/helm/helm.tgz -C /usr/local/bin --strip-components=1 "linux-$(dpkg --print-architecture)/helm"
+tar -xzf /in/kubeconform/kubeconform.tgz -C /usr/local/bin kubeconform
+tar -xzf /in/kustomize/kustomize.tgz -C /usr/local/bin kustomize
+chmod 0755 /usr/local/bin/terraform /usr/local/bin/tflint /usr/local/bin/helm /usr/local/bin/kubeconform /usr/local/bin/kustomize
+jq -c --argjson lock "$(cat /tmp/runner.lock)" --arg arch "$(dpkg --print-architecture)" '
+  def entry($n): {name: $n, version: $lock.tools[$n].version, sha256: $lock.tools[$n].sha256[$arch], variant: "ci"};
+  . + [entry("terraform"), entry("tflint"), entry("kubectl"), entry("helm"), entry("kubeconform"), entry("kustomize"), entry("argocd")]' \
   /etc/ufawkes/tools.json > /etc/ufawkes/tools.json.new
 chmod --reference=/etc/ufawkes/tools.json /etc/ufawkes/tools.json.new
 mv /etc/ufawkes/tools.json.new /etc/ufawkes/tools.json
