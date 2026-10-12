@@ -1,0 +1,177 @@
+name: Reusable Image Signing
+
+# Signs a pushed container image keylessly (GitHub OIDC) with cosign, attaches a CycloneDX SBOM
+# attestation, and verifies both, in the suite's CI image (ci-pipeline spec R4). Ported from
+# fawkes's local copy, with these differences:
+#   - runs in ci-image (by digest) instead of installing cosign and syft on the runner;
+#   - cosign 3.x (the copy pinned 2.2.3);
+#   - image-digest signs and verifies a digest, not a mutable tag (a tag gets a warning);
+#   - the signer identity is THIS workflow in uFawkesPipe, and the verify step also checks the
+#     signature was made for the calling repo, so images signed through this reusable carry
+#     Pipe's identity, not the caller's;
+#   - the summary prints a strict verify command, not one that accepts any identity.
+
+on:
+  workflow_call:
+    inputs:
+      ci-image:
+        description: >-
+          ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>. Required; a ref without a digest fails the job.
+        required: true
+        type: string
+      image-name:
+        description: "Container image name to sign (owner/name, without the registry)"
+        required: true
+        type: string
+      image-tag:
+        description: "Container image tag"
+        required: false
+        type: string
+        default: "latest"
+      image-digest:
+        description: >-
+          Digest of the image (sha256:...). When set, the digest is signed and verified; when
+          empty the tag is, with a warning, because a tag can move between signing and verifying.
+        required: false
+        type: string
+        default: ""
+      registry:
+        description: "Container registry"
+        required: false
+        type: string
+        default: "ghcr.io"
+      sign-sbom:
+        description: "Also attach and verify a signed CycloneDX SBOM attestation"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      registry-username:
+        description: "Registry username (default: the actor)"
+        required: false
+      registry-password:
+        description: "Registry password (default: no login, for a public image)"
+        required: false
+
+permissions: {} # deny all at workflow level; grant per job below
+
+jobs:
+  sign-image:
+    name: Sign Container Image
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # keyless signing
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: ${{ startsWith(inputs.ci-image, 'ghcr.io/paruff/ufawkes-ci@sha256:') && inputs.ci-image || null }}
+    defaults:
+      run:
+        shell: bash -e {0}
+    env:
+      REGISTRY: ${{ inputs.registry }}
+      IMAGE_NAME: ${{ inputs.image-name }}
+      IMAGE_TAG: ${{ inputs.image-tag }}
+      IMAGE_DIGEST: ${{ inputs.image-digest }}
+    steps:
+      - name: Require a digest-pinned ufawkes-ci image
+        env:
+          CI_IMAGE: ${{ inputs.ci-image }}
+        run: |
+          if ! [[ "$CI_IMAGE" =~ ^ghcr\.io/paruff/ufawkes-ci@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::ci-image must be ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>, got '${CI_IMAGE}'"
+            exit 1
+          fi
+
+      - name: DORA job start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
+      - name: Work out what to sign
+        id: ref
+        run: |
+          if [[ -n "$IMAGE_DIGEST" ]]; then
+            if ! [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+              echo "::error::image-digest must be sha256:<64 hex>, got '${IMAGE_DIGEST}'"
+              exit 1
+            fi
+            echo "ref=${REGISTRY}/${IMAGE_NAME}@${IMAGE_DIGEST}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::signing the tag ${IMAGE_TAG}, not a digest: pass image-digest so what is signed cannot move"
+            echo "ref=${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Log in to the registry
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.registry-password }}
+          REGISTRY_USERNAME: ${{ secrets.registry-username || github.actor }}
+        run: |
+          if [ -n "${REGISTRY_PASSWORD}" ]; then
+            echo "${REGISTRY_PASSWORD}" | docker login "$REGISTRY" -u "${REGISTRY_USERNAME}" --password-stdin
+          else
+            echo "No registry password given: not logging in (fine for a public image, a push-protected one will fail below)."
+          fi
+
+      - name: Sign the image (keyless)
+        env:
+          IMAGE_REF: ${{ steps.ref.outputs.ref }}
+        run: cosign sign --yes "$IMAGE_REF"
+
+      - name: Attach the SBOM attestation
+        if: inputs.sign-sbom
+        env:
+          IMAGE_REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          syft scan "$IMAGE_REF" -o cyclonedx-json=sbom.json
+          cosign attest --yes --predicate sbom.json --type cyclonedx "$IMAGE_REF"
+
+      # Verifies the signature came from THIS reusable workflow, signing for THIS repo, via
+      # GitHub's OIDC issuer. A failed verify fails the job.
+      - name: Verify the signature
+        env:
+          IMAGE_REF: ${{ steps.ref.outputs.ref }}
+          CALLER_REPO: ${{ github.repository }}
+        run: |
+          cosign verify "$IMAGE_REF" \
+            --certificate-identity-regexp '^https://github\.com/paruff/uFawkesPipe/\.github/workflows/reusable-image-signing\.yml@' \
+            --certificate-github-workflow-repository "$CALLER_REPO" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+
+      - name: Verify the SBOM attestation
+        if: inputs.sign-sbom
+        env:
+          IMAGE_REF: ${{ steps.ref.outputs.ref }}
+          CALLER_REPO: ${{ github.repository }}
+        run: |
+          cosign verify-attestation "$IMAGE_REF" --type cyclonedx \
+            --certificate-identity-regexp '^https://github\.com/paruff/uFawkesPipe/\.github/workflows/reusable-image-signing\.yml@' \
+            --certificate-github-workflow-repository "$CALLER_REPO" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+
+      - name: Display signing summary
+        env:
+          IMAGE_REF: ${{ steps.ref.outputs.ref }}
+          SIGN_SBOM_LABEL: ${{ inputs.sign-sbom && 'signed and verified' || 'skipped' }}
+        run: |
+          {
+            echo "### Image Signing Summary"
+            echo ""
+            echo "- **Image**: ${IMAGE_REF}"
+            echo "- **Signing**: keyless (GitHub OIDC), verified"
+            echo "- **SBOM attestation**: ${SIGN_SBOM_LABEL}"
+            echo ""
+            echo "To verify this signature:"
+            echo '```bash'
+            echo "cosign verify ${IMAGE_REF} \\"
+            echo "  --certificate-identity-regexp '^https://github\\.com/paruff/uFawkesPipe/\\.github/workflows/reusable-image-signing\\.yml@' \\"
+            echo "  --certificate-github-workflow-repository ${GITHUB_REPOSITORY} \\"
+            echo "  --certificate-oidc-issuer https://token.actions.githubusercontent.com"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: DORA job finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -1,0 +1,144 @@
+name: Reusable Policy Enforcement
+
+# Checks Kubernetes manifests and Dockerfiles against OPA/Rego policies with conftest, in the
+# suite's CI image (ci-pipeline spec R4). Ported from fawkes's local copy, with these differences:
+#   - runs in ci-image (by digest) instead of installing conftest on the runner;
+#   - a missing or empty policy directory FAILS (set allow-no-policies to accept it). The copy
+#     created an empty directory, skipped every check and passed;
+#   - it checks every Dockerfile (the copy stopped at 20), and files with spaces in the path;
+#   - fail-on-violation=false is advisory: violations become warnings, not a swallowed exit;
+#   - policy-namespaces is gone. The copy accepted it and ignored it (it always ran
+#     --all-namespaces), so an input that did nothing is no longer offered.
+
+on:
+  workflow_call:
+    inputs:
+      ci-image:
+        description: >-
+          ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>. Required; a ref without a digest fails the job.
+        required: true
+        type: string
+      policy-path:
+        description: "Directory of OPA/Rego policy files"
+        required: false
+        type: string
+        default: ".security-plane/policies"
+      target-path:
+        description: "Directory of files to validate against the policies"
+        required: false
+        type: string
+        default: "."
+      fail-on-violation:
+        description: "Fail on a violation (true) or only warn (false)"
+        required: false
+        type: boolean
+        default: true
+      allow-no-policies:
+        description: "Pass when the policy directory has no .rego files (otherwise that fails)"
+        required: false
+        type: boolean
+        default: false
+
+permissions: {} # deny all at workflow level; grant per job below
+
+jobs:
+  enforce-policies:
+    name: Enforce Security Policies
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: ${{ startsWith(inputs.ci-image, 'ghcr.io/paruff/ufawkes-ci@sha256:') && inputs.ci-image || null }}
+    defaults:
+      run:
+        shell: bash -e {0}
+    env:
+      POLICY_PATH: ${{ inputs.policy-path }}
+      TARGET_PATH: ${{ inputs.target-path }}
+      FAIL_ON_VIOLATION: ${{ inputs.fail-on-violation }}
+    steps:
+      - name: Require a digest-pinned ufawkes-ci image
+        env:
+          CI_IMAGE: ${{ inputs.ci-image }}
+        run: |
+          if ! [[ "$CI_IMAGE" =~ ^ghcr\.io/paruff/ufawkes-ci@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::ci-image must be ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>, got '${CI_IMAGE}'"
+            exit 1
+          fi
+
+      - name: DORA job start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Verify policies exist
+        id: verify
+        env:
+          ALLOW_NO_POLICIES: ${{ inputs.allow-no-policies }}
+        run: |
+          count=0
+          if [ -d "$POLICY_PATH" ]; then
+            count="$(find "$POLICY_PATH" -name '*.rego' | wc -l)"
+          fi
+          echo "policy-count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ] && [ "$ALLOW_NO_POLICIES" != "true" ]; then
+            echo "::error::no .rego policies in '${POLICY_PATH}': a policy check with no policies would pass without checking anything (set allow-no-policies to accept that)"
+            exit 1
+          fi
+          echo "Found $count policy files in $POLICY_PATH"
+
+      - name: Check Kubernetes manifests
+        if: steps.verify.outputs.policy-count > 0
+        run: |
+          mapfile -d '' files < <(find "$TARGET_PATH" -type f \( -name '*.yaml' -o -name '*.yml' \) \
+            -not -path '*/node_modules/*' -not -path '*/.github/*' -not -path '*/vendor/*' \
+            -not -path '*/upstream/*' -not -path "$POLICY_PATH/*" -print0)
+          echo "Checking ${#files[@]} YAML files"
+          if [ "${#files[@]}" -eq 0 ]; then exit 0; fi
+          if conftest test "${files[@]}" -p "$POLICY_PATH" --all-namespaces; then
+            echo "✅ All manifests passed policy checks"
+          elif [ "$FAIL_ON_VIOLATION" = "true" ]; then
+            echo "::error::policy violations in Kubernetes manifests"
+            exit 1
+          else
+            echo "::warning::policy violations in Kubernetes manifests (advisory: fail-on-violation is false)"
+          fi
+
+      - name: Check Dockerfiles
+        if: steps.verify.outputs.policy-count > 0
+        run: |
+          mapfile -d '' files < <(find "$TARGET_PATH" -type f -name 'Dockerfile*' \
+            -not -path '*/node_modules/*' -not -path '*/vendor/*' -print0)
+          echo "Checking ${#files[@]} Dockerfiles"
+          if [ "${#files[@]}" -eq 0 ]; then exit 0; fi
+          if conftest test "${files[@]}" -p "$POLICY_PATH" --all-namespaces; then
+            echo "✅ All Dockerfiles passed policy checks"
+          elif [ "$FAIL_ON_VIOLATION" = "true" ]; then
+            echo "::error::policy violations in Dockerfiles"
+            exit 1
+          else
+            echo "::warning::policy violations in Dockerfiles (advisory: fail-on-violation is false)"
+          fi
+
+      - name: Policy report
+        if: always()
+        env:
+          POLICY_COUNT: ${{ steps.verify.outputs.policy-count }}
+          MODE: ${{ inputs.fail-on-violation && 'strict (blocking)' || 'advisory (warnings only)' }}
+        run: |
+          {
+            echo "### Policy Enforcement Summary"
+            echo ""
+            echo "- **Policies**: ${POLICY_COUNT} in ${POLICY_PATH}"
+            echo "- **Target**: ${TARGET_PATH}"
+            echo "- **Enforcement**: ${MODE}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: DORA job finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ok-app
+spec:
+  selector:
+    matchLabels:
+      app: ok-app
+  template:
+    metadata:
+      labels:
+        app: ok-app
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: app
+          image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000000

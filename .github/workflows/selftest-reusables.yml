@@ -8,6 +8,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/reusable-security-scanning.yml"
+      - ".github/workflows/reusable-sbom-generation.yml"
+      - ".github/workflows/reusable-image-signing.yml"
+      - ".github/workflows/reusable-policy-enforcement.yml"
+      - "tests/fixtures/**"
       - ".github/workflows/selftest-reusables.yml"
 
 permissions:
@@ -29,3 +33,31 @@ jobs:
       fail-on-critical: false
       ignore-unfixed: true
       upload-sarif: false
+
+  # The next two run the reusables that execute in ufawkes-ci. The image must be one that has
+  # syft and conftest in it (published from images/ci).
+  sbom:
+    name: sbom-generation scans a source directory
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/reusable-sbom-generation.yml
+    with:
+      ci-image: CI_IMAGE_PLACEHOLDER
+      image-name: selftest
+      scan-target: "dir:tests/fixtures/sbom"
+      upload-artifact: false
+
+  policy:
+    name: policy-enforcement passes a compliant manifest
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-policy-enforcement.yml
+    with:
+      ci-image: CI_IMAGE_PLACEHOLDER
+      policy-path: tests/fixtures/policy/policies
+      target-path: tests/fixtures/policy/ok
+
+# Not exercised here, deliberately: a failing path (a violating manifest, a missing policy
+# directory) would turn this whole workflow red, so those are checked by hand; and image
+# signing needs a pushed image and a real OIDC token, so its first real run is its test.
