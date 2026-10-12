@@ -1,0 +1,31 @@
+name: Reusables self-test
+
+# The suite's pipeline calls the *released* reusables, so a change to one is first
+# exercised after the next release. This runs the changed workflow from the PR itself
+# (the ./ path), for the paths a caller can break.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/reusable-security-scanning.yml"
+      - ".github/workflows/selftest-reusables.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  security-scanning-image:
+    name: security-scanning scans an image
+    # Scans the public CI image by digest. Not a gate on that image's findings
+    # (fail-on-critical is off); it proves the image-ref path runs and reports.
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/reusable-security-scanning.yml
+    with:
+      scan-type: vulnerabilities
+      image-ref: ghcr.io/paruff/ufawkes-ci@sha256:e85db8b3554da7c3362303d0e1e9681997d78093269b641e3535989f9c66f4da
+      severity-threshold: CRITICAL
+      fail-on-critical: false
+      ignore-unfixed: true
+      upload-sarif: false
