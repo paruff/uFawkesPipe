@@ -95,12 +95,21 @@ jobs:
         with:
           sarif_file: scan-out/trivy.sarif
           category: ufawkes-ci
-      - name: Trivy, gate HIGH/CRITICAL with a fix available
+      # Like uFawkesAI's: gate what this repo controls (docker CLI, compose, the
+      # runner, semgrep's dependencies), report the rest. fawkes-core's own tools
+      # and the Debian base are fixed by core's rebuild. See tests/trivy-gate.sh.
+      - name: Trivy gate self-test
+        run: bash images/ci/tests/test-trivy-gate.sh
+      - name: Trivy, gate fixable HIGH/CRITICAL in what this image adds
         run: |
           docker run --rm --user root \
-            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/scan-out:/out" \
             ufawkes-ci:ci trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
-            --exit-code "${GATE_EXIT}" ufawkes-ci:ci
+            --format json --output /out/trivy.json ufawkes-ci:ci
+          args=()
+          [[ "${GATE_EXIT}" == 0 ]] && args=(--report-only)
+          bash images/ci/tests/trivy-gate.sh scan-out/trivy.json images/ci/trivy-exceptions.json \
+            images/ci/python/requirements.lock "${args[@]}"
 
       - name: Manifest and size
         if: always()
