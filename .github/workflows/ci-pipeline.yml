@@ -20,7 +20,7 @@ jobs:
   # ─── Stage 0: Pre-flight ──────────────────────────────────────────────────
   preflight:
     name: Pre-flight
-    uses: ./.github/workflows/reusable-preflight.yml
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
     with:
       pr-size-limit: 0
       # The hook stages run in the suite's CI image (ci-pipeline spec R4).
@@ -30,13 +30,13 @@ jobs:
   lint:
     name: Static Analysis
     needs: [preflight]
-    uses: ./.github/workflows/reusable-lint.yml
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-lint.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
 
   # ─── Stage 2: Security Scanning ─────────────────────────────────────────
   security:
     name: Security Scanning
     needs: [lint]
-    uses: ./.github/workflows/reusable-security-scanning.yml
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-security-scanning.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
     with:
       scan-type: all
       severity-threshold: MEDIUM
@@ -47,7 +47,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     needs: [lint]
-    uses: ./.github/workflows/reusable-dependency-review.yml
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-dependency-review.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
     with:
       fail-on-severity: high
 
@@ -55,7 +55,7 @@ jobs:
   build:
     name: Build & Validate
     needs: [security, dependency-review]
-    uses: ./.github/workflows/reusable-build.yml
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-build.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
     with:
       fail-on-latest: true
       coverage-paths: "tests/unit"
