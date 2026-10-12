@@ -79,6 +79,9 @@ jobs:
             --cache-from "type=gha,scope=ufawkes-ci-${ARCH}" \
             --cache-to "type=gha,mode=max,scope=ufawkes-ci-${ARCH}"
 
+      - name: release-match self-test
+        run: bash images/ci/tests/test-release-match.sh
+
       - name: Verify (tests/verify.sh, offline where the spec says offline)
         run: bash images/ci/tests/verify.sh ufawkes-ci:ci
 

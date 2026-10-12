@@ -3,7 +3,8 @@
 # preinstalled toolchain, run from the mounted workspace (-v "$PWD:/src" -w /src).
 # Each subcommand exits with the underlying tool's code; nothing is swallowed.
 #
-# Exit codes of its own: 64 unknown subcommand, 66 no unit-test entrypoint found.
+# Exit codes of its own: 64 unknown subcommand, 66 no unit-test entrypoint found,
+# 1 release mismatch, 67 release-match could not run (named on stderr).
 set -euo pipefail
 
 RULES=/opt/ufawkes/semgrep-rules
@@ -20,6 +21,8 @@ usage: pipe-ci <subcommand> [args]
   lint                         actionlint, shellcheck, hadolint, ruff on the files that exist
   security                     gitleaks + trivy fs + semgrep (local ruleset, offline)
   unit                         make test, or scripts/run-unit-tests.sh
+  release-match [devcontainer] fail if this image's fawkes-core is not the release the
+                               devcontainer's fawkes-space pins (default .devcontainer/devcontainer.json)
   exec <cmd...>                run any command in the image environment
 USAGE
 }
@@ -96,6 +99,46 @@ cmd_security() {
   semgrep scan --config "${RULES}" --error --metrics=off --disable-version-check .
 }
 
+# The fawkes-core digest this image was built FROM must be the digest of the fawkes-core
+# tagged like the fawkes-space the devcontainer pins: one uFawkesAI release for CI and for
+# development (ci-pipeline spec R4). Reads the public registry; needs network.
+cmd_release_match() {
+  local devcontainer="${1:-.devcontainer/devcontainer.json}"
+  local base_file="${PIPE_CI_BASE_DIGEST_FILE:-/etc/ufawkes/ci-base-digest}"
+  local registry="${PIPE_CI_REGISTRY:-https://ghcr.io}"
+  if [[ ! -f "${devcontainer}" ]]; then
+    echo "pipe-ci: release-match: no ${devcontainer}; nothing to compare" >&2
+    return 67
+  fi
+  [[ -s "${base_file}" ]] || {
+    echo "pipe-ci: release-match: ${base_file} is missing: this image does not record its base" >&2
+    return 67
+  }
+  local have tag want token
+  have="$(< "${base_file}")"
+  # grep exits 1 when nothing matches; an empty tag is reported below, by name.
+  tag="$(grep -oE 'ghcr\.io/paruff/fawkes-space:[0-9A-Za-z._-]+' "${devcontainer}" | head -1 | cut -d: -f2)" || tag=""
+  if [[ -z "${tag}" ]]; then
+    echo "pipe-ci: release-match: ${devcontainer} does not pin ghcr.io/paruff/fawkes-space:<release>" >&2
+    return 67
+  fi
+  token="$(curl -fsSL "${registry}/token?service=ghcr.io&scope=repository:paruff/fawkes-core:pull" | jq -er .token)" || {
+    echo "pipe-ci: release-match: cannot get a registry token" >&2
+    return 67
+  }
+  want="$(curl -fsSI -H "Authorization: Bearer ${token}" \
+    -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.manifest.v1+json" \
+    "${registry}/v2/paruff/fawkes-core/manifests/${tag}" | awk -F': ' 'tolower($1) == "docker-content-digest" {print $2}' | tr -d '\r')" || {
+    echo "pipe-ci: release-match: cannot resolve fawkes-core:${tag}" >&2
+    return 67
+  }
+  if [[ "${have}" != "${want}" ]]; then
+    echo "::error::ufawkes-ci is built on fawkes-core ${have}, but the devcontainer pins fawkes-space:${tag}, whose fawkes-core is ${want:-unknown}. CI and development must come from one uFawkesAI release." >&2
+    return 1
+  fi
+  echo "release match: fawkes-core:${tag} = ${have}"
+}
+
 cmd_unit() {
   if [[ -f Makefile ]] && make -n test > /dev/null 2>&1; then
     make test
@@ -116,6 +159,7 @@ case "${sub}" in
   lint) cmd_lint ;;
   security) cmd_security ;;
   unit) cmd_unit ;;
+  release-match) cmd_release_match "$@" ;;
   exec)
     [[ $# -gt 0 ]] || {
       usage
