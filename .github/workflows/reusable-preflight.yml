@@ -28,6 +28,14 @@ on:
         required: false
         type: string
         default: ""
+      runner:
+        description: >-
+          Runner label for the job (for example a self-hosted `pipe-ci` runner).
+          Honoured only when the caller was triggered by `workflow_dispatch`;
+          every other event runs on ubuntu-latest, whatever is passed here.
+        required: false
+        type: string
+        default: "ubuntu-latest"
     outputs:
       result:
         description: "Preflight result (pass/fail)"
@@ -41,7 +49,10 @@ jobs:
       contents: read
       pull-requests: read
     name: Pre-flight Checks
-    runs-on: ubuntu-latest
+    # Trust gate (ci-runner-image spec R4): only a manual dispatch may pick the
+    # runner. A pull_request, push or schedule caller that passes `runner:
+    # self-hosted` still runs on a GitHub-hosted runner.
+    runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.runner) || 'ubuntu-latest' }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
       result: ${{ steps.outcome.outputs.result }}
