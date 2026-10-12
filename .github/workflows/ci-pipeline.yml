@@ -23,6 +23,8 @@ jobs:
     uses: ./.github/workflows/reusable-preflight.yml
     with:
       pr-size-limit: 0
+      # The hook stages run in the suite's CI image (ci-pipeline spec R4).
+      ci-image: ghcr.io/paruff/ufawkes-ci@sha256:e9a37816f1deae9a432591076b6600d345e649b2a39cc451059e1617d83694ea
 
   # ─── Stage 1: Static Analysis (Lint) ────────────────────────────────────
   lint:

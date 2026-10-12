@@ -36,6 +36,16 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      ci-image:
+        description: >-
+          Run the job in this image, by digest:
+          ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>. CI's hook stages then use the
+          same toolchain as a laptop (ci-pipeline spec R4). Empty keeps the
+          GitHub-hosted runner's own tools. A ref without a digest fails the job.
+          Not the CDE images (fawkes-space, fawkes-core): those are for development.
+        required: false
+        type: string
+        default: ""
     outputs:
       result:
         description: "Preflight result (pass/fail)"
@@ -53,10 +63,24 @@ jobs:
     # runner. A pull_request, push or schedule caller that passes `runner:
     # self-hosted` still runs on a GitHub-hosted runner.
     runs-on: ${{ (github.event_name == 'workflow_dispatch' && inputs.runner) || 'ubuntu-latest' }}
+    # Only this repo's CI image, by digest, becomes the container. Anything else
+    # leaves the job on the host, where the first step fails it loudly rather than
+    # pulling and running an image nobody vetted.
+    container: ${{ startsWith(inputs.ci-image, 'ghcr.io/paruff/ufawkes-ci@sha256:') && inputs.ci-image || null }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     outputs:
       result: ${{ steps.outcome.outputs.result }}
     steps:
+      - name: Require a digest-pinned ufawkes-ci image
+        if: inputs.ci-image != ''
+        env:
+          CI_IMAGE: ${{ inputs.ci-image }}
+        run: |
+          if ! [[ "$CI_IMAGE" =~ ^ghcr\.io/paruff/ufawkes-ci@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::ci-image must be ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>, got '${CI_IMAGE}'"
+            exit 1
+          fi
+
       # ── DORA Timestamp ──────────────────────────────────────────────────────
       - name: DORA job start
         run: |
@@ -85,13 +109,13 @@ jobs:
 
       # ── Pre-commit Validation ───────────────────────────────────────────────
       - name: Set up Python
-        if: steps.bypass.outputs.skipped != 'true'
+        if: steps.bypass.outputs.skipped != 'true' && inputs.ci-image == ''
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v6.1.1
         with:
           python-version: "3.11"
 
       - name: Install pre-commit
-        if: steps.bypass.outputs.skipped != 'true'
+        if: steps.bypass.outputs.skipped != 'true' && inputs.ci-image == ''
         run: pip install 'pre-commit==4.6.0'
 
       - name: Cache pre-commit environments
