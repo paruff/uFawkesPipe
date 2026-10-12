@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.15.1-beta.1...v1.16.0-beta.1) (2026-10-12)
+
+
+### Added
+
+* **ci:** scan container images in reusable-security-scanning ([#184](https://github.com/paruff/uFawkesPipe/issues/184)) ([9903ac7](https://github.com/paruff/uFawkesPipe/commit/9903ac7f5c6685bd10ea763ae98645aa0d3409d9))
+
+
+### Fixed
+
+* **ci-image:** stop find|grep -q failing the build under pipefail ([#182](https://github.com/paruff/uFawkesPipe/issues/182)) ([9b2c25d](https://github.com/paruff/uFawkesPipe/commit/9b2c25d3a49e6b514a991e3f61887759b7a61548))
+
 ## [1.15.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.15.0-beta.1...v1.15.1-beta.1) (2026-10-12)
 
 
