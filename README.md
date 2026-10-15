@@ -465,6 +465,13 @@ docker pull paketobuildpacks/builder:base
 
 Contributions are welcome! Please read our contributing guidelines and submit pull requests.
 
+## Research basis
+
+- DORA, [_AI Capabilities Model_](https://dora.dev/ai/capabilities-model/report/) (2025-11-25): strong version control practices and working in small batches amplify AI benefits. Pipe is the primary stack for both.
+- DORA, [_2025 State of AI-assisted Software Development_](https://dora.dev/research/2025/dora-report/): AI is an amplifier, so strengthen pipelines and small batches first; adds rework rate as a core metric.
+
+Full findings and sources: [research foundation](https://github.com/paruff/uFawkes.dev/blob/main/docs/research-foundation.md), reviewed quarterly.
+
 ## Design and brand
 
 This repo follows the shared Fawkes and uFawkes design reference:
