@@ -5,6 +5,28 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.16.0-beta.1...v1.17.0-beta.1) (2026-10-17)
+
+
+### Added
+
+* **ci-image:** add syft, conftest, cosign for supply-chain reusables ([#188](https://github.com/paruff/uFawkesPipe/issues/188)) ([040b9ce](https://github.com/paruff/uFawkesPipe/commit/040b9ce929498248eaee95d8d246ddddc7f3fb0a))
+* **ci-image:** add the Terraform and Kubernetes tools fawkes needs ([#186](https://github.com/paruff/uFawkesPipe/issues/186)) ([2d68d1b](https://github.com/paruff/uFawkesPipe/commit/2d68d1b473d2bf957e8196c3434bab081cfb2059))
+
+
+### Docs
+
+* **readme:** cite research basis (paruff/uFawkes.dev[#65](https://github.com/paruff/uFawkesPipe/issues/65)) ([#190](https://github.com/paruff/uFawkesPipe/issues/190)) ([856d36a](https://github.com/paruff/uFawkesPipe/commit/856d36a4e333a05e20b8c5c7ca09e3f3246177f5))
+
+
+### Chores
+
+* **deps:** bump actions/setup-node from 7.0.0 to 7.1.0 ([#192](https://github.com/paruff/uFawkesPipe/issues/192)) ([e703fdd](https://github.com/paruff/uFawkesPipe/commit/e703fddafd146a9b19e024d61253d0af190ab61c))
+* **deps:** bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#191](https://github.com/paruff/uFawkesPipe/issues/191)) ([fb125b7](https://github.com/paruff/uFawkesPipe/commit/fb125b7d5e5b418928af2d7d40b4c1eb7a7eecd1))
+* **deps:** bump github/codeql-action/upload-sarif ([#194](https://github.com/paruff/uFawkesPipe/issues/194)) ([7873457](https://github.com/paruff/uFawkesPipe/commit/787345713985224b57205141fd00fa6cf6b13be2))
+* **deps:** bump trufflesecurity/trufflehog from 3.98.0 to 3.99.2 ([#193](https://github.com/paruff/uFawkesPipe/issues/193)) ([3759b8e](https://github.com/paruff/uFawkesPipe/commit/3759b8eb3219decc22ac013c8926f120c6e0d4fb))
+* **infra:** adopt the OpenCode shift-left plugin ([#153](https://github.com/paruff/uFawkesPipe/issues/153)) ([#189](https://github.com/paruff/uFawkesPipe/issues/189)) ([a4079d9](https://github.com/paruff/uFawkesPipe/commit/a4079d905cbe12a5612a245ad9bd2eb90de04842))
+
 ## [1.16.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.15.1-beta.1...v1.16.0-beta.1) (2026-10-12)
 
 
