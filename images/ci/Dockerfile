@@ -1,7 +1,7 @@
 # ufawkes-ci: the suite's CI image (docs/ci-runner-image/spec.md).
 # Layered on the published fawkes-core, never rebuilt here (spec R1).
-# fawkes-core 2.0.0; bump together with uFawkesAI's next CDE release (R4).
-FROM ghcr.io/paruff/fawkes-core@sha256:15a466e07a59dab4863622e6eeca19c748b3018081c85771b0f01acbeffc29bd AS base
+# fawkes-core 2.2.0; bump together with uFawkesAI's next CDE release (R4).
+FROM ghcr.io/paruff/fawkes-core@sha256:fcf4d2de2543708854da5e875c537189c6cf9094746d91c665b2b69bdc38960a AS base
 
 # Fetch every download and verify it against runner.lock. A mismatch fails
 # the build (spec R3); nothing here is trusted by version alone.
