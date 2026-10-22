@@ -67,3 +67,9 @@ real findings, not an image fault: `shellcheck` info-level notes in
 `brown-belt/module-16-incident-management/lab-01/validate.sh`, and `detect-secrets` flagging a hex
 string at `modules/brown-belt/module-14-dora-deep-dive.md:210`. The plan's AC2 rehearsal expected
 exit 0 there; that needs those two fixed or allow-listed in Dojo.
+
+## Bump to fawkes-core 2.2.0 (2026-10-22)
+
+Base moved from `fawkes-core` 2.0.0 (`sha256:15a466e0…`) to 2.2.0 (`sha256:fcf4d2de…`), the core inside `fawkes-space:2.2.0`.
+uFawkesAI's Pre-flight fails when the CI image and the devcontainer are built on different cores, so this and
+uFawkesAI#260 land together.
