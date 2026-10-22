@@ -2,24 +2,24 @@
   "schema": 1,
   "tools": {
     "actions-runner": {
-      "version": "2.337.0",
+      "version": "2.338.1",
       "sha256": {
-        "amd64": "70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613",
-        "arm64": "9b1dc70626422526e3c94767cf024896beb15da5342a3f4819bf2feac13e0393"
+        "amd64": "08e9ccb3604d2462c24b5e33604dc30810296ca15cc65f23cffd4317eb144c37",
+        "arm64": "475e0c149fd3b611610127b9664ba5bacf5c6928795cc448ab520bb5f324bede"
       }
     },
     "docker-cli": {
-      "version": "29.9.0",
+      "version": "29.9.2",
       "sha256": {
-        "amd64": "33e1ab8b63d14bca449f7a3d30d7f6aa669daa544e60a86b17fec87f61afe2b4",
-        "arm64": "811f6eee271678fc98dbe5c4d896c00fc5fe2daa4f7a37069c17abc036eab85b"
+        "amd64": "9ac225999fd5e863f7694c728ef23d480616b1e5639328fa309befd4243d69eb",
+        "arm64": "873b3e0207857c3b2f28392fb922f3ea6efe37620c16d4d4aaf2fef409c90b73"
       }
     },
     "docker-compose": {
-      "version": "5.6.0",
+      "version": "5.6.1",
       "sha256": {
-        "amd64": "40343e21ca777173e69cff5dbafeb37c6f81f3b0d57d9e597f036e95eb63e76a",
-        "arm64": "733ec76717ceb59052a9609b9dadfb523b2df8eab57a54212872d10a58078ea2"
+        "amd64": "47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0",
+        "arm64": "42cfa75f51ad0ccf290bad37899e0038a8c10a0069e85233ecc1d53e3ff1347d"
       }
     },
     "semgrep-rules": {
