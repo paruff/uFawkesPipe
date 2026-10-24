@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload Gitleaks results to GitHub Security
         if: always() && inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'secrets')
-        uses: github/codeql-action/upload-sarif@0a458f10acbef1a8b8de555ff4c45ae60900a2a1  # v4.2.5
+        uses: github/codeql-action/upload-sarif@3306ba4df796b6b5059316f3af8bdea1e2138c9b  # v4.2.5
         with:
           sarif_file: "gitleaks-results.sarif"
           category: "gitleaks"
@@ -164,7 +164,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security
         if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities')
-        uses: github/codeql-action/upload-sarif@0a458f10acbef1a8b8de555ff4c45ae60900a2a1  # v4.2.5
+        uses: github/codeql-action/upload-sarif@3306ba4df796b6b5059316f3af8bdea1e2138c9b  # v4.2.5
         with:
           sarif_file: "trivy-results.sarif"
           category: ${{ inputs.sarif-category }}
