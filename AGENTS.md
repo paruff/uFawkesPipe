@@ -85,8 +85,6 @@ steps another agent calls directly.
 | 11 | `docs/PR_STANDARD.md` | PR title and body format rules |
 | 12 | `docs/GOLDEN_PATH.md` | Canonical idea → deploy workflow |
 | 13 | `docs/MODEL_POLICY.md` | Model selection and cost tracking |
-| 14 | `docs/product/discovery-draft.md` | JTBD, riskiest assumption, acceptance criterion |
-| 15 | `docs/product/spec.md` | Numbered functional requirements |
 
 **Hard Rules (never delegated to agent judgment):**
 - Architecture Rules (§4): no `latest` tags, secrets via `.env`, healthchecks required, pinned Woodpecker images

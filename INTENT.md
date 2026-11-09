@@ -56,9 +56,8 @@ This repo's first stable release is its Phase 2.
   `docs/ai-sdlc/<feature>/intent.md` → `spec.md` (requirements and design) →
   `plan.md`. Today the planning docs are duplicated across the root and
   `docs/`: `specification.md`, `docs/specification.md`,
-  `docs/product/spec.md`, `design.md`, `docs/design.md`, and
-  `plan-for-the-day.md`. Consolidating them into `docs/ai-sdlc/v2.0.0/` is
-  #96.
+  `design.md`, `docs/design.md`, and `plan-for-the-day.md`. Consolidating
+  them into `docs/ai-sdlc/v2.0.0/` is #121.
 - **A feature is claimed only after a real pipeline run shows it working.**
 
 ## Explicit non-goals
