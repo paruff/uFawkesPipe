@@ -141,6 +141,7 @@ class TestComposeSuiteMode:
 # ---------------------------------------------------------------------------
 # Suite mode runs without the archived uFawkesRes (#97)
 # ---------------------------------------------------------------------------
+@pytest.mark.unit
 class TestSuiteWithoutUFawkesRes:
     def test_no_ufawkesres_network(self, suite_config):
         """No service or network reaches uFawkesRes's backbone network."""
@@ -148,15 +149,14 @@ class TestSuiteWithoutUFawkesRes:
         for name, svc in suite_config.get("services", {}).items():
             assert "fawkes-backbone-net" not in (svc.get("networks") or []), name
 
-    def test_databases_stay_local(self):
+    def test_databases_stay_local(self, suite_config):
         """No service is pointed at uFawkesRes's postgres or cache."""
-        with open("compose.suite.yaml", "r") as f:
-            text = f.read()
+        text = str(suite_config)
         assert "fawkes-postgres" not in text
         assert "fawkes-cache" not in text
 
     def test_local_databases_join_fawkes_net(self, suite_config):
-        """Every suite service is on fawkes-net, so this stack's own postgres and valkey stay reachable."""
+        """This stack's own postgres and valkey join fawkes-net, where their suite-mode consumers are."""
         services = suite_config.get("services", {})
         for name in ("postgres", "valkey"):
             assert "fawkes-net" in (services.get(name, {}).get("networks") or []), name
