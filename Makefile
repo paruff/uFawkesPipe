@@ -120,17 +120,12 @@ health-suite: ## Show container health status table — suite mode
 	@docker compose -f compose.yaml -f compose.suite.yaml ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
 
 # ============================================================================
-# Suite Mode — connects to uFawkesObs; still needs the deprecated uFawkesRes (#97)
-# Unsupported until #97 (uFawkesRes is deprecated). Prefer `make up` (standalone).
-#   cd ../uFawkesRes && make up
+# Suite Mode — joins uFawkesObs's observability-lab network. Start Obs first:
 #   cd ../uFawkesObs && make up
 # ============================================================================
 
 up-suite: ## Start uFawkesPipe stack — suite mode (compose + compose.suite)
-	@echo "⚠️  Suite mode still requires the deprecated uFawkesRes (see issue #97). Prefer: make up"
-	@echo "   cd ../uFawkesRes && make up"
-	@echo "   cd ../uFawkesObs && make up"
-	@echo ""
+	@docker network inspect observability-lab > /dev/null 2>&1 || { echo "observability-lab network not found: start uFawkesObs first (cd ../uFawkesObs && make up)"; exit 1; }
 	docker compose -f compose.yaml -f compose.suite.yaml up -d
 
 down-suite: ## Stop uFawkesPipe stack — suite mode (compose + compose.suite)

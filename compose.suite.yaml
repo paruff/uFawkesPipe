@@ -203,8 +203,9 @@
 # uFawkesPipe — Suite Mode Overlay
 # ==============================================================================
 # Extends compose.yaml to connect uFawkesPipe to the full uFawkesAI suite:
-#   - uFawkesRes: shared PostgreSQL (DEPRECATED; suite mode is unsupported until #97)
 #   - uFawkesObs: OTEL Collector for metrics/traces/logs, Grafana dashboards
+# Databases and cache stay this stack's own postgres and valkey (compose.yaml);
+# uFawkesRes is archived and nothing here depends on it (#97).
 #
 # Usage:
 #   Standalone: docker compose -f compose.yaml up -d
@@ -214,9 +215,6 @@
 services:
   woodpecker-server:
     environment:
-      # --- Database: uFawkesRes PostgreSQL instead of SQLite ---
-      - WOODPECKER_DATABASE_DRIVER=postgres
-      - WOODPECKER_DATABASE_DATASOURCE=postgres://fawkes:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/woodpecker?sslmode=disable
       # --- Metrics: Prometheus scrape endpoint ---
       - WOODPECKER_PROMETHEUS_AUTH_TOKEN=${WOODPECKER_METRICS_TOKEN:-}
       # --- OTEL: export traces, metrics, logs to uFawkesObs ---
@@ -225,7 +223,6 @@ services:
       - OTEL_SERVICE_NAME=ufawkespipe
       - OTEL_RESOURCE_ATTRIBUTES=service.version=0.3.0,deployment.environment=${UFAWKES_ENVIRONMENT:-development}
     networks:
-      - fawkes-backbone-net
       - observability-lab
       - fawkes-net
 
@@ -234,34 +231,30 @@ services:
       # Pipeline step containers join fawkes-net to reach suite services
       - WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net
     networks:
-      - fawkes-backbone-net
       - observability-lab
       - fawkes-net
 
   sonarqube:
-    environment:
-      # --- Database: uFawkesRes PostgreSQL instead of embedded H2 ---
-      - SONAR_JDBC_URL=jdbc:postgresql://fawkes-postgres:5432/sonar
-      - SONAR_JDBC_USERNAME=sonar
-      - SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD:?}
     networks:
-      - fawkes-backbone-net
       - observability-lab
       - fawkes-net
 
   portainer:
     networks:
-      - fawkes-backbone-net
       - observability-lab
       - fawkes-net
 
-  # --- Security plane (uFawkesSec) — suite mode: shared uFawkesRes postgres/valkey ---
-  defectdojo:
-    environment:
-      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
-      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
+  # --- Security plane: this stack's own postgres and valkey, on fawkes-net ---
+  postgres:
     networks:
-      - fawkes-backbone-net
+      - fawkes-net
+
+  valkey:
+    networks:
+      - fawkes-net
+
+  defectdojo:
+    networks:
       - fawkes-net
 
   defectdojo-nginx:
@@ -269,27 +262,15 @@ services:
       - fawkes-net
 
   defectdojo-celery-beat:
-    environment:
-      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
-      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
     networks:
-      - fawkes-backbone-net
       - fawkes-net
 
   defectdojo-celery-worker:
-    environment:
-      DD_DATABASE_URL: postgresql://dojo:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/dojo
-      DD_CELERY_BROKER_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/0
     networks:
-      - fawkes-backbone-net
       - fawkes-net
 
   infisical:
-    environment:
-      DB_CONNECTION_URI: postgresql://infisical:${POSTGRES_PASSWORD:?}@fawkes-postgres:5432/infisical
-      REDIS_URL: redis://:${VALKEY_PASSWORD:?}@fawkes-cache:6379/1
     networks:
-      - fawkes-backbone-net
       - fawkes-net
 
   trivy-server:
@@ -304,9 +285,6 @@ services:
 # External networks from other planes
 # ==============================================================================
 networks:
-  fawkes-backbone-net:
-    name: ufawkes-resources_fawkes-backbone-net
-    external: true
   observability-lab:
     name: observability-lab
     external: true

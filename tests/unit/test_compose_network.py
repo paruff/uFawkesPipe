@@ -136,3 +136,27 @@ class TestComposeSuiteMode:
             f"Suite woodpecker-agent must have "
             f"WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net, got: {env_str}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Suite mode runs without the archived uFawkesRes (#97)
+# ---------------------------------------------------------------------------
+class TestSuiteWithoutUFawkesRes:
+    def test_no_ufawkesres_network(self, suite_config):
+        """No service or network reaches uFawkesRes's backbone network."""
+        assert "fawkes-backbone-net" not in suite_config.get("networks", {})
+        for name, svc in suite_config.get("services", {}).items():
+            assert "fawkes-backbone-net" not in (svc.get("networks") or []), name
+
+    def test_databases_stay_local(self):
+        """No service is pointed at uFawkesRes's postgres or cache."""
+        with open("compose.suite.yaml", "r") as f:
+            text = f.read()
+        assert "fawkes-postgres" not in text
+        assert "fawkes-cache" not in text
+
+    def test_local_databases_join_fawkes_net(self, suite_config):
+        """Every suite service is on fawkes-net, so this stack's own postgres and valkey stay reachable."""
+        services = suite_config.get("services", {})
+        for name in ("postgres", "valkey"):
+            assert "fawkes-net" in (services.get(name, {}).get("networks") or []), name
