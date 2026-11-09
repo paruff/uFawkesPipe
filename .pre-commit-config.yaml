@@ -78,13 +78,15 @@ repos:
         args: ["--config", ".gitleaks.toml"]
 
   # ============================================================================
-  # Shell Linting (shellcheck-py mirror for offline use)
+  # Shell Linting (system shellcheck)
   # ============================================================================
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+  - repo: local
     hooks:
       - id: shellcheck
         name: Lint shell scripts with shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
         args: ["--severity=warning"]
 
   # ============================================================================
