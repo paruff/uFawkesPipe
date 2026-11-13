@@ -23,7 +23,7 @@
 
 | # | Gap | Fix |
 |---|-----|-----|
-| C-1 | Backlog issues DY-002, DY-004, DY-006, GITOPS-001 etc. are still open even though `docs/plan.md` already dispositions them (relabel/close/supersede) | Execute the disposition table in `docs/plan.md` against the live GitHub issues. |
+| C-1 | Backlog issues DY-002, DY-004, DY-006, GITOPS-001 etc. are still open even though [`docs/plan.md` at `v1.16.0-beta.1`](https://github.com/paruff/uFawkesPipe/blob/v1.16.0-beta.1/docs/plan.md) (retired; the live plan is `docs/ai-sdlc/suite-pipeline-release/plan.md`) already dispositions them (relabel/close/supersede) | Execute that disposition table against the live GitHub issues. |
 | C-2 | `KNOWN_LIMITATIONS.md` L-002 claims `docs/GOLDEN_PATH.md` doesn't exist — it does | Mark L-002 resolved. |
 | C-3 | `CHANGELOG.md` has no entries for `v1.0.0`–`v1.2.0` | Backfill from `git log`, or reset the log going forward from the beta tag. |
 
@@ -40,7 +40,7 @@ These are documented, accepted trade-offs in `KNOWN_LIMITATIONS.md` and don't ne
 1. Merge the 2 open Dependabot PRs.
 2. Investigate/fix or waive the CodeQL `actions` job (likely a self-hosted runner capacity issue — check runner pool, or drop the `actions` language matrix entry if it's not adding value).
 3. Decide B-1's scope for beta: either (a) make `.woodpecker.yml` actually load `.fawkespipe.yml` fields, or (b) update the README/docs to stop presenting it as implemented and mark it "planned" — pick one and close the gap between docs and code.
-4. Run the disposition table in `docs/plan.md` against the live GitHub issues (close/relabel DY-002, DY-004, DY-006, GITOPS-001, etc.).
+4. Run the C-1 disposition table against the live GitHub issues (close/relabel DY-002, DY-004, DY-006, GITOPS-001, etc.).
 5. Mark `KNOWN_LIMITATIONS.md` L-002 resolved.
 6. Backfill or reset `CHANGELOG.md` so it matches the tag history.
 7. Cut `v1.3.0-beta.1` (or next semver) and publish an actual GitHub Release with notes.
