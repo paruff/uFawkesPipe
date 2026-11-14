@@ -17,7 +17,7 @@ uFawkesPipe is a Woodpecker CI-based CI/CD platform with integrated SAST (SonarQ
 - **DefectDojo Integration** - Automated security scan result ingestion post-build
 - **Woodpecker-based** - Lightweight, YAML-driven CI/CD orchestration with GitHub OAuth
 - **DORA Observability** - Structured JSON logging, OTEL deployment event emission, Prometheus metrics
-- **Standalone mode** - Runs self-contained, with embedded Postgres and Valkey. Suite mode (adding uFawkesObs) is unsupported until [#97](https://github.com/paruff/uFawkesPipe/issues/97): it still depends on the deprecated uFawkesRes.
+- **Standalone mode** - Runs self-contained, with embedded Postgres and Valkey. Suite mode adds uFawkesObs and keeps the same embedded databases.
 - **Security Plane (merged from uFawkesSec)** - DefectDojo, Infisical, Trivy server, and Falco run alongside the CI/CD stack, plus a Conftest/Rego `policy-check` pipeline step — see [Security Plane](#-security-plane) below
 
 ## 📋 Pipeline Stages
@@ -79,18 +79,16 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 │                  │   Registry      │                        │
 │                  └─────────────────┘                        │
 │                                                               │
-│  Suite mode: ┌────────────┐   ┌───────────────────┐         │
-│              │ uFawkesRes*│   │   uFawkesObs      │         │
-│              │ (Postgres, │◄──│ (OTEL, Loki,      │         │
-│              │  Traefik)  │   │  Prometheus)      │         │
-│              └────────────┘   └───────────────────┘         │
+│  Suite mode:                  ┌───────────────────┐         │
+│                               │   uFawkesObs      │         │
+│                               │ (OTEL, Loki,      │         │
+│                               │  Prometheus)      │         │
+│                               └───────────────────┘         │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-\* uFawkesRes is deprecated; suite mode is unsupported until [#97](https://github.com/paruff/uFawkesPipe/issues/97).
-
 - **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
-- **Suite mode** (`make up-suite`): **unsupported until #97**. It adds uFawkesObs's OTEL Collector, Alloy, Loki, and Prometheus, but still points databases at the deprecated uFawkesRes.
+- **Suite mode** (`make up-suite`): start uFawkesObs first. It joins Obs's `observability-lab` network, so Woodpecker exports to Obs's OTEL Collector and Prometheus scrapes it. Databases stay this stack's own.
 
 ## 🔐 Security Plane
 
@@ -113,9 +111,8 @@ pipeline itself uses it for image/fs scanning.
 | `trivy-server`               | `aquasec/trivy:0.74.0`                  | Shared Trivy CVE cache server            |
 | `falco`                      | `falcosecurity/falco-no-driver:0.39.2`  | Runtime container security monitoring    |
 
-Standalone mode embeds its own `postgres`/`valkey`; suite mode (`compose.suite.yaml`)
-redirects these services to the deprecated uFawkesRes's `fawkes-postgres`/`fawkes-cache`
-instead (unsupported until #97). Rego policies live in `policy/` and run as the `policy-check` pipeline
+Both modes use this stack's own `postgres`/`valkey`; suite mode (`compose.suite.yaml`)
+only adds network membership and OTEL settings. Rego policies live in `policy/` and run as the `policy-check` pipeline
 step (see [docs/policy-guide.md](docs/policy-guide.md)).
 
 ## 🛠️ Quick Start
