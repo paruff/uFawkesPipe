@@ -5,6 +5,51 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.16.0-beta.1...v1.17.0-beta.1) (2026-11-14)
+
+
+### Added
+
+* **ci-image:** add syft, conftest, cosign for supply-chain reusables ([#188](https://github.com/paruff/uFawkesPipe/issues/188)) ([040b9ce](https://github.com/paruff/uFawkesPipe/commit/040b9ce929498248eaee95d8d246ddddc7f3fb0a))
+* **ci-image:** add the Terraform and Kubernetes tools fawkes needs ([#186](https://github.com/paruff/uFawkesPipe/issues/186)) ([2d68d1b](https://github.com/paruff/uFawkesPipe/commit/2d68d1b473d2bf957e8196c3434bab081cfb2059))
+
+
+### Fixed
+
+* **ci-image:** bump actions-runner, docker-cli and compose for fixed CVEs ([#197](https://github.com/paruff/uFawkesPipe/issues/197)) ([76568cd](https://github.com/paruff/uFawkesPipe/commit/76568cd81c9d586a61d1dd86ee72dddf1a111464))
+* **ci-image:** bump certifi to 2026.10.19 for GHSA-6q48-6c7w-9gw2 ([#198](https://github.com/paruff/uFawkesPipe/issues/198)) ([1d5de8a](https://github.com/paruff/uFawkesPipe/commit/1d5de8a84bdb566ea1dda8493515cd3d0ac62d47))
+* **compose:** suite mode without uFawkesRes; retire the June v0.2 plan ([#210](https://github.com/paruff/uFawkesPipe/issues/210)) ([a5d143c](https://github.com/paruff/uFawkesPipe/commit/a5d143cdfb4da44d6cb4cf0d20d8d4601f1e4786))
+
+
+### Docs
+
+* **docs:** interfaces, pipeline invariants and make commands ([#219](https://github.com/paruff/uFawkesPipe/issues/219)) ([9bdc49d](https://github.com/paruff/uFawkesPipe/commit/9bdc49d4cc2ab53904a6713762e8903802bdbe59))
+* **docs:** v2.0.0 spec adds DORA and pipeline-contract criteria ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#224](https://github.com/paruff/uFawkesPipe/issues/224)) ([bf4077f](https://github.com/paruff/uFawkesPipe/commit/bf4077f1483c37b5f6414e320da2ad8ae40d82b7))
+* **readme:** cite research basis (paruff/uFawkes.dev[#65](https://github.com/paruff/uFawkesPipe/issues/65)) ([#190](https://github.com/paruff/uFawkesPipe/issues/190)) ([856d36a](https://github.com/paruff/uFawkesPipe/commit/856d36a4e333a05e20b8c5c7ca09e3f3246177f5))
+* retire docs/product and the v0.2 docs/plan.md ([#207](https://github.com/paruff/uFawkesPipe/issues/207)) ([7741d12](https://github.com/paruff/uFawkesPipe/commit/7741d1255d8784c3c73ef1468e4478fee56de8cc))
+* **review:** REVIEW.md and the Project 7 workflow ([#200](https://github.com/paruff/uFawkesPipe/issues/200)) ([6905653](https://github.com/paruff/uFawkesPipe/commit/69056534c9bf006f19f61a6726a4a6b1bf2c5cbf))
+
+
+### Chores
+
+* **ci-image:** build ufawkes-ci on fawkes-core 2.2.0 ([#196](https://github.com/paruff/uFawkesPipe/issues/196)) ([6dfccae](https://github.com/paruff/uFawkesPipe/commit/6dfccae0ec8617c65a8b11eef74ac25a5db5e284))
+* **deps:** bump actions/setup-node from 7.0.0 to 7.1.0 ([#192](https://github.com/paruff/uFawkesPipe/issues/192)) ([e703fdd](https://github.com/paruff/uFawkesPipe/commit/e703fddafd146a9b19e024d61253d0af190ab61c))
+* **deps:** bump actions/setup-python from 7.0.0 to 7.1.0 ([#203](https://github.com/paruff/uFawkesPipe/issues/203)) ([20a07b3](https://github.com/paruff/uFawkesPipe/commit/20a07b3264f062607202413211ae2fd83101958d))
+* **deps:** bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#191](https://github.com/paruff/uFawkesPipe/issues/191)) ([fb125b7](https://github.com/paruff/uFawkesPipe/commit/fb125b7d5e5b418928af2d7d40b4c1eb7a7eecd1))
+* **deps:** bump docker/login-action from 4.6.0 to 4.7.0 ([#201](https://github.com/paruff/uFawkesPipe/issues/201)) ([a4ca607](https://github.com/paruff/uFawkesPipe/commit/a4ca607866500e6a84771ee13ab25e023da769ec))
+* **deps:** bump docker/login-action from 4.7.0 to 4.8.0 ([#213](https://github.com/paruff/uFawkesPipe/issues/213)) ([9e14315](https://github.com/paruff/uFawkesPipe/commit/9e14315639c3ed8f946b59fb5046b0d99de82f69))
+* **deps:** bump github/codeql-action/upload-sarif ([#194](https://github.com/paruff/uFawkesPipe/issues/194)) ([7873457](https://github.com/paruff/uFawkesPipe/commit/787345713985224b57205141fd00fa6cf6b13be2))
+* **deps:** bump github/codeql-action/upload-sarif ([#199](https://github.com/paruff/uFawkesPipe/issues/199)) ([53cb24a](https://github.com/paruff/uFawkesPipe/commit/53cb24a1bc4a49be216671442671a3ffa7d932ae))
+* **deps:** bump github/codeql-action/upload-sarif ([#204](https://github.com/paruff/uFawkesPipe/issues/204)) ([7ab21af](https://github.com/paruff/uFawkesPipe/commit/7ab21af47465da8312b2f3e387ab29d62d6c7390))
+* **deps:** bump github/codeql-action/upload-sarif ([#211](https://github.com/paruff/uFawkesPipe/issues/211)) ([0209073](https://github.com/paruff/uFawkesPipe/commit/020907350746b6ad647362fcd9919cacc75a5de8))
+* **deps:** bump golangci/golangci-lint-action ([#206](https://github.com/paruff/uFawkesPipe/issues/206)) ([f4823ee](https://github.com/paruff/uFawkesPipe/commit/f4823ee538c0900ca0f731f910f2f45b9338d225))
+* **deps:** bump golangci/golangci-lint-action ([#215](https://github.com/paruff/uFawkesPipe/issues/215)) ([a76a1f0](https://github.com/paruff/uFawkesPipe/commit/a76a1f0e86ecc21c54a751ff0d0e228324eb025a))
+* **deps:** bump sigstore/cosign-installer from 4.1.2 to 4.1.3 ([#214](https://github.com/paruff/uFawkesPipe/issues/214)) ([2ad766b](https://github.com/paruff/uFawkesPipe/commit/2ad766b7ff2c09ecc3d25cd7a38436311e5a6b16))
+* **deps:** bump trufflesecurity/trufflehog from 3.98.0 to 3.99.2 ([#193](https://github.com/paruff/uFawkesPipe/issues/193)) ([3759b8e](https://github.com/paruff/uFawkesPipe/commit/3759b8eb3219decc22ac013c8926f120c6e0d4fb))
+* **deps:** bump trufflesecurity/trufflehog from 3.99.2 to 3.99.7 ([#202](https://github.com/paruff/uFawkesPipe/issues/202)) ([7e0dbad](https://github.com/paruff/uFawkesPipe/commit/7e0dbade6308e8c06a992f41569d478f7a4d5f12))
+* **deps:** bump trufflesecurity/trufflehog from 3.99.7 to 3.99.8 ([#212](https://github.com/paruff/uFawkesPipe/issues/212)) ([bbf3e0f](https://github.com/paruff/uFawkesPipe/commit/bbf3e0f69f820a3984a34fadf23dc47446e3cfef))
+* **infra:** adopt the OpenCode shift-left plugin ([#153](https://github.com/paruff/uFawkesPipe/issues/153)) ([#189](https://github.com/paruff/uFawkesPipe/issues/189)) ([a4079d9](https://github.com/paruff/uFawkesPipe/commit/a4079d905cbe12a5612a245ad9bd2eb90de04842))
+
 ## [1.16.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.15.1-beta.1...v1.16.0-beta.1) (2026-10-12)
 
 
