@@ -10,6 +10,26 @@
   verification are in the
   [suite spec](https://github.com/paruff/uFawkes.dev/blob/main/docs/ai-sdlc/suite-release/spec.md#release-4--ufawkespipe-v200).
 
+The three below are this repo's own, from the suite audit of 2026-11-13
+(paruff/uFawkesPipe#223). Whether each gates `v2.0.0` or follows it is the
+owner's decision; until it's made they don't block the tag.
+
+- **AC-DORA-01:** `notify-obs` reports a failed pipeline as well as a
+  successful one (`status: failed`), and its deployment event carries
+  `first_commit_at` and `pr_merged_at`. Today it sends `status: success`
+  only and neither field, so uFawkesObs can compute deployment frequency
+  from it and nothing else (paruff/uFawkesPipe#220).
+- **AC-DORA-02:** each schema in `contracts/dora-events/` has the same
+  properties and `required` list as uFawkesObs's `dora/events/` at the
+  release the compatibility matrix names, checked in CI
+  (paruff/uFawkesPipe#218; the suite's AC-SUITE-04). Read on 2026-11-13,
+  the deployment mirror lacks `first_commit_at` and `pr_merged_at`.
+- **AC-CONTRACT-01:** `docs/pipeline-contract.md` lists only fields the
+  generator reads, and a field it calls required is one the generator
+  rejects a file without. Today `app.type` and `build.image` are documented
+  as required and not enforced, and four `advanced.*` fields are documented
+  and ignored (paruff/uFawkesPipe#221).
+
 ## Design
 
 `v2.0.0` changes no architecture: [`docs/ARCHITECTURE.md`](../../ARCHITECTURE.md)
@@ -27,7 +47,7 @@ anything in a "Provides" row is a **major** change.
 | `ufawkes-ci` CI job image | Provides, to all seven repos | `images/ci/` |
 | `.fawkespipe.yml` pipeline contract | Provides, to uFawkesDevX's golden-path templates and any application repo | [`docs/pipeline-contract.md`](../../pipeline-contract.md) |
 | Pipeline trigger from uFawkesDevX's Score service | Provides, to uFawkesDevX | **Not defined.** uFawkesDevX posts to a provisional `PIPELINE_WEBHOOK_URL`. This release doesn't claim it (paruff/uFawkesPipe#217) |
-| DORA event ingestion | Consumes, from uFawkesObs (`notify-obs`) | uFawkesObs `docs/CONTRACTS.md` §1, mirrored here in `contracts/dora-events/` and [`docs/dora-contract.md`](../../dora-contract.md). The mirror isn't synced automatically (paruff/uFawkesPipe#218) |
+| DORA event ingestion | Consumes, from uFawkesObs (`notify-obs`) | uFawkesObs `dora/events/*.schema.json`, described in its `docs/CONTRACTS.md` §1 and mirrored here in `contracts/dora-events/` and [`docs/dora-contract.md`](../../dora-contract.md). The mirror isn't synced automatically and is stale for the deployment event (AC-DORA-02, paruff/uFawkesPipe#218) |
 | OTLP receivers | Consumes, from uFawkesObs | uFawkesObs `docs/CONTRACTS.md` §2 |
 | `fawkes-space` devcontainer image | Consumes, from uFawkesAI | Pinned by digest |
 
@@ -49,4 +69,5 @@ This repo adds:
 | Risk | Handling |
 |---|---|
 | A change to a reusable's inputs breaks six repos at once | The inputs are a "Provides" row: a major change, moved across the suite in one step by `scripts/suite-bump.sh` |
-| The DORA mirror drifts from uFawkesObs | `notify-obs` is verified against a released uFawkesObs version before the tag (AC-PIPE-01) |
+| The DORA mirror drifts from uFawkesObs | `notify-obs` is verified against a released uFawkesObs version before the tag (AC-PIPE-01). That run proves the nine required fields only; AC-DORA-02 covers the rest |
+| A golden-path template breaks the pipeline contract and nothing reports it | uFawkesDevX's four templates do today (paruff/uFawkesDevX#149). AC-CONTRACT-01 makes the generator the judge |
