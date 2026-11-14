@@ -280,6 +280,10 @@ jobs:
           failed=0
           for sha in $(git rev-list --no-merges "$BASE_SHA..$HEAD_SHA"); do
             git log -1 --format=%B "$sha" > "$msg"
+            if [ "$(head -1 "$msg")" = "Initial plan" ] && [ "$(git log -1 --format=%an "$sha")" = "copilot-swe-agent[bot]" ]; then
+              echo "Skipping synthetic Copilot scaffold commit ${sha:0:7}"
+              continue
+            fi
             if ! pre-commit run --hook-stage commit-msg --commit-msg-filename "$msg"; then
               echo "::error::Commit ${sha:0:7}: $(head -1 "$msg")"
               failed=1
