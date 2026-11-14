@@ -78,13 +78,21 @@ repos:
         args: ["--config", ".gitleaks.toml"]
 
   # ============================================================================
-  # Shell Linting (shellcheck-py mirror for offline use)
+  # Shell Linting (host shellcheck)
+  #
+  # Not shellcheck-py: pre-commit installs a remote Python hook by building it
+  # in a fresh virtualenv, and that build downloads the ShellCheck release, so
+  # a 504 from GitHub took the whole Lint & Format job down (uFawkesPipe#208).
+  # A host tool cannot fail that way, and require-tool.sh makes a missing
+  # shellcheck a loud failure rather than a silent pass (spec R4).
   # ============================================================================
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+  - repo: local
     hooks:
       - id: shellcheck
         name: Lint shell scripts with shellcheck
+        entry: scripts/shift-left/require-tool.sh shellcheck -- shellcheck
+        language: script
+        types: [shell]
         args: ["--severity=warning"]
 
   # ============================================================================
