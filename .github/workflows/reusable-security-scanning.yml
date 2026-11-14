@@ -146,14 +146,18 @@ jobs:
 
       - name: Run Trivy vulnerability scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == ''
+        env:
+          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+          IGNORE_UNFIXED: ${{ inputs.ignore-unfixed }}
+          SCAN_PATH: ${{ inputs.scan-path }}
         run: |
           trivy fs \
             --scanners vuln \
-            --severity ${{ inputs.severity-threshold }} \
-            --ignore-unfixed ${{ inputs.ignore-unfixed }} \
+            --severity "$SEVERITY_THRESHOLD" \
+            --ignore-unfixed "$IGNORE_UNFIXED" \
             --format sarif \
             --output trivy-results.sarif \
-            ${{ inputs.scan-path }}
+            "$SCAN_PATH"
 
       - name: Install Trivy 0.76.2 (image)
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
@@ -165,14 +169,18 @@ jobs:
 
       - name: Run Trivy image scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
+        env:
+          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+          IGNORE_UNFIXED: ${{ inputs.ignore-unfixed }}
+          IMAGE_REF: ${{ inputs.image-ref }}
         run: |
           trivy image \
             --scanners vuln \
-            --severity ${{ inputs.severity-threshold }} \
-            --ignore-unfixed ${{ inputs.ignore-unfixed }} \
+            --severity "$SEVERITY_THRESHOLD" \
+            --ignore-unfixed "$IGNORE_UNFIXED" \
             --format sarif \
             --output trivy-results.sarif \
-            ${{ inputs.image-ref }}
+            "$IMAGE_REF"
 
       - name: Upload Trivy results to GitHub Security
         if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities')
