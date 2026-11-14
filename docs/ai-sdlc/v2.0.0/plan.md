@@ -7,6 +7,8 @@ This plan lists no tasks. The sequence is
 the tasks are the sub-issues of paruff/uFawkesPipe#120 on
 [Project #7](https://github.com/users/paruff/projects/7), and the reusables'
 own release is [`suite-pipeline-release/plan.md`](../suite-pipeline-release/plan.md).
+The findings of the 2026-11-13 suite audit are the sub-issues of
+paruff/uFawkesPipe#223.
 
 ## Verification Strategy
 
@@ -15,6 +17,9 @@ own release is [`suite-pipeline-release/plan.md`](../suite-pipeline-release/plan
 | AC-PIPE-01 | A real pipeline run on a sample repo, linked from the release notes (paruff/uFawkesPipe#123) |
 | `notify-obs` | The same run, against a released uFawkesObs version, recorded in the compatibility matrix |
 | Interfaces | Review of the spec's table against `README.md` and each `workflow_call` block at the release candidate |
+| AC-DORA-01 | A failed run and a successful run on a sample repo, each answered with 201 by a released uFawkesObs; the successful run's event has `first_commit_at` (paruff/uFawkesPipe#220) |
+| AC-DORA-02 | A CI check that compares `contracts/dora-events/` with uFawkesObs at the pinned release, and fails on today's deployment mirror (paruff/uFawkesPipe#218) |
+| AC-CONTRACT-01 | A unit test: a `.fawkespipe.yml` without a field the doc calls required makes `make generate-pipeline` fail (paruff/uFawkesPipe#221) |
 
 ### Make commands
 
