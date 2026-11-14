@@ -159,28 +159,19 @@ jobs:
             --output trivy-results.sarif \
             "$SCAN_PATH"
 
-      - name: Install Trivy 0.76.2 (image)
-        if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
-        run: |
-          curl -sSLO https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz
-          tar -xzf trivy_0.76.2_Linux-64bit.tar.gz trivy
-          sudo mv trivy /usr/local/bin/trivy
-          trivy --version
-
+      # Use trivy-action for image scans to handle digest format correctly
       - name: Run Trivy image scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
-        env:
-          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
-          IGNORE_UNFIXED: ${{ inputs.ignore-unfixed }}
-          IMAGE_REF: ${{ inputs.image-ref }}
-        run: |
-          trivy image \
-            --scanners vuln \
-            --severity "$SEVERITY_THRESHOLD" \
-            --ignore-unfixed "$IGNORE_UNFIXED" \
-            --format sarif \
-            --output trivy-results.sarif \
-            "$IMAGE_REF"
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          version: v0.76.2
+          scan-type: "image"
+          image-ref: ${{ inputs.image-ref }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: ${{ inputs.severity-threshold }}
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          exit-code: ${{ inputs.fail-on-critical && '1' || '0' }}
 
       - name: Upload Trivy results to GitHub Security
         if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities')
