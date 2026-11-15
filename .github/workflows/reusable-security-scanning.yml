@@ -134,8 +134,10 @@ jobs:
           path: .
           extra_args: --only-verified
 
-      # ─── Vulnerability Scanning (Trivy FS) ─────────────────────────────
-      # Install Trivy 0.76.2 directly to avoid trivy-action version caching issues.
+      # ─── Vulnerability Scanning (Trivy) ───────────────────────────────────
+      # Install Trivy 0.76.2 directly for fs scans to avoid trivy-action version caching issues.
+      # trivy-action v0.36.0 ignores the version parameter and runs 0.74.0.
+      # For image scans, use trivy-action which handles digest format correctly.
       - name: Install Trivy 0.76.2
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == ''
         run: |
@@ -144,7 +146,7 @@ jobs:
           sudo mv trivy /usr/local/bin/trivy
           trivy --version
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy filesystem scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == ''
         env:
           SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
@@ -159,7 +161,6 @@ jobs:
             --output trivy-results.sarif \
             "$SCAN_PATH"
 
-      # Use trivy-action for image scans to handle digest format correctly
       - name: Run Trivy image scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
