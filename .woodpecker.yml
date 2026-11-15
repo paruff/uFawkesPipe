@@ -496,7 +496,7 @@ steps:
   # docs/dora-contract.md). The OTLP span alone never fed DORA metrics.
   - name: notify-obs
     image: curlimages/curl:8.6.0
-    depends_on: [upload-defectdojo]
+    depends_on: [upload-defectdojo, sign-image]
     environment:
       OTEL_ENDPOINT:
         from_secret: otel_endpoint
