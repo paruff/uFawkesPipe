@@ -135,10 +135,11 @@ jobs:
           extra_args: --only-verified
 
       # ─── Vulnerability Scanning (Trivy) ───────────────────────────────────
-      # Install Trivy 0.76.2 directly to avoid trivy-action version caching issues.
+      # Install Trivy 0.76.2 directly for fs scans to avoid trivy-action version caching issues.
       # trivy-action v0.36.0 ignores the version parameter and runs 0.74.0.
+      # For image scans, use trivy-action which handles digest format correctly.
       - name: Install Trivy 0.76.2
-        if: inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities'
+        if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == ''
         run: |
           curl -sSLO https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz
           tar -xzf trivy_0.76.2_Linux-64bit.tar.gz trivy
@@ -162,18 +163,16 @@ jobs:
 
       - name: Run Trivy image scanner
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
-        env:
-          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
-          IGNORE_UNFIXED: ${{ inputs.ignore-unfixed }}
-          IMAGE_REF: ${{ inputs.image-ref }}
-        run: |
-          trivy image \
-            --scanners vuln \
-            --severity "$SEVERITY_THRESHOLD" \
-            --ignore-unfixed "$IGNORE_UNFIXED" \
-            --format sarif \
-            --output trivy-results.sarif \
-            "$IMAGE_REF"
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          version: v0.76.2
+          scan-type: "image"
+          image-ref: ${{ inputs.image-ref }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: ${{ inputs.severity-threshold }}
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          exit-code: ${{ inputs.fail-on-critical && '1' || '0' }}
 
       - name: Upload Trivy results to GitHub Security
         if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities')
