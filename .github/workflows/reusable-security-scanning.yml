@@ -158,7 +158,7 @@ jobs:
           trivy fs \
             --scanners vuln \
             --severity "$SEVERITY_THRESHOLD" \
-            --ignore-unfixed "$IGNORE_UNFIXED" \
+            --ignore-unfixed="$IGNORE_UNFIXED" \
             --format sarif \
             --output trivy-results.sarif \
             "$SCAN_PATH"
