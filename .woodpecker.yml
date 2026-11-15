@@ -425,7 +425,7 @@ steps:
 
   # Sign container image with Cosign using key from Woodpecker secret (main only)
   - name: sign-image
-    image: bitnami/cosign:latest
+    image: bitnami/cosign:2.4.1
     depends_on: [generate-sbom]
     environment:
       REGISTRY_USERNAME:
