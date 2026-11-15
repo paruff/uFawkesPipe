@@ -32,3 +32,7 @@ new release in one step. Adoption in the seven repos is paruff/uFawkes.dev#181.
 - A stable (non-beta) release tag: #165 says to cut it only after the reusables' own tests pass.
 - The Pre-flight step that calls `pipe-ci release-match`, and Pipe's `ci-image` pin moved to the
   digest that has `ci-base-digest`: both need #178 merged and published first.
+
+### Audit follow-up, 2026-11-15
+
+This branch fixes High findings from the suite integration harness (uFawkes.dev `tests/suite-integration/AUDIT_FINDINGS.md`). Verified by running the harness against it: `make suite-integration-test` passes with the fix applied and the finding's reproduction test no longer reproduces.
