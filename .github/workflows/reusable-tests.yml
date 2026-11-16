@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -152,7 +152,7 @@ jobs:
             coverage.xml
           if-no-files-found: ignore
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -165,7 +165,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -234,7 +234,7 @@ jobs:
             docker compose -f "$STACK_COMPOSE_FILE" down -v
           fi
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -247,7 +247,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -311,7 +311,7 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.integration.yml down -v
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -324,7 +324,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -376,7 +376,7 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -390,7 +390,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -437,7 +437,7 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -450,6 +450,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: job-start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Check required files exist and are not placeholders
@@ -511,6 +518,10 @@ jobs:
 
           exit $FAIL
 
+      - name: job-finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
   markdown-lint:
     name: Markdown lint
     if: contains(inputs.test-tiers, 'docs')
@@ -519,11 +530,22 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: job-start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff  # v23.0.0
         with:
           globs: "**/*.md"
           config: ".markdownlint.json"
+
+      - name: job-finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
   link-check:
     name: Check links
@@ -533,6 +555,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: job-start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.5.0
         with:
@@ -545,6 +574,10 @@ jobs:
             '**/*.md'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: job-finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
   # ─── Test Summary ──────────────────────────────────────────────────────
   test-summary:
@@ -565,7 +598,7 @@ jobs:
     if: always()
 
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -594,6 +627,6 @@ jobs:
             exit 1
           fi
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"

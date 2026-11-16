@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -276,6 +276,6 @@ jobs:
             fi
           fi
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"

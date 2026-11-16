@@ -67,7 +67,7 @@ jobs:
       typescript: ${{ steps.filter.outputs.typescript }}
       go: ${{ steps.filter.outputs.go }}
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -122,7 +122,7 @@ jobs:
             echo "go=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -140,7 +140,7 @@ jobs:
       needs.detect-changes.outputs.python == 'true' &&
       inputs.emergency-bypass != true
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -164,7 +164,7 @@ jobs:
       - name: Black format check
         run: black --check --diff .
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -182,7 +182,7 @@ jobs:
       needs.detect-changes.outputs.shell == 'true' &&
       inputs.emergency-bypass != true
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -213,7 +213,7 @@ jobs:
           find . -name "*.sh" -not -path "./.git/*" -not -path "./node_modules/*" \
             -exec shfmt -i 2 -ci -bn -sr -d {} +
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -231,7 +231,7 @@ jobs:
       needs.detect-changes.outputs.yaml == 'true' &&
       inputs.emergency-bypass != true
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -252,7 +252,7 @@ jobs:
       - name: Run yamllint
         run: yamllint -f github .
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -270,7 +270,7 @@ jobs:
       needs.detect-changes.outputs.typescript == 'true' &&
       inputs.emergency-bypass != true
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -292,7 +292,7 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -310,7 +310,7 @@ jobs:
       needs.detect-changes.outputs.go == 'true' &&
       inputs.emergency-bypass != true
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -332,7 +332,7 @@ jobs:
           version: latest
           args: --timeout=5m
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -356,7 +356,7 @@ jobs:
     outputs:
       result: ${{ steps.outcome.outputs.result }}
     steps:
-      - name: DORA job start
+      - name: job-start
         run: |
           echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "sha:${{ github.sha }}"
@@ -389,6 +389,6 @@ jobs:
           echo "| TypeScript | ${{ needs.typescript-lint.result == 'skipped' && '⏭️ N/A' || (needs.typescript-lint.result == 'success' && '✅ Pass' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Go | ${{ needs.go-lint.result == 'skipped' && '⏭️ N/A' || (needs.go-lint.result == 'success' && '✅ Pass' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
 
-      - name: DORA job finish
+      - name: job-finish
         if: always()
         run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"

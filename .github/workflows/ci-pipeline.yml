@@ -100,7 +100,7 @@ jobs:
           echo ""
           echo "✅ Pipeline PASSED"
 
-      - name: DORA pipeline finish
+      - name: job-finish
         if: always()
         run: |
           echo "pipeline-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
