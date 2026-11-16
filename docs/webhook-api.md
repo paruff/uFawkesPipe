@@ -80,6 +80,7 @@ curl -H "Authorization: Bearer <woodpecker-api-token>" \
 | `GET /api/repos` | List repositories |
 | `GET /api/repos/{owner}/{repo}/pipelines` | List pipelines for a repo |
 | `GET /api/repos/{owner}/{repo}/pipelines/{number}` | Get pipeline status / logs |
+| `POST /api/repos/{repo-id}/pipelines` | Start a pipeline run; see the [pipeline-trigger contract](pipeline-trigger-contract.md) |
 
 See the [Woodpecker API documentation](https://woodpecker-ci.org/docs/api) for
 the full endpoint reference.
