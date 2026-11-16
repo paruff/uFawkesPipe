@@ -29,6 +29,8 @@ Content-Type: application/json
 | URL | `<repo-id>` is the repository's numeric id in Woodpecker (`GET /api/repos/lookup/<owner>/<repo>`) |
 | Token | A Woodpecker API token ([webhook-api.md](webhook-api.md), "Authentication"); sent as a bearer token |
 | `branch` | The branch to run. The caller's default is `main` |
+| `message`, `workflow` | Optional Woodpecker fields; the caller doesn't send them |
+| Permission | The token's user needs push access to the repository (Woodpecker's create-pipeline call checks it) |
 | `variables` | Strings only. They reach the pipeline as environment variables, so a pipeline reads `SCORE_WORKLOAD` and the rest by name |
 
 ## Response

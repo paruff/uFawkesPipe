@@ -17,6 +17,14 @@ MIRROR = Path(__file__).parent.parent.parent / "contracts" / "dora-events"
 RAW = "https://raw.githubusercontent.com/paruff/uFawkesObs/{release}/dora/events/{name}"
 
 
+def github_headers():
+    # Unauthenticated api.github.com allows 60 requests an hour per IP, which shared CI runners exhaust.
+    headers = {"Accept": "application/vnd.github+json"}
+    if os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+    return headers
+
+
 def shape(schema):
     return {
         "required": sorted(schema.get("required", [])),
@@ -53,7 +61,7 @@ def test_mirror_schema_matches_obs(path, release):
 def test_every_obs_event_type_is_mirrored(release):
     listing = urllib.request.Request(
         f"https://api.github.com/repos/paruff/uFawkesObs/contents/dora/events?ref={release}",
-        headers={"Accept": "application/vnd.github+json"},
+        headers=github_headers(),
     )
     try:
         with urllib.request.urlopen(listing, timeout=20) as r:
