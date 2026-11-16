@@ -68,6 +68,13 @@ def test_every_obs_event_type_is_mirrored(release):
             theirs = {
                 e["name"] for e in json.load(r) if e["name"].endswith(".schema.json")
             }
+    except urllib.error.HTTPError as e:
+        if e.code in (403, 429):
+            # Rate limit, not drift: the per-schema cases above read raw.githubusercontent.com, which has none.
+            pytest.skip(
+                f"api.github.com rate limit ({e.code}); new Obs event types not checked this run"
+            )
+        pytest.fail(f"cannot list uFawkesObs {release}: {e}")
     except (urllib.error.URLError, TimeoutError) as e:
         if os.environ.get("CI"):
             pytest.fail(f"cannot list uFawkesObs {release}: {e}")
