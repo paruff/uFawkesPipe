@@ -36,7 +36,7 @@ test-policy: ## Validate compose/pipeline config against Rego policies (requires
 # Validation Commands
 # ============================================================================
 
-validate: validate-docker validate-agents ## Run all validations (Docker + Agents)
+validate: pre-commit-run validate-docker validate-agents ## The local gate: hooks, compose.yaml and agent definitions
 
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
