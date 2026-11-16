@@ -39,6 +39,8 @@ jobs:
           pip install pytest pytest-cov pyyaml docker
 
       - name: Run unit tests
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # the DORA mirror test reads uFawkesObs's public API
         run: |
           pytest tests/unit/ -v --tb=short --cov=tests/unit --cov-report=term-missing
         continue-on-error: false
