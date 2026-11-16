@@ -85,6 +85,14 @@ jobs:
     outputs:
       result: ${{ steps.outcome.outputs.result }}
     steps:
+      # ── DORA Timestamp ──────────────────────────────────────────────────────
+      - name: job-start
+        run: |
+          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "sha:${{ github.sha }}"
+          echo "workflow:${{ github.workflow }}"
+          echo "job:${{ github.job }}"
+
       - name: Require a digest-pinned ufawkes-ci image
         if: inputs.ci-image != ''
         env:
@@ -94,14 +102,6 @@ jobs:
             echo "::error::ci-image must be ghcr.io/paruff/ufawkes-ci@sha256:<64 hex>, got '${CI_IMAGE}'"
             exit 1
           fi
-
-      # ── DORA Timestamp ──────────────────────────────────────────────────────
-      - name: DORA job start
-        run: |
-          echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "sha:${{ github.sha }}"
-          echo "workflow:${{ github.workflow }}"
-          echo "job:${{ github.job }}"
 
       # ── Checkout ────────────────────────────────────────────────────────────
       - name: Checkout code
@@ -341,11 +341,6 @@ jobs:
             echo "result=fail" >> $GITHUB_OUTPUT
           fi
 
-      # ── DORA Timestamp ──────────────────────────────────────────────────────
-      - name: DORA job finish
-        if: always()
-        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
       # ── Summary ─────────────────────────────────────────────────────────────
       - name: Generate summary
         if: always()
@@ -363,3 +358,8 @@ jobs:
           echo "| PR Size | ${PR_SIZE_STATUS} |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit Format | ${COMMIT_FORMAT_STATUS} |" >> $GITHUB_STEP_SUMMARY
           echo "| Secret Detection | ${SECRETS_STATUS} |" >> $GITHUB_STEP_SUMMARY
+
+      # ── DORA Timestamp ──────────────────────────────────────────────────────
+      - name: job-finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
