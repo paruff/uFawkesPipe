@@ -24,7 +24,7 @@ human-readable companion for both channels.
 - [Who consumes this contract today](#who-consumes-this-contract-today)
 - [How uFawkesPipe emits DORA events](#how-ufawkespipe-emits-dora-events)
 - [OTLP telemetry contract (traces, metrics, logs)](#otlp-telemetry-contract-traces-metrics-logs)
-- [Known gap: no automated sync with uFawkesObs](#known-gap-no-automated-sync-with-ufawkesobs)
+- [Sync with uFawkesObs](#sync-with-ufawkesobs)
 - [Where the human-readable page goes next](#where-the-human-readable-page-goes-next)
 
 ---
@@ -143,18 +143,15 @@ uFawkesObs ("suite mode"); standalone, `notify-obs`'s OTLP send is a no-op
 (`OTEL_ENDPOINT` unset → skipped, per the existing `dora_warn` branch) and
 metrics/logs stay local (stdout / Docker json-file).
 
-## Known gap: no automated sync with uFawkesObs
+## Sync with uFawkesObs
 
-There is currently **no CI check, tooling, or process** keeping this repo's
-`contracts/dora-events/*.schema.json` and uFawkesObs's `dora/events/*.schema.json`
-in sync — they are two independent copies. A change made in one and not the
-other will silently diverge: uFawkesObs's copy is what its `dora/ingestion/`
-service actually enforces at runtime, regardless of what this repo says.
-Until a sync mechanism exists (e.g., a scheduled diff check, or uFawkesObs
-vendoring these schemas from here as a submodule/package), treat this repo's
-copy as the *documentation* source of truth and uFawkesObs's copy as the
-*enforcement* source of truth, and manually port any change between them
-(see `contracts/dora-events/README.md`'s Contributing section).
+`contracts/dora-events/OBS_RELEASE` pins the uFawkesObs release these schemas
+mirror. `tests/unit/test_dora_schema_mirror.py` reads uFawkesObs's
+`dora/events/*.schema.json` at that release and fails when an event type, a
+required field or a property differs. It runs in CI (`ci-tests.yml`) and skips
+offline. When uFawkesObs releases a contract change, port it here and move
+`OBS_RELEASE` in the same PR. uFawkesObs's copy is the enforcement source of
+truth.
 
 ## Where the human-readable page goes next
 
