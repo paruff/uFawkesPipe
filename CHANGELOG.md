@@ -5,6 +5,23 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.17.0-beta.1...v1.17.1-beta.1) (2026-11-17)
+
+
+### Fixed
+
+* **ci:** send a token in the DORA mirror test, note contract details ([#218](https://github.com/paruff/uFawkesPipe/issues/218)) ([#240](https://github.com/paruff/uFawkesPipe/issues/240)) ([ff4c142](https://github.com/paruff/uFawkesPipe/commit/ff4c14254e6a31889690320e92084d8394bec0e0))
+
+
+### Docs
+
+* **docs:** define the pipeline-trigger contract ([#217](https://github.com/paruff/uFawkesPipe/issues/217)) ([#238](https://github.com/paruff/uFawkesPipe/issues/238)) ([826eb09](https://github.com/paruff/uFawkesPipe/commit/826eb09ce2c78fb5f6d48b7cab24fb5f3d5fff7c))
+
+
+### Chores
+
+* **infra:** make validate run the hooks too ([#216](https://github.com/paruff/uFawkesPipe/issues/216)) ([#236](https://github.com/paruff/uFawkesPipe/issues/236)) ([649c226](https://github.com/paruff/uFawkesPipe/commit/649c2264b197de4821ce5bfe565673111f02b1f2))
+
 ## [1.17.0-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.16.0-beta.1...v1.17.0-beta.1) (2026-11-15)
 
 
