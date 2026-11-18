@@ -181,16 +181,16 @@ jobs:
     uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@<40-hex SHA of the tag> # v1.14.0-beta.1
 ```
 
-| Reusable | Does | Inputs |
-| --- | --- | --- |
-| `reusable-preflight.yml` | The repo's pre-commit hooks at the `pre-commit` and `pre-push` stages, PR size, commit format | `pr-size-limit`, `commit-format`, `emergency-bypass`, `timeout-minutes`, `skip-hooks`, `runner`, `ci-image` |
-| `reusable-lint.yml` | Language linters | `languages`, `auto-detect`, `fail-on-warning`, `emergency-bypass`, `timeout-minutes` |
-| `reusable-security-scanning.yml` | Secret scanning, Trivy, dependency scans, SARIF upload | `scan-type`, `scan-path`, `severity-threshold`, `fail-on-critical`, `upload-sarif`, `gitleaks-config` |
-| `reusable-dependency-review.yml` | Dependency review on pull requests | `fail-on-severity`, `comment-summary-in-pr`, `base-ref`, `head-ref`, `deny-licenses` |
-| `reusable-build.yml` | Build and validate (observability stack config, image pins, coverage gate) | `validate-*`, `*-image`, `fail-on-latest`, `allow-latest`, `enable-coverage-gate`, `coverage-threshold`, `python-version`, `coverage-paths` |
-| `reusable-tests.yml` | Test tiers (unit, integration, health checks) | `test-tiers`, `python-version`, `run-unit`, `unit-test-command`, `integration-test-command`, `compose-profile`, `compose-file`, `health-endpoints`, `coverage-threshold`, `coverage-paths`, `setup-command` |
-| `reusable-rollback.yml` | Roll a deploy back | `deploy-path`, `restart-command` |
-| `reusable-main-ci-guard.yml` | Fails a PR while `main`'s last CI run is red | `workflow-id`, `workflow-name` |
+| Reusable | Does | Inputs | Outputs | Secrets |
+| --- | --- | --- | --- | --- |
+| `reusable-preflight.yml` | The repo's pre-commit hooks at the `pre-commit` and `pre-push` stages, PR size, commit format | `pr-size-limit`, `commit-format`, `emergency-bypass`, `timeout-minutes`, `skip-hooks`, `runner`, `ci-image`, `check-release-match` | `result` | — |
+| `reusable-lint.yml` | Language linters | `languages`, `auto-detect`, `fail-on-warning`, `emergency-bypass`, `timeout-minutes` | `result`, `python-detected`, `shell-detected`, `yaml-detected`, `typescript-detected`, `go-detected` | — |
+| `reusable-security-scanning.yml` | Secret scanning, Trivy, dependency scans, SARIF upload | `scan-type`, `scan-path`, `severity-threshold`, `fail-on-critical`, `upload-sarif`, `gitleaks-config`, `image-ref`, `ignore-unfixed`, `sarif-category` | — | — |
+| `reusable-dependency-review.yml` | Dependency review on pull requests | `fail-on-severity`, `comment-summary-in-pr`, `base-ref`, `head-ref`, `deny-licenses` | — | — |
+| `reusable-build.yml` | Build and validate (observability stack config, image pins, coverage gate) | `validate-*`, `*-image`, `fail-on-latest`, `allow-latest`, `enable-coverage-gate`, `coverage-threshold`, `python-version`, `coverage-paths` | — | — |
+| `reusable-tests.yml` | Test tiers (unit, integration, health checks) | `test-tiers`, `python-version`, `run-unit`, `unit-test-command`, `integration-test-command`, `compose-profile`, `compose-file`, `health-endpoints`, `coverage-threshold`, `coverage-paths`, `setup-command` | — | `DATABASE_URL` |
+| `reusable-rollback.yml` | Roll a deploy back | `deploy-path`, `restart-command` | — | `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KEY`, `DEPLOY_HOST_KEY` |
+| `reusable-main-ci-guard.yml` | Fails a PR while `main`'s last CI run is red | `workflow-id`, `workflow-name` | — | — |
 
 Read the `workflow_call` block of a reusable for the exact types and defaults; they are the contract.
 Every reusable's gate steps fail when their check fails (ci-pipeline spec R5).
