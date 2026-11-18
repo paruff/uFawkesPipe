@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# Live system check for the suite status page (#125): start the real
+# standalone stack and run the acceptance suite against it.
+name: Live Acceptance
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-acceptance
+  cancel-in-progress: true
+
+jobs:
+  live-acceptance:
+    name: Standalone stack acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # Ephemeral runner, torn down at job end; not real credentials.
+      WOODPECKER_AGENT_SECRET: ci-live-acceptance-not-a-real-secret  # pragma: allowlist secret
+      WOODPECKER_GITHUB_CLIENT: ci-placeholder
+      WOODPECKER_GITHUB_SECRET: ci-placeholder  # pragma: allowlist secret
+      SONARQUBE_ADMIN_PASSWORD: ci-live-acceptance-not-a-real-secret  # pragma: allowlist secret
+    steps:
+      - name: job-start
+        run: echo "job-start:$(date -u +%Y-%m-%dT%H:%M:%SZ) sha:${{ github.sha }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Start standalone stack
+        run: make up
+
+      - name: Wait for Woodpecker
+        run: |
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:8000/healthz && exit 0
+            sleep 5
+          done
+          docker compose -f compose.yaml ps
+          exit 1
+
+      - name: Run smoke and acceptance tests
+        run: make test-smoke test-acceptance
+
+      - name: Stack logs on failure
+        if: failure()
+        run: docker compose -f compose.yaml logs --tail=200
+
+      - name: Stop stack
+        if: always()
+        run: make down
+
+      - name: job-finish
+        if: always()
+        run: echo "job-finish:$(date -u +%Y-%m-%dT%H:%M:%SZ)"
