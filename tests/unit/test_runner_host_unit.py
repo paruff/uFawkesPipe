@@ -33,17 +33,33 @@ def test_has_a_healthcheck(service):
     assert "healthcheck" in service
 
 
+@pytest.fixture(scope="module")
+def proxy():
+    compose = yaml.safe_load((ROOT / "runner" / "compose.yaml").read_text())
+    return compose["services"]["socket-proxy"]
+
+
 @pytest.mark.unit
-def test_docker_socket_comes_from_env_and_state_is_on_named_volumes(service):
-    volumes = service["volumes"]
-    assert any(
-        v.startswith("${DOCKER_SOCKET:-") and v.endswith(":/var/run/docker.sock")
-        for v in volumes
+def test_runner_reaches_docker_only_through_the_socket_proxy(service):
+    assert service["environment"]["DOCKER_HOST"] == "tcp://socket-proxy:2375"
+    assert not any("docker.sock" in v for v in service["volumes"]), (
+        "the runner must not mount the raw socket"
     )
     assert {
         "runner-state:/opt/ufawkes-runner",
         "runner-toolcache:/opt/hostedtoolcache",
-    } <= set(volumes)
+    } <= set(service["volumes"])
+
+
+@pytest.mark.unit
+def test_proxy_is_pinned_read_only_socket_and_limited_to_the_runner(proxy):
+    assert re.search(r"socket-proxy:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}", proxy["image"])
+    assert any(
+        v.startswith("${DOCKER_SOCKET:-") and v.endswith(":/var/run/docker.sock:ro")
+        for v in proxy["volumes"]
+    )
+    assert "-allowfrom=ufawkes-ci-runner" in proxy["command"]
+    assert not any("prune" in arg for arg in proxy["command"])
 
 
 @pytest.mark.unit

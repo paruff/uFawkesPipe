@@ -204,17 +204,49 @@
 # Copy .env.example to .env, set RUNNER_TOKEN, then:
 #   docker compose -f runner/compose.yaml --env-file runner/.env up -d
 # The runner serves workflow_dispatch jobs only (spec R4).
+# It reaches Docker through a filtering socket proxy, never the raw docker.sock
+# (the proxy anchors each pattern itself; the allow-lists cover what compose-based flows need; no prune, no swarm).
 services:
+  socket-proxy:
+    image: ghcr.io/wollomatic/socket-proxy:1.13.2@sha256:82db5c4728e4fd68d969ec3d74d99bf6d990d06428b583a6f1daabab27de1bd3
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges]
+    user: "0:0"
+    command:
+      - -allowfrom=ufawkes-ci-runner
+      - -listenip=0.0.0.0
+      - -allowhealthcheck
+      - '-allowGET=/(v[0-9.]+/)?(_ping|version|info|events|containers/.*|images/.*|networks(/.*)?|volumes(/.*)?)'
+      - '-allowHEAD=/(v[0-9.]+/)?_ping'
+      - '-allowPOST=/(v[0-9.]+/)?(containers/create|containers/[^/]+/(start|stop|restart|kill|wait|attach|resize|exec)|exec/[^/]+/(start|resize)|images/create|build|networks/create|networks/[^/]+/(connect|disconnect)|volumes/create)'
+      - '-allowDELETE=/(v[0-9.]+/)?(containers|networks|volumes)/[^/]+'
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    networks: [runner-docker]
+    healthcheck:
+      test: ["CMD", "/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   ufawkes-ci-runner:
     image: ghcr.io/paruff/ufawkes-ci@sha256:575c812d55ca8f9c4faa5afb77dbb721969f8e866448fe7641e835be79057ee0
     entrypoint: /usr/local/bin/runner.sh
     env_file: .env
+    hostname: ufawkes-ci-runner
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
+    depends_on:
+      socket-proxy:
+        condition: service_healthy
+    networks: [default, runner-docker]  # default: outbound to GitHub
     restart: unless-stopped
     volumes:
       - runner-state:/opt/ufawkes-runner
       - runner-toolcache:/opt/hostedtoolcache
       - runner-precommit:/root/.cache/pre-commit
-      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
     healthcheck:
       # [R] keeps grep from matching its own command line; the image has no pgrep.
       test: ["CMD-SHELL", "grep -qa '[R]unner.Listener' /proc/[0-9]*/cmdline"]
@@ -222,6 +254,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 60s
+
+networks:
+  runner-docker:
+    internal: true
 
 volumes:
   runner-state:
