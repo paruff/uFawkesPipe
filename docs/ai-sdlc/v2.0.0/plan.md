@@ -21,6 +21,13 @@ paruff/uFawkesPipe#223.
 | AC-DORA-02 | A CI check that compares `contracts/dora-events/` with uFawkesObs at the pinned release, and fails on today's deployment mirror (paruff/uFawkesPipe#218) |
 | AC-CONTRACT-01 | A unit test: a `.fawkespipe.yml` without a field the doc calls required makes `make generate-pipeline` fail (paruff/uFawkesPipe#221) |
 
+**Evidence so far (#220, #221):** `notify-obs`'s commands, run under `sh` against a stub
+ingestion server that validates each POST against `contracts/dora-events/deployment-event.schema.json`,
+got 201 for a `success` run and for a `failure` run (sent as `status: failed`); both events carried
+`first_commit_at` and `pr_merged_at`. This is a local simulation: the real-Woodpecker run against a
+released uFawkesObs that AC-DORA-01 requires is still open. `tests/unit/test_pipeline_contract_doc.py`
+covers AC-CONTRACT-01.
+
 ### Make commands
 
 Per [the suite's rule for `make` commands](https://github.com/paruff/uFawkes.dev/blob/main/docs/ai-sdlc/suite-release/spec.md#make-verification-commands). `make validate` here checks `compose.yaml` and the agent
