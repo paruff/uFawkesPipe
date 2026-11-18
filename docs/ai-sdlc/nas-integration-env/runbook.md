@@ -6,12 +6,22 @@ existing stack's data, but the Arcane migration must not start before that backl
 item is done. Facts below come from the compose files and the eshelfstack change
 records; each "check" is for you to run, since nothing has been run on the NAS.
 
+## NAS facts, read over SSH on 2026-11-18 (read-only)
+
+| Item | Value | Consequence |
+|---|---|---|
+| RAM | 19.8 GB total, 15.6 GB available, 3.8 GB used, 14 GB swap | Obs `core` fits |
+| Disk | `/volume1` 32 TB, 12 TB used, 20 TB free | No constraint |
+| CPU / load | 4 cores, load average 0.4 | Headroom |
+| Docker / Compose | Docker 24.0.2, Compose **v2.20.1** (`/usr/local/bin/docker`; not on the non-interactive SSH `PATH`) | `!override` and `!reset` (need 2.24) don't work; see below |
+| Ports already listening on all interfaces | 3000, 5001, 8000, 9000, 9443 | Grafana (3000), `telemetry-generator` (5001), Woodpecker (8000, 9000) and Pipe's Portainer (9443) all collide |
+
 ## 0. Preflight (read-only)
 
 ```
 free -m                       # DS920+ ships with 4 GB RAM; Obs's core profile sets limits above that
 df -h /volume1                # room for Prometheus, Loki and Tempo data
-docker compose version        # need >= 2.24 for the port override below
+/usr/local/bin/docker compose version   # the NAS has v2.20.1
 sudo netstat -tlnp | grep -E ':(3000|8000|8088|9000|9090|9443)\b'
 ```
 
@@ -19,24 +29,25 @@ sudo netstat -tlnp | grep -E ':(3000|8000|8088|9000|9090|9443)\b'
 
 | Collision | Cause | Fix |
 |---|---|---|
-| Ports 8000, 9000, 9443 | The existing Portainer CE publishes them; Pipe's `woodpecker-server` (8000, 9000) and `portainer` (9443) want the same | `compose.nas.yaml` below: Woodpecker UI on 8010, no host port 9000 (the agent reaches the server over the compose network), no second Portainer |
+| Ports 8000, 9000, 9443 | The existing Portainer CE publishes them; Pipe's `woodpecker-server` (8000, 9000) and `portainer` (9443) want the same | Host ports must become configurable (below). Skip Pipe's own Portainer: it would collide on 9443 and the NAS already runs one |
 | Port 5001 | Obs's `telemetry-generator` publishes 5001, which is DSM's default HTTPS port | Don't start it: it is a demo generator |
-| Port 3000 | Grafana, on all interfaces | Check the netstat line; remap if something owns it |
-| Memory | Obs `core` limits are Tempo 4 GB, Loki 2 GB, Prometheus 2 GB, Grafana and others on top | If `free -m` shows 4 GB, add RAM or start a subset (Prometheus, Grafana, OTel collector, `dora-api`) first, and watch `docker stats` |
+| Port 3000 | Grafana, on all interfaces; something already listens on 3000 | Make Grafana's host port configurable in Obs, or stop the other service |
+| Memory | Obs `core` limits are Tempo 4 GB, Loki 2 GB, Prometheus 2 GB, Grafana and others on top | The NAS now has 19.8 GB with 15.6 GB available: fits. Still watch `docker stats` the first day |
 | `dora-api` unreachable | Obs binds it to `127.0.0.1:8088`, so a container on another network can't reach it | Join the runner and Woodpecker to Obs's network `observability-lab` and use `http://dora-api:8088` |
 
-`compose.nas.yaml` (kept on the NAS next to a checkout; it overrides, it doesn't edit `compose.yaml`):
+**The override approach doesn't work on this NAS.** A compose override file can't drop
+a port the base file publishes without `!override`, and Compose v2.20.1 predates it. Two
+ways out, both needing the owner's approval because they touch compose structure:
 
-```yaml
-services:
-  woodpecker-server:
-    ports: !override
-      - "8010:8000"
-  portainer:
-    profiles: [disabled]   # the NAS already runs Portainer until Arcane replaces it
-```
+1. **Recommended:** make the host ports in `compose.yaml` configurable, defaulting to
+   today's values, e.g. `"${WOODPECKER_UI_PORT:-8000}:8000"`, and drop the host
+   publication of 9000 (the agent reaches the server over the compose network). Same for
+   Obs's Grafana. Nothing changes for anyone who sets nothing.
+2. Upgrade Container Manager to a Compose 2.24 or later, then use an override with
+   `ports: !override`.
 
-Set `WOODPECKER_HOST=http://<nas-ip>:8010` in `.env`.
+Until one of those lands, don't start Pipe's `woodpecker-server` or `portainer` on the
+NAS. Set `WOODPECKER_HOST=http://<nas-ip>:<chosen port>` in `.env` once the port is chosen.
 
 ## 1. uFawkesObs first
 
@@ -51,11 +62,11 @@ Expected: the network exists and the health call prints 200. Pin versions as the
 
 ```
 cd uFawkesPipe && cp .env.example .env     # fill the secrets; never commit .env
-docker compose -f compose.yaml -f compose.suite.yaml -f compose.nas.yaml up -d
+docker compose -f compose.yaml -f compose.suite.yaml up -d   # after the port change above
 ```
 Suite mode currently depends on the deprecated uFawkesRes for Postgres and Traefik
 (AGENTS.md section 10, #97). If that blocks you, run standalone mode
-(`-f compose.yaml -f compose.nas.yaml`) and give Woodpecker the Obs network by hand.
+(`-f compose.yaml`) and give Woodpecker the Obs network by hand.
 Woodpecker's webhook needs GitHub to reach it; on a LAN-only NAS that won't happen, so
 trigger pipelines from the Woodpecker UI or `woodpecker-cli` until a tunnel is chosen.
 
