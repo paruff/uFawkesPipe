@@ -27,7 +27,10 @@ paruff/uFawkesPipe#223.
 2026-11-18T15:35:27Z; Obs's `ufawkesdora-ingestion` logged `POST /event 201 Created` and
 `Processed event 1 (deployment)`. Run 44344387937 (a branch, so no merged PR and no
 `first_commit_at`) passed 6 tests on the NAS runner and was accepted with 201 (event 2).
-Still open: a passing run on `main` whose event carries `first_commit_at`.
+Run 44344859202 (on `main`, after the `uv` fix) passed 6 tests on the NAS runner and sent
+`status: success`, `environment: test`, `first_commit_at` 2026-11-18T16:04:33Z and
+`pr_merged_at` 2026-11-18T16:13:46Z; Obs logged `POST /event 201 Created` and `Processed event 3
+(deployment)`. Both halves of #220's done-when are met.
 
 **Evidence so far (#220, #221):** `notify-obs`'s commands, run under `sh` against a stub
 ingestion server that validates each POST against `contracts/dora-events/deployment-event.schema.json`,
