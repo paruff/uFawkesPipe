@@ -1155,3 +1155,28 @@ class TestPolicyCheckStep:
         assert 'dora_start "policy-check"' in command_str, (
             "policy-check must call dora_start with step name"
         )
+
+
+@pytest.mark.unit
+class TestNotifyObsLeadTimeAndFailure:
+    """#220: notify-obs reports failed runs and sends lead-time fields."""
+
+    def _commands(self, woodpecker_config):
+        step = next(s for s in woodpecker_config["steps"] if s["name"] == "notify-obs")
+        return step, " ".join(step["commands"])
+
+    def test_runs_on_failure_as_well(self, woodpecker_config):
+        step, _ = self._commands(woodpecker_config)
+        assert set(step.get("runs_on", [])) >= {"success", "failure"}
+
+    def test_status_is_not_hardcoded_success(self, woodpecker_config):
+        _, commands = self._commands(woodpecker_config)
+        dora = commands[commands.find("schema_version") :]
+        assert '"status": "success"' not in dora
+        assert "CI_PIPELINE_STATUS" in commands
+        assert "failed" in dora
+
+    def test_payload_carries_lead_time_fields(self, woodpecker_config):
+        _, commands = self._commands(woodpecker_config)
+        assert "first_commit_at" in commands
+        assert "pr_merged_at" in commands
