@@ -56,7 +56,7 @@ This repo's first stable release is its Phase 2.
   `docs/ai-sdlc/<feature>/intent.md` → `spec.md` (requirements and design) →
   `plan.md`. The current v2.0.0 intent, spec and plan live in
   `docs/ai-sdlc/v2.0.0/`; the finished CONSOLIDATE-SEC spec and design are in
-  `docs/ai-sdlc/consolidate-sec/`.
+  `docs/ai-sdlc/v2.0.0/`.
 - **A feature is claimed only after a real pipeline run shows it working.**
 
 ## Explicit non-goals

@@ -36,7 +36,7 @@
     {
       "id": "TASK-004",
       "title": "Add policy-check step to .woodpecker.yml",
-      "description": "Insert conftest-based policy-check step per docs/ai-sdlc/consolidate-sec/design.md section 4, after vuln-scan-fs, before build-image.",
+      "description": "Insert conftest-based policy-check step per docs/ai-sdlc/v2.0.0/consolidate-sec-design.md section 4, after vuln-scan-fs, before build-image.",
       "acceptance_criteria": ["AC-03"],
       "test_type": "unit",
       "depends_on": ["TASK-002"]

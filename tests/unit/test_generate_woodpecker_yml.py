@@ -1,7 +1,7 @@
 """Tests for scripts/generate_woodpecker_yml.py.
 
-Encodes docs/ai-sdlc/consolidate-sec/spec.md (PIPE-009) AC-01..AC-04 against the field -> step
-mapping documented in docs/ai-sdlc/consolidate-sec/design.md §5.
+Encodes docs/ai-sdlc/v2.0.0/consolidate-sec-spec.md (PIPE-009) AC-01..AC-04 against the field -> step
+mapping documented in docs/ai-sdlc/v2.0.0/consolidate-sec-design.md §5.
 """
 
 import sys
