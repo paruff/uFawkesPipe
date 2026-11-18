@@ -36,7 +36,7 @@ def _published(service: str) -> dict[str, str]:
 def test_host_ports_are_env_configurable_with_todays_defaults(service):
     published = _published(service)
     for container_port, (var, default) in CONFIGURABLE[service].items():
-        assert published[container_port] == "${%s:-%s}" % (var, default)
+        assert published[container_port] == f"${{{var}:-{default}}}"
 
 
 @pytest.mark.unit
