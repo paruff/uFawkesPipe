@@ -1169,7 +1169,9 @@ class TestBuildImageIsRealCnbBuild:
         assert image.startswith("buildpacksio/pack:"), image
         assert not image.endswith(":latest")
 
-    def test_runs_pack_build_and_publishes_the_tag_later_steps_scan(self, woodpecker_config):
+    def test_runs_pack_build_and_publishes_the_tag_later_steps_scan(
+        self, woodpecker_config
+    ):
         commands = " ".join(self._step(woodpecker_config)["commands"])
         assert "pack build" in commands
         assert "--publish" in commands
