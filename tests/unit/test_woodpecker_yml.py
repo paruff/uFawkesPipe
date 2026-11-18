@@ -1155,3 +1155,33 @@ class TestPolicyCheckStep:
         assert 'dora_start "policy-check"' in command_str, (
             "policy-check must call dora_start with step name"
         )
+
+
+@pytest.mark.unit
+class TestBuildImageIsRealCnbBuild:
+    """ADR-006 / AC-PIPE-01: build-image builds and publishes with `pack`."""
+
+    def _step(self, woodpecker_config):
+        return next(s for s in woodpecker_config["steps"] if s["name"] == "build-image")
+
+    def test_uses_a_pinned_pack_image(self, woodpecker_config):
+        image = self._step(woodpecker_config)["image"]
+        assert image.startswith("buildpacksio/pack:"), image
+        assert not image.endswith(":latest")
+
+    def test_runs_pack_build_and_publishes_the_tag_later_steps_scan(
+        self, woodpecker_config
+    ):
+        commands = " ".join(self._step(woodpecker_config)["commands"])
+        assert "pack build" in commands
+        assert "--publish" in commands
+        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in commands
+
+    def test_is_not_a_placeholder(self, woodpecker_config):
+        commands = " ".join(self._step(woodpecker_config)["commands"]).lower()
+        assert "placeholder" not in commands
+
+    def test_registry_credentials_come_from_secrets(self, woodpecker_config):
+        env = self._step(woodpecker_config)["environment"]
+        assert env["REGISTRY_USERNAME"]["from_secret"] == "registry_username"
+        assert env["REGISTRY_PASSWORD"]["from_secret"] == "registry_password"
