@@ -1186,6 +1186,7 @@ class TestBuildImageIsRealCnbBuild:
         assert env["REGISTRY_USERNAME"]["from_secret"] == "registry_username"
         assert env["REGISTRY_PASSWORD"]["from_secret"] == "registry_password"
 
+
 class TestNotifyObsLeadTimeAndFailure:
     """#220: notify-obs reports failed runs and sends lead-time fields."""
 
