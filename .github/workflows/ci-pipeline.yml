@@ -24,7 +24,7 @@ jobs:
     with:
       pr-size-limit: 0
       # The hook stages run in the suite's CI image (ci-pipeline spec R4).
-      ci-image: ghcr.io/paruff/ufawkes-ci@sha256:e85db8b3554da7c3362303d0e1e9681997d78093269b641e3535989f9c66f4da
+      ci-image: ghcr.io/paruff/ufawkes-ci@sha256:575c812d55ca8f9c4faa5afb77dbb721969f8e866448fe7641e835be79057ee0
 
   # ─── Stage 1: Static Analysis (Lint) ────────────────────────────────────
   lint:
