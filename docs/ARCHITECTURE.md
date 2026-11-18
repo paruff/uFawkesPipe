@@ -133,7 +133,7 @@ validate (init → lint-yaml + lint-shell)
 | 3 | security | `secrets-scan` | `zricethezav/gitleaks:v8.18.2` | always | **Yes** (`--exit-code 1`) |
 | 3 | security | `vuln-scan-fs` | `aquasec/trivy:0.74.0` | always | No (non-blocking, to DefectDojo) |
 | 3 | security | `vuln-scan-image` | `aquasec/trivy:0.74.0` | push → main only | No (non-blocking) |
-| 4 | build | `build-image` | `alpine:3.20` | push → main only | No (placeholder) |
+| 4 | build | `build-image` | `buildpacksio/pack:0.32.1` | push → main only | No |
 | 5 | publish | `upload-defectdojo` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 | 6 | deploy | `notify-obs` | `curlimages/curl:8.6.0` | push → main only | No (non-blocking) |
 

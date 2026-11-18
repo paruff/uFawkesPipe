@@ -44,7 +44,7 @@ Every pipeline in uFawkesPipe follows these standardized stages (defined in [`.w
 - **secrets-scan** — Hard gate: Gitleaks secret detection with `.gitleaks.toml` rules
 - **vuln-scan-fs** — Trivy filesystem vulnerability scan (entire working tree)
 - **vuln-scan-image** — Trivy container image vulnerability scan (main branch only)
-- **build-image** — Container image build via CNB (placeholder)
+- **build-image** — Container image build and push via Cloud Native Buildpacks (`pack build --publish`, Paketo base builder); needs the `registry_username` and `registry_password` secrets
 - **upload-defectdojo** — Collect Gitleaks + Trivy results and POST to DefectDojo API (non-blocking)
 - **notify-obs** — Emit structured deployment event to uFawkesObs OTEL collector (non-blocking)
 
