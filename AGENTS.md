@@ -251,7 +251,7 @@ For uFawkesPipe specifically, every PR must also cover:
 
 ### Deployment Lifecycle Gates
 
-- **Main CI must be green before any PR merges.** Enforced by `main-ci-guard.yml` which calls `reusable-main-ci-guard@v1.2.0`.
+- **Main CI must be green before any PR merges.** Enforced by `main-ci-guard.yml` which calls `reusable-main-ci-guard` at `v1.15.0-beta.1`.
 - **Observability is built-in.** Every CI job logs `job-start` / `job-finish` timestamps. Build times and test results are traceable in uFawkesObs.
 - **Progressive delivery is not applicable** to uFawkesPipe itself (it is a CI/CD platform, not a user-facing service). Pipeline contract changes are versioned via semver tags.
 
@@ -261,7 +261,7 @@ For uFawkesPipe specifically, every PR must also cover:
 
 See `docs/KNOWN_LIMITATIONS.md` for the full list. Key items agents should be aware of:
 
-- `notify-obs` is a stub — no DORA deployment events are actually emitted yet.
+- `notify-obs` posts a deployment event (`success` or `failed`, with `first_commit_at` and `pr_merged_at` when GitHub reports a PR) to uFawkesObs when `DORA_INGESTION_URL` is set; it emits no `rework` or `incident` events.
 - No automated integration or E2E tests exist — only unit tests.
 - No Gitleaks secrets scan in CI (only pre-commit hook).
 

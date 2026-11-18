@@ -517,9 +517,13 @@ steps:
         from_secret: dora_ingestion_url
       DORA_API_KEY:
         from_secret: dora_api_key
+      GITHUB_TOKEN:
+        from_secret: github_token
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "notify-obs"
+      # CI_PIPELINE_STATUS is success or failure; the schema calls a failure "failed".
+      - DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed
       - |
         if [ -n "${OTEL_ENDPOINT:-}" ]; then
           curl -sf -X POST "${OTEL_ENDPOINT}/v1/traces" \
@@ -532,7 +536,7 @@ steps:
                     {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
                     {"key": "deployment.environment", "value": {"stringValue": "production"}},
                     {"key": "deployment.version", "value": {"stringValue": "'"${CI_COMMIT_SHA:0:7}"'"}},
-                    {"key": "deployment.status", "value": {"stringValue": "success"}}
+                    {"key": "deployment.status", "value": {"stringValue": "'"${DEPLOY_STATUS}"'"}}
                   ]
                 },
                 "scopeSpans": [{
@@ -557,6 +561,23 @@ steps:
         fi
       - |
         if [ -n "${DORA_INGESTION_URL:-}" ]; then
+          # Lead time: uFawkesObs reads first_commit_at, else pr_merged_at, from the event.
+          # shortcut: scrapes GitHub's pretty-printed JSON with grep (no jq in this image);
+          # unauthenticated calls are rate-limited, so set GITHUB_TOKEN to lift it.
+          LEAD_TIME=""
+          GH_API="https://api.github.com/repos/${CI_REPO}"
+          GH_PR=$(curl -sf ${GITHUB_TOKEN:+-H "Authorization: Bearer ${GITHUB_TOKEN}"} \
+            "${GH_API}/commits/${CI_COMMIT_SHA}/pulls") \
+            || dora_warn "observability" "GitHub PR lookup failed (rate limit? set github_token) — event sent without lead-time fields"
+          GH_PR_NUMBER=$(echo "${GH_PR}" | grep -m1 '^    "number":' | grep -o '[0-9]*' || true)
+          PR_MERGED_AT=$(echo "${GH_PR}" | grep -m1 '^    "merged_at":' | grep -o '[0-9T:Z-]\{20\}' || true)
+          if [ -n "${GH_PR_NUMBER}" ]; then
+            FIRST_COMMIT_AT=$(curl -sf ${GITHUB_TOKEN:+-H "Authorization: Bearer ${GITHUB_TOKEN}"} \
+              "${GH_API}/pulls/${GH_PR_NUMBER}/commits?per_page=100" \
+              | grep -o '"date": "[0-9T:Z-]*"' | grep -o '[0-9T:Z-]\{20\}' | sort | head -1 || true)
+          fi
+          [ -z "${FIRST_COMMIT_AT:-}" ] || LEAD_TIME="${LEAD_TIME},\"first_commit_at\": \"${FIRST_COMMIT_AT}\""
+          [ -z "${PR_MERGED_AT}" ] || LEAD_TIME="${LEAD_TIME},\"pr_merged_at\": \"${PR_MERGED_AT}\""
           DORA_PAYLOAD=$(cat <<EOF
         {
           "schema_version": "1.0",
@@ -566,8 +587,8 @@ steps:
           "environment": "production",
           "commit_sha": "${CI_COMMIT_SHA}",
           "deployed_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-          "status": "success",
-          "pipeline_url": "${CI_PIPELINE_URL}"
+          "status": "${DEPLOY_STATUS}",
+          "pipeline_url": "${CI_PIPELINE_URL}"${LEAD_TIME}
         }
         EOF
           )
@@ -585,6 +606,7 @@ steps:
           dora_warn "observability" "DORA_INGESTION_URL not set — deployment will not be counted in DORA metrics"
         fi
       - dora_end "notify-obs"
+    runs_on: [success, failure]
     when:
       - event: push
         branch: main

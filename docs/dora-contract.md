@@ -85,7 +85,10 @@ implemented here or anywhere in the suite yet).
    what actually feeds DORA metrics computation. Requires the
    `dora_ingestion_url` Woodpecker secret (`http://<obs-host>:8088`
    typically); `dora_api_key` is optional bearer auth, sent only if
-   configured.
+   configured. The step runs on failed pipelines too (`status: failed`) and adds
+   `first_commit_at` and `pr_merged_at` from the GitHub API; the optional
+   `github_token` secret lifts GitHub's unauthenticated rate limit, and without
+   a successful lookup the event goes out without those two fields.
 2. The original OTLP trace span to `${OTEL_ENDPOINT}/v1/traces` — unchanged,
    still useful for tracing in Tempo, but **not** a DORA signal (see below).
 

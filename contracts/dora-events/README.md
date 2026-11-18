@@ -112,6 +112,7 @@ event — collectors should emit both when a deployment is rework.
 
 | Field            | Required | Type                     | Description                   |
 | ---------------- | -------- | ------------------------ | ----------------------------- |
+| `repo`           | Yes      | `string`                 | Repository identifier         |
 | `deployment_sha` | Yes      | `string` (hex, 40 chars) | Rework deployment SHA         |
 | `rework_type`    | Yes      | `enum`                   | `hotfix`, `rollback`, `patch` |
 | `triggered_at`   | Yes      | `string` (ISO 8601)      | Deployment timestamp          |
