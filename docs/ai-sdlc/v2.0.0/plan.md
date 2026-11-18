@@ -21,6 +21,17 @@ paruff/uFawkesPipe#223.
 | AC-DORA-02 | A CI check that compares `contracts/dora-events/` with uFawkesObs at the pinned release, and fails on today's deployment mirror (paruff/uFawkesPipe#218) |
 | AC-CONTRACT-01 | A unit test: a `.fawkespipe.yml` without a field the doc calls required makes `make generate-pipeline` fail (paruff/uFawkesPipe#221) |
 
+**Real run on the NAS, 2026-11-18 (#220):** `python-fawkes-path` workflow run 44344109474
+(on `main`, `simulate_failure=true`) sent a deployment event with `status: failed`,
+`environment: test`, `first_commit_at` 2026-11-18T15:15:37Z and `pr_merged_at`
+2026-11-18T15:35:27Z; Obs's `ufawkesdora-ingestion` logged `POST /event 201 Created` and
+`Processed event 1 (deployment)`. Run 44344387937 (a branch, so no merged PR and no
+`first_commit_at`) passed 6 tests on the NAS runner and was accepted with 201 (event 2).
+Run 44344859202 (on `main`, after the `uv` fix) passed 6 tests on the NAS runner and sent
+`status: success`, `environment: test`, `first_commit_at` 2026-11-18T16:04:33Z and
+`pr_merged_at` 2026-11-18T16:13:46Z; Obs logged `POST /event 201 Created` and `Processed event 3
+(deployment)`. Both halves of #220's done-when are met.
+
 **Evidence so far (#220, #221):** `notify-obs`'s commands, run under `sh` against a stub
 ingestion server that validates each POST against `contracts/dora-events/deployment-event.schema.json`,
 got 201 for a `success` run and for a `failure` run (sent as `status: failed`); both events carried

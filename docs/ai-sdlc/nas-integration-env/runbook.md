@@ -87,6 +87,30 @@ environment)" workflow twice: once as is, once with `simulate_failure`. Expected
 events accepted with 201 in `dora-api`'s log, statuses `success` and `failed`, and the
 successful one carrying `first_commit_at`. Record both in `docs/ci-runner-image/verification-log.md`.
 
+## What the first deploy found (2026-11-18)
+
+Corrections to the steps above, from running them on the NAS.
+
+- **Obs was already there.** `~/uFawkesObs` (the checkout the old containers came from)
+  held a stale commit and seven exited core containers, started from two untracked files,
+  `compose.drill.yaml` (an old full copy; unused) and `compose.drill-user.yaml` (a 242-byte
+  override that sets `user: "1026:100"`). Update that checkout to `main` and start with
+  `-f compose.yaml -f compose.drill-user.yaml --profile core --profile dora`.
+- **`dora-api` needs the same user override.** Its container name is `ufawkesdora-ingestion`
+  and it bind-mounts `dora/ingestion` and `dora/events` from the home folder, which has
+  Synology ACLs. As uid 999 it crash-looped with `PermissionError: /app/ingestion/__init__.py`;
+  adding `dora-api: user: "1026:100"` to `compose.drill-user.yaml` fixed it. The DORA API is in
+  the `dora` profile, not `core`.
+- **Grafana moves to 3300** (`GRAFANA_PORT=3300` in Obs's `.env`; Sure holds 3000), and
+  `telemetry-generator` is not started.
+- **The runner image has no pip.** `python -m pip` and `python -m venv` both fail in
+  `ufawkes-ci`; use `uv venv` and `uv pip install` (the image ships `uv`).
+- **Woodpecker is not needed for #220.** The real run uses a GitHub Actions workflow on the
+  runner (`python-fawkes-path`, "DORA event (test environment)") and the Obs ingestion API.
+  Pipe's own stack still needs a GitHub OAuth app.
+- **Public repo, self-hosted runner.** The repo's fork-PR approval policy was
+  `first_time_contributors`; it is now `all_external_contributors`.
+
 ## Rollback
 
 `docker compose ... down` for the stack you started (never `down -v`); the old
