@@ -43,9 +43,9 @@ Set `WOODPECKER_HOST=http://<nas-ip>:8010` in `.env`.
 ```
 cd uFawkesObs && docker compose --profile core up -d
 docker network inspect observability-lab > /dev/null && echo network-ok
-docker exec $(docker ps -qf name=dora-api) wget -qO- http://localhost:8088/health
+docker exec $(docker ps -qf name=dora-api) python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8088/health', timeout=5).status)"   # the image has no wget or curl
 ```
-Expected: the network exists and the health call answers. Pin versions as the repo does; no `latest`.
+Expected: the network exists and the health call prints 200. Pin versions as the repo does; no `latest`.
 
 ## 2. uFawkesPipe in suite mode
 
