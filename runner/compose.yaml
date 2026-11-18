@@ -216,7 +216,8 @@ services:
       - runner-precommit:/root/.cache/pre-commit
       - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f Runner.Listener > /dev/null"]
+      # [R] keeps grep from matching its own command line; the image has no pgrep.
+      test: ["CMD-SHELL", "grep -qa '[R]unner.Listener' /proc/[0-9]*/cmdline"]
       interval: 30s
       timeout: 5s
       retries: 3
