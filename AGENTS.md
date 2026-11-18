@@ -76,7 +76,7 @@ steps another agent calls directly.
 | 2 | `VISION.md` | North star, core principles, non-goals, riskiest assumption |
 | 3 | `MILESTONES.md` | Horizon map, milestones, release gates, traceability |
 | 4 | `EXECUTION_QUEUE.md` | Priority tiers (P0–P3), scope-drift guard, feedback loop |
-| 5 | `plan-for-the-day.md` | Daily goal, TDD protocol, retrospective |
+| 5 | `docs/ai-sdlc/v2.0.0/` | Current intent, spec and plan |
 | 6 | `compose.yaml` + `compose.suite.yaml` | Service versions, configuration, standalone vs suite mode |
 | 7 | `.fawkespipe.yml.example` | The pipeline contract that app teams use |
 | 8 | `docs/ARCHITECTURE.md` | How components connect |

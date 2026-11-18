@@ -7,7 +7,7 @@ and observability event step.
 
 Does NOT require the compose stack to be running — pipeline
 structure is verified by parsing .woodpecker.yml directly
-(see ADR-004 in docs/design.md). These tests always run.
+(see ADR-004 in docs/ai-sdlc/v2.0.0/acceptance-suite-design.md). These tests always run.
 """
 
 import pytest
