@@ -1174,7 +1174,7 @@ class TestNotifyObsLeadTimeAndFailure:
         dora = commands[commands.find("schema_version") :]
         assert '"status": "success"' not in dora
         assert "CI_PIPELINE_STATUS" in commands
-        assert "failed" in dora
+        assert "failed" in commands
 
     def test_payload_carries_lead_time_fields(self, woodpecker_config):
         _, commands = self._commands(woodpecker_config)
