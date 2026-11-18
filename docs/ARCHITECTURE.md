@@ -437,7 +437,7 @@ file — do not "fix" this away in tests or docs.
 `policy-check` (in `.woodpecker.yml`, §3.2) runs Conftest against `compose.yaml`,
 `compose.suite.yaml`, and `.woodpecker.yml` using the Rego policies in `policy/`.
 See [docs/policy-guide.md](policy-guide.md) and
-[docs/quickstart.md](quickstart.md) for authoring policies and the
+[QUICKSTART.md](../QUICKSTART.md) for authoring policies and the
 security-plane startup sequence.
 
 ---
