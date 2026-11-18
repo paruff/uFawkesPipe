@@ -70,3 +70,10 @@ def test_env_example_lists_the_runner_keys_and_no_token():
     assert re.search(r"^RUNNER_TOKEN=$", env, re.MULTILINE), (
         "the example must not carry a token"
     )
+
+
+@pytest.mark.unit
+def test_obs_override_joins_the_runner_to_the_external_observability_network():
+    override = yaml.safe_load((ROOT / "runner" / "compose.obs.yaml").read_text())
+    assert "observability-lab" in override["services"]["ufawkes-ci-runner"]["networks"]
+    assert override["networks"]["observability-lab"] == {"external": True}
