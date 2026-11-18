@@ -93,12 +93,12 @@ pipeline steps — see `docs/KNOWN_LIMITATIONS.md` L-005.
 
 ## app — Application Metadata
 
-Defines your application's identity. This section is **required**.
+Defines your application's identity. This section is **required**, but only `app.language` is enforced: the generator fails without it and reads no other `app` field.
 
 | Field    | Type   | Required | Default | Description |
 |----------|--------|----------|---------|-------------|
-| `name`   | string | yes      | —       | Application name. Used for image names, SonarQube project keys, and Kubernetes resources. |
-| `type`   | string | yes      | `service` | Application type. Valid values: `service`, `library`, `cli`, `frontend` |
+| `name`   | string | no       | —       | Application name. Used for image names, SonarQube project keys, and Kubernetes resources. |
+| `type`   | string | no       | `service` | Application type. Valid values: `service`, `library`, `cli`, `frontend` |
 | `language` | string | yes    | —       | Primary programming language. Valid values: `java`, `python`, `nodejs`, `go`, `ruby`, `php`, `dotnet`, `rust` |
 | `version` | string | no       | auto-detected | Semantic version. Can be auto-generated from Git tags or CI variables. |
 
@@ -116,14 +116,14 @@ app:
 
 ## build — Build Configuration
 
-Defines how your application is built into a container image. **Required**.
+Defines how your application is built into a container image. No `build` field is enforced.
 
 | Field      | Type   | Required | Default  | Description |
 |------------|--------|----------|----------|-------------|
-| `builder`  | string | yes      | `cnb`    | Build method. Valid values: `cnb` (Cloud Native Buildpacks), `docker` (Dockerfile), `custom` (custom script) |
+| `builder`  | string | no       | `cnb`    | Build method. Valid values: `cnb` (Cloud Native Buildpacks), `docker` (Dockerfile), `custom` (custom script) |
 | `cnb`      | object | no       | —        | CNB-specific configuration (see below) |
 | `docker`   | object | no       | —        | Docker-specific configuration (see below) |
-| `image`    | object | yes      | —        | Image registry, name, and tag configuration (see below) |
+| `image`    | object | no       | —        | Image registry, name, and tag configuration (see below) |
 
 ### CNB Builder
 
@@ -191,7 +191,7 @@ Configures the container image name, registry, and tag strategy.
 | Field       | Type   | Required | Default        | Description |
 |-------------|--------|----------|----------------|-------------|
 | `registry`  | string | no       | `docker.io`    | Container registry hostname |
-| `namespace` | string | yes      | —              | Registry namespace/organization (e.g., DockerHub username) |
+| `namespace` | string | no       | —              | Registry namespace/organization (e.g., DockerHub username). Used with `name`: both set gives `namespace/name`, otherwise the image is `$CI_REPO_NAME`. |
 | `name`      | string | no       | `app.name`     | Image name. Defaults to the app name. |
 | `tags`      | array  | no       | `[short-sha]`  | List of tags to apply. Supports CI variable interpolation. |
 
@@ -654,32 +654,13 @@ Fine-tune pipeline behavior.
 
 | Field                | Type    | Required | Default | Description |
 |----------------------|---------|----------|---------|-------------|
-| `timeout`            | integer | no       | `60`    | Pipeline timeout in minutes |
-| `retry.enabled`      | boolean | no       | `true`  | Enable automatic retry on failure |
-| `retry.count`        | integer | no       | `2`     | Maximum retry attempts |
-| `parallel.enabled`   | boolean | no       | `false` | Run independent stages in parallel |
-| `artifacts.paths`    | array   | no       | —       | Paths to archive as build artifacts |
-| `artifacts.retention` | integer | no      | `30`    | Days to retain artifacts |
-| `workspace.cleanup`  | boolean | no       | `true`  | Clean workspace after build |
+| `timeout`            | integer | no       | `60`    | Pipeline timeout in minutes. Written to the generated file as a comment only; Woodpecker CE has no per-pipeline YAML timeout (L-005). |
 
 **Example:**
 
 ```yaml
 advanced:
   timeout: 60
-  retry:
-    enabled: true
-    count: 2
-  parallel:
-    enabled: false
-  artifacts:
-    paths:
-      - target/*.jar
-      - dist/
-      - build/
-    retention: 30
-  workspace:
-    cleanup: true
 ```
 
 ---
@@ -782,15 +763,6 @@ kubernetes:
 
 advanced:
   timeout: 60
-  retry:
-    enabled: true
-    count: 2
-  artifacts:
-    paths:
-      - target/*.jar
-    retention: 30
-  workspace:
-    cleanup: true
 ```
 
 ---

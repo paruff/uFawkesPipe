@@ -155,16 +155,3 @@ kubernetes:
 # Advanced configuration
 advanced:
   timeout: 60                                # Pipeline timeout in minutes
-  retry:
-    enabled: true
-    count: 2
-  parallel:
-    enabled: false                           # Run independent stages in parallel
-  artifacts:
-    paths:                                   # Paths to archive as artifacts
-      - target/*.jar
-      - dist/
-      - build/
-    retention: 30                            # Days to retain artifacts
-  workspace:
-    cleanup: true                            # Clean workspace after build
