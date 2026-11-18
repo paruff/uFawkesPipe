@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -38,8 +39,6 @@ def _required_rows(section: str) -> list[str]:
 
 def _contract(tmp_path: Path, app: dict) -> Path:
     path = tmp_path / ".fawkespipe.yml"
-    import yaml
-
     path.write_text(yaml.safe_dump({"app": app, "build": {"builder": "cnb"}}))
     return path
 

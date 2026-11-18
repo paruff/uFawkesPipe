@@ -567,7 +567,8 @@ steps:
           LEAD_TIME=""
           GH_API="https://api.github.com/repos/${CI_REPO}"
           GH_PR=$(curl -sf ${GITHUB_TOKEN:+-H "Authorization: Bearer ${GITHUB_TOKEN}"} \
-            "${GH_API}/commits/${CI_COMMIT_SHA}/pulls" || true)
+            "${GH_API}/commits/${CI_COMMIT_SHA}/pulls") \
+            || dora_warn "observability" "GitHub PR lookup failed (rate limit? set github_token) — event sent without lead-time fields"
           GH_PR_NUMBER=$(echo "${GH_PR}" | grep -m1 '^    "number":' | grep -o '[0-9]*' || true)
           PR_MERGED_AT=$(echo "${GH_PR}" | grep -m1 '^    "merged_at":' | grep -o '[0-9T:Z-]\{20\}' || true)
           if [ -n "${GH_PR_NUMBER}" ]; then
