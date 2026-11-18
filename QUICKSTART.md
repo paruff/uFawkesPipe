@@ -261,6 +261,27 @@ cd ../uFawkesObs && make status
 docker compose -f compose.yaml exec woodpecker-agent wget -qO- http://otel-collector:4318
 ```
 
+## Security Plane
+
+`make up` also starts DefectDojo, Infisical, a Trivy server and Falco, backed
+by the embedded `postgres` and `valkey`. Set these in `.env` (see
+`.env.example`) before the first start; generate keys with `openssl rand -hex 32`
+(or `-hex 64` for secrets):
+
+| Variable | Used by |
+|---|---|
+| `DEFECTDOJO_SECRET_KEY`, `DEFECTDOJO_AES_KEY`, `DOJO_DB_PASSWORD` | DefectDojo |
+| `INFISICAL_ENCRYPTION_KEY`, `INFISICAL_AUTH_SECRET`, `INFISICAL_DB_PASSWORD` | Infisical |
+
+Once `docker compose ps` shows the services healthy (30-60 s):
+
+- [ ] DefectDojo loads at <http://localhost:8080>
+- [ ] Infisical loads at <http://localhost:8082>
+- [ ] `docker logs falco` shows startup messages (syscall events need Linux; on macOS Falco starts but captures none)
+- [ ] `docker compose exec trivy-server trivy health` passes
+
+Policy authoring: [docs/policy-guide.md](docs/policy-guide.md).
+
 ## Next Steps
 
 - Read the [Architecture Documentation](docs/ARCHITECTURE.md)

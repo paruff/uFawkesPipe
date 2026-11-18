@@ -304,7 +304,7 @@ the `policy-check` step in `.woodpecker.yml`.
   this repo (not external) — both sides of what used to be a cross-repo
   network now live in one compose deployment.
 - See [docs/policy-guide.md](docs/policy-guide.md) and
-  [docs/quickstart.md](docs/quickstart.md) for policy authoring and the
+  [QUICKSTART.md](QUICKSTART.md) for policy authoring and the
   security-plane startup sequence.
 
 ---
