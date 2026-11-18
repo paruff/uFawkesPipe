@@ -11,7 +11,7 @@
 
 ```
 1. Run discovery (15-min JTBD exercise) → discovery-brief.md
-2. Extract requirements → specification.md
+2. Extract requirements → `docs/ai-sdlc/<feature>/spec.md`
 3. Define acceptance criteria (binary pass/fail)
 4. Check governance alignment:
    - Pipeline policy (required stages, security gates)
@@ -25,7 +25,7 @@
 
 ## Phase 1 — Design
 
-**Input:** specification.md
+**Input:** `docs/ai-sdlc/<feature>/spec.md`
 
 ```
 1. Architecture decomposition → component map
@@ -40,7 +40,7 @@
 
 ## Phase 2 — Plan
 
-**Input:** specification.md + design.md
+**Input:** `docs/ai-sdlc/<feature>/spec.md`
 
 ```
 1. Task decomposition → tasks.json with ordered work items
@@ -88,7 +88,7 @@
 
 ## Phase 5 — Review
 
-**Input:** design.md + build-report.md + test-report.md
+**Input:** the feature spec + build-report.md + test-report.md
 
 ```
 Checks:

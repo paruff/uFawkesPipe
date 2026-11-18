@@ -57,7 +57,7 @@
 |----------|-----------------|
 | **MILESTONES.md** | What we ship and when — monthly/quarterly horizons mapped to principles |
 | **EXECUTION_QUEUE.md** | What we work on this week/next — priority tiers, scope-drift guard |
-| **plan-for-the-day.md** | What we do *today* — single goal, TDD protocol, retrospective |
+| **docs/ai-sdlc/v2.0.0/** | What we are building now — intent, spec, plan |
 | **docs/ARCHITECTURE.md** | How components connect — service map, data flows, network topology, suite mode |
 | **docs/KNOWN_LIMITATIONS.md** | What's broken or missing — living document, agents must not make these worse |
 | **docs/CHANGE_IMPACT_MAP.md** | What breaks when — cross-plane impact of contract, compose, pipeline changes |

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate .woodpecker.yml from an app repo's .fawkespipe.yml contract.
 
-See design.md (PIPE-009) for the field -> step mapping this implements.
+See docs/ai-sdlc/consolidate-sec/design.md (PIPE-009) for the field -> step mapping this implements.
 
 Usage:
     generate_woodpecker_yml.py [--contract PATH] [--output PATH] [--check]

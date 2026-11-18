@@ -201,7 +201,7 @@
 #    limitations under the License.
 
 # PIPE-009 migration example: proves .fawkespipe.yml actually drives the
-# generated .woodpecker.yml (see design.md Option B). Regenerate the
+# generated .woodpecker.yml (see docs/ai-sdlc/consolidate-sec/design.md Option B). Regenerate the
 # paired .woodpecker.yml with:
 #   make generate-pipeline \
 #     FILE=examples/fawkespipe-contract-migration/.fawkespipe.yml \
