@@ -55,3 +55,11 @@ definitions but doesn't run the hooks (paruff/uFawkesPipe#216); run `make pre-co
 | `make check-pipeline` | `.woodpecker.yml` isn't stale against `.fawkespipe.yml` | Nothing |
 | `make test-smoke`, `make test-acceptance` | Smoke and acceptance tests pass | `make up` first |
 | `make doctor` | This clone's hooks are installed and its tools are present | Nothing |
+
+### Planning-doc layout (#96)
+
+This directory holds the repo's one current intent, spec and plan. The finished
+CONSOLIDATE-SEC spec and design (`consolidate-sec-*.md`) and the acceptance-suite
+design sit beside them as history; code comments cite them (PIPE-009). Verify
+with `grep -rn "plan-for-the-day\|docs/specification" .` returning nothing
+outside the changelog.

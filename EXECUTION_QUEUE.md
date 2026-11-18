@@ -21,7 +21,7 @@
 | P1-1 | Fix `vuln-scan-fs` Trivy severity threshold alignment (HIGH/CRITICAL vs CRITICAL only) | KNOWN_LIMITATIONS L-008 follow-up | Trivy fs scan fails on HIGH+; config in `.fawkespipe.yml.example` matches | pipeline-policy, verification | DONE (PR #83) |
 | P1-2 | Add `policy-check` step timeout (currently unbounded) | AGENTS.md §4 | Step has `timeout: 5` minutes; fails fast on OPA hang | pipeline-policy, governance-enforcement | DONE (PR #83) |
 | P1-3 | Document suite-mode network topology in `docs/ARCHITECTURE.md` §12.2 (add diagram for security plane services) | ARCHITECTURE.md gap | Mermaid diagram shows defectdojo/infisical/trivy/falco on `fawkes-net` internal | documentation, design-compliance | DONE (PR #83) |
-| P1-4 | Add `make test-policy` target running Conftest against local compose files | design.md §4 | `make test-policy` runs `conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml` | test-execution, pipeline-test-stage-validation | DONE (PR #83) |
+| P1-4 | Add `make test-policy` target running Conftest against local compose files | consolidate-sec/design.md §4 | `make test-policy` runs `conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml` | test-execution, pipeline-test-stage-validation | DONE (PR #83) |
 | P1-5 | Add integration tests for `scripts/generate_woodpecker_yml.py` (empty stages, custom builders) | Retrospective insight | Test matrix covers edge cases; all pass | test-execution, verification | DONE (PR #83) |
 
 ### P2 — Next Sprint (Week of 2026-09-21)
@@ -79,7 +79,7 @@
 
 ## Bottom-Up Feedback Loop
 
-> Learnings from `plan-for-the-day.md` retrospectives route back here:
+> Learnings from session retrospectives route back here:
 
 | Date | Retrospective Insight | Queue Impact |
 |------|----------------------|--------------|
@@ -87,7 +87,7 @@
 | 2026-09-18 | Milestones/EXECUTION_QUEUE Issue/PR citations for M1.1–M1.4 were fabricated (real PRs, wrong ones — mostly unrelated Dependabot bumps); P1-2/P1-3/P1-5 were implemented but left unmarked; `docs/ARCHITECTURE.md` has a live internal contradiction about whether uFawkesRes is decommissioned | Added P3-11..P3-16 (new); flagged P3-14 as blocking on a human decision before any suite-mode integration work proceeds |
 | — | — | — |
 
-**Process:** At end of each `plan-for-the-day.md` session, the retrospective section captures:
+**Process:** At the end of each work session, the retrospective section captures:
 1. What took longer than expected?
 2. What broke that wasn't in the queue?
 3. What non-goal pressure appeared?

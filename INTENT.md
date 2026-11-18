@@ -54,10 +54,9 @@ This repo's first stable release is its Phase 2.
 
 - **Planning follows the uFawkesAI artifact chain:**
   `docs/ai-sdlc/<feature>/intent.md` → `spec.md` (requirements and design) →
-  `plan.md`. Today the planning docs are duplicated across the root and
-  `docs/`: `specification.md`, `docs/specification.md`,
-  `design.md`, `docs/design.md`, and `plan-for-the-day.md`. Consolidating
-  them into `docs/ai-sdlc/v2.0.0/` is #121.
+  `plan.md`. The current v2.0.0 intent, spec and plan live in
+  `docs/ai-sdlc/v2.0.0/`; the finished CONSOLIDATE-SEC spec and design are in
+  `docs/ai-sdlc/v2.0.0/`.
 - **A feature is claimed only after a real pipeline run shows it working.**
 
 ## Explicit non-goals
