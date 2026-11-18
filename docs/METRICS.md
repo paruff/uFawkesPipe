@@ -4,12 +4,16 @@ Reading time: 8–12 minutes
 
 ## Purpose
 
-This document describes how uFawkesPipe collects, emits, and reports the four DORA metrics:
+This document describes how uFawkesPipe collects, emits, and reports the five DORA metrics that uFawkesObs computes:
 
-1. **Lead Time for Changes** — Time from commit to production deploy
+1. **Lead Time for Changes** — Time from first commit (or PR merge) to production deploy
 2. **Deployment Frequency** — Deploy events per unit time
-3. **Mean Time to Restore** — Time from failure to recovery
+3. **Failed Deployment Recovery Time** — Time from a failed deploy to the next successful one
 4. **Change Failure Rate** — Failed deploys / total deploys
+5. **Rework Rate** — Share of deployments that are corrective (`rework` events; this repo's pipeline does not emit them yet, see `docs/dora-contract.md`)
+
+uFawkesPipe only emits the events. uFawkesObs (`dora/compute/`) computes the
+metrics and exposes the `dora_*` series quoted under [Queries](#queries-promql).
 
 ## Prerequisites
 
@@ -70,8 +74,8 @@ Emitted by `notify-obs` step in `.woodpecker.yml`:
 lead_time = deploy_timestamp - commit_timestamp
 ```
 
-- `commit_timestamp`: From `CI_COMMIT_TIMESTAMP` or git log
-- `deploy_timestamp`: From deployment event
+- `commit_timestamp`: the event's `first_commit_at`, else its `pr_merged_at` (`notify-obs` sends both when GitHub reports a PR for the commit)
+- `deploy_timestamp`: the event's `deployed_at`
 
 ### Deployment Frequency
 
@@ -79,14 +83,14 @@ lead_time = deploy_timestamp - commit_timestamp
 deployments_per_day = count(deploy_events) / days_in_window
 ```
 
-### Mean Time to Restore
+### Failed Deployment Recovery Time
 
 ```
-mttr = mean(restore_timestamp - failure_timestamp)
+fdrt = mean(next_success.deployed_at - failed.deployed_at)
 ```
 
-- `failure_timestamp`: From `stage-error` event with `result=failure`
-- `restore_timestamp`: From subsequent successful `deploy` event
+- `failed`: a deployment event with `status=failed` (`notify-obs` sends one when the pipeline fails)
+- `next_success`: the next deployment event with `status=success`
 
 ### Change Failure Rate
 
@@ -94,37 +98,25 @@ mttr = mean(restore_timestamp - failure_timestamp)
 cfr = failed_deploys / total_deploys
 ```
 
-- `failed_deploys`: Deployment events with `status=failure`
+- `failed_deploys`: Deployment events with `status=failed`
 - `total_deploys`: All deployment events
 
 ## Queries (PromQL)
 
-### Lead Time (p95)
+These are the series uFawkesObs pushes (`dora/compute/metrics.py`). They are
+gauges computed over its own window, so query them directly; don't wrap them
+in `rate()`.
 
 ```promql
-histogram_quantile(0.95,
-  sum by (le) (rate(dora_lead_time_seconds_bucket[5m]))
-)
+dora_deployment_frequency_per_week   # Deployment Frequency
+dora_lead_time_p50_hours             # Lead Time for Changes, median
+dora_lead_time_p95_hours             # Lead Time for Changes, p95
+dora_fdrt_p50_hours                  # Failed Deployment Recovery Time, median
+dora_cfr_pct                         # Change Failure Rate, percent
+dora_rework_rate_pct                 # Rework Rate, percent
 ```
 
-### Deployment Frequency (per day)
-
-```promql
-sum(rate(dora_deployments_total[1d]))
-```
-
-### MTTR
-
-```promql
-avg(dora_mttr_seconds)
-```
-
-### Change Failure Rate
-
-```promql
-sum(rate(dora_deployments_failed_total[5m])) /
-sum(rate(dora_deployments_total[5m]))
-```
+Each also has a `dora_tier_*` series carrying its performance tier.
 
 ## Woodpecker Native Prometheus Metrics (P3-3)
 

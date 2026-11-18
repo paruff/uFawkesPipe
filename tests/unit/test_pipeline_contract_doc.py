@@ -9,7 +9,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import generate_woodpecker_yml as gen  # noqa: E402
+import generate_woodpecker_yml as gen
 
 DOC = (ROOT / "docs" / "pipeline-contract.md").read_text()
 # Fields the generator never reads, so the doc must not list them.
@@ -17,7 +17,9 @@ IGNORED_FIELDS = ("retry", "parallel", "artifacts.paths", "workspace.cleanup")
 
 
 def _section(heading: str) -> str:
-    match = re.search(rf"^## {re.escape(heading)}.*?(?=^## )", DOC, re.S | re.M)
+    match = re.search(
+        rf"^## {re.escape(heading)}.*?(?=^## )", DOC, re.DOTALL | re.MULTILINE
+    )
     assert match, f"no '## {heading}' section"
     return match.group(0)
 
@@ -43,7 +45,9 @@ def _contract(tmp_path: Path, app: dict) -> Path:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("field", _required_rows(_section("app — Application Metadata")))
+@pytest.mark.parametrize(
+    "field", _required_rows(_section("app — Application Metadata"))
+)
 def test_every_app_field_the_doc_requires_is_enforced(tmp_path, field):
     app = {"name": "x", "type": "service", "language": "python"}
     del app[field]
@@ -55,7 +59,9 @@ def test_every_app_field_the_doc_requires_is_enforced(tmp_path, field):
 def test_doc_requires_only_what_the_generator_enforces():
     assert _required_rows(_section("app — Application Metadata")) == ["language"]
     build_required = _required_rows(_section("build — Build Configuration"))
-    assert build_required == [], f"generator enforces no build.* field, doc requires {build_required}"
+    assert build_required == [], (
+        f"generator enforces no build.* field, doc requires {build_required}"
+    )
 
 
 @pytest.mark.unit
