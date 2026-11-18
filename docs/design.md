@@ -369,3 +369,4 @@ complexity for a marginal gain.
 | ADR-003 | Initialize-then-auth for Portainer | Handles both fresh and pre-initialized stacks | 2026-07-02 |
 | ADR-004 | Parse .woodpecker.yml for pipeline structure | No Woodpecker server auth needed, ACs are about file structure | 2026-07-02 |
 | ADR-005 | `requests` library over `urllib.request` | HTTPS session handling, retry support, cleaner API for JSON POST | 2026-07-02 |
+| ADR-006 | `build-image` is a real Cloud Native Buildpacks build; the README keeps the claim | Pipeline contract already offers `builder: cnb`; the step is a placeholder today. See [ADR-006](adr/ADR-006-build-image-via-cnb.md) | 2026-11-18 |
