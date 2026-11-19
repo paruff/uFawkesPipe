@@ -260,6 +260,11 @@ class TestCnbBuildPublishes:
         assert image.startswith("buildpacksio/pack:")
         assert not image.endswith(":latest")
 
+    def test_cnb_build_image_has_a_shell_for_woodpecker_commands(self):
+        # distroless buildpacksio/pack has no /bin/sh, so a `commands:` step
+        # fails to start; the `-base` variant is ubuntu-based and does.
+        assert _step(_contract(), "build")["image"].endswith("-base")
+
     def test_cnb_build_publishes_to_the_registry_user_namespace(self):
         cmds = " ".join(_step(_contract(), "build")["commands"])
         assert "--publish" in cmds
