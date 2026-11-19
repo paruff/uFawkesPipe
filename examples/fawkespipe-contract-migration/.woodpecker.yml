@@ -49,6 +49,11 @@ steps:
   - printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > "$HOME/.docker/config.json"
   - pack build ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} --builder
     paketobuildpacks/builder:base --path . --publish
+  when:
+    event:
+    - push
+    - manual
+    branch: main
 - name: image-scan
   image: aquasec/trivy:latest
   commands:

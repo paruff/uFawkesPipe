@@ -302,8 +302,13 @@ class TestNotifyObsStage:
         pipeline = yaml.safe_load(gen.render(self._enabled()))
         step = pipeline["steps"][-1]
         assert step["name"] == "notify-obs"
-        assert step["when"] == {"event": "push", "branch": "main"}
-        assert step["runs_on"] == ["success", "failure"]
+        # Woodpecker 3 rejects `runs_on`; a status filter in `when` is the v3 way.
+        assert "runs_on" not in step
+        assert step["when"] == {
+            "event": ["push", "manual"],
+            "branch": "main",
+            "status": ["success", "failure"],
+        }
 
     def test_never_fails_the_pipeline(self):
         assert _step(self._enabled(), "notify-obs")["failure"] == "ignore"
@@ -397,3 +402,23 @@ class TestCnbImageScanTargetsPublishedImage:
         step = _step(contract, "image-scan")
         assert "environment" not in step
         assert step["commands"][-1].endswith(" $CI_REPO_NAME")
+
+
+@pytest.mark.unit
+class TestCnbBuildEventFilter:
+    """Woodpecker's linter asks for an event filter, and publishing needs the
+    registry secrets, which a pull_request run doesn't get."""
+
+    def test_cnb_build_only_publishes_on_main_pushes_and_manual_runs(self):
+        assert _step(_contract(), "build")["when"] == {
+            "event": ["push", "manual"],
+            "branch": "main",
+        }
+
+    def test_docker_builder_build_step_is_unfiltered_as_before(self):
+        contract = _contract()
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
+        assert "when" not in _step(contract, "build")
