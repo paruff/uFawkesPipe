@@ -276,6 +276,8 @@ def _build_step(contract: dict) -> dict:
                 'printf \'{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}\' "$AUTH" > "$HOME/.docker/config.json"',
                 f"pack build {_cnb_ref(contract)} --builder {cnb_builder} --path . --publish",
             ],
+            # Publishing needs the registry secrets, which pull_request runs don't get.
+            "when": {"event": ["push", "manual"], "branch": "main"},
         }
     elif builder == "docker":
         docker_cfg = build_cfg.get("docker", {})
@@ -509,8 +511,14 @@ def _notify_obs_step(contract: dict) -> dict:
             '[ "$CODE" = "201" ]',
         ],
         "failure": "ignore",
-        "runs_on": ["success", "failure"],
-        "when": {"event": "push", "branch": "main"},
+        # `runs_on` is rejected by Woodpecker 3; a status filter in `when` is the
+        # v3 way to also run after a failed pipeline. `manual` lets the run be
+        # started by hand where GitHub can't deliver webhooks.
+        "when": {
+            "event": ["push", "manual"],
+            "branch": "main",
+            "status": ["success", "failure"],
+        },
     }
 
 
