@@ -48,8 +48,8 @@ uFawkesPipe is a **CI/CD platform** for polyglot application development. It pro
 
 | Service | Image | Port(s) | Role |
 | ------- | ----- | ------- | ---- |
-| **woodpecker-server** | `woodpeckerci/woodpecker-server:v3.15.0` | `8000` (UI), `9000` (gRPC) | CI/CD orchestration, webhook receiver, pipeline state |
-| **woodpecker-agent** | `woodpeckerci/woodpecker-agent:v3.15.0` | — | Pipeline step execution via Docker-in-Docker |
+| **woodpecker-server** | `woodpeckerci/woodpecker-server:v3.20.1` | `8000` (UI), `9000` (gRPC) | CI/CD orchestration, webhook receiver, pipeline state |
+| **woodpecker-agent** | `woodpeckerci/woodpecker-agent:v3.20.1` | — | Pipeline step execution via Docker-in-Docker |
 | **sonarqube** | `sonarqube:lts-community` | `9001→:9000` | SAST code quality analysis |
 | **portainer** | `portainer/portainer-ce:2.39.3` | `9443` (HTTPS), `9002` (edge) | Container management, CD via webhook stacks |
 
