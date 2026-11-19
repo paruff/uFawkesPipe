@@ -209,7 +209,7 @@ name: ufawkespipe
 
 services:
   woodpecker-agent:
-    image: woodpeckerci/woodpecker-agent:v3.15.0
+    image: woodpeckerci/woodpecker-agent:v3.20.1
     environment:
       - WOODPECKER_SERVER=woodpecker-server:9000
       - WOODPECKER_AGENT_SECRET=${WOODPECKER_AGENT_SECRET}
@@ -232,7 +232,7 @@ services:
     restart: unless-stopped
 
   woodpecker-server:
-    image: woodpeckerci/woodpecker-server:v3.15.0
+    image: woodpeckerci/woodpecker-server:v3.20.1
     ports:
       - "${WOODPECKER_UI_PORT:-8000}:8000"  # UI
       - "${WOODPECKER_GRPC_PORT:-9000}:9000"  # gRPC agent communication

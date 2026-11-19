@@ -115,3 +115,24 @@ Corrections to the steps above, from running them on the NAS.
 
 `docker compose ... down` for the stack you started (never `down -v`); the old
 Portainer and every existing stack are untouched.
+
+## Upgrading Woodpecker (v3.15.0 to v3.20.1, #277)
+
+v3.18.0 runs a database migration that alters log storage; it can be slow and is
+one-way, so back up the `woodpecker_data` volume first. Do not pin v3.20.0: it
+shipped an unintended breaking change (woodpecker-ci/woodpecker#7398).
+
+```
+cd ~/uFawkesPipe
+docker compose stop woodpecker-server woodpecker-agent
+docker run --rm -v ufawkespipe_woodpecker_data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/woodpecker_data-v3.15.0.tgz -C /data .
+git pull && docker compose up -d woodpecker-server woodpecker-agent
+```
+
+Check `docker compose logs woodpecker-server` for the migration, then run a pipeline.
+
+**Rollback:** stop both services, restore the archive over the volume
+(`docker run --rm -v ufawkespipe_woodpecker_data:/data -v "$PWD":/backup alpine sh -c 'rm -rf /data/* && tar xzf /backup/woodpecker_data-v3.15.0.tgz -C /data'`),
+pin `v3.15.0` again in `compose.yaml`, and start the services. The archive holds
+the database, so keep it until the new version has run a full pipeline.
