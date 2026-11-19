@@ -30,6 +30,7 @@ STAGE_ORDER = (
     "defectdojo",
     "push",
     "deploy",
+    "notify_obs",
 )
 
 # Shared workspace path where scan steps drop machine-readable reports for
@@ -237,6 +238,25 @@ def _image_ref(contract: dict) -> str:
     return "$CI_REPO_NAME"
 
 
+# Same pinned image as this repo's own build-image step (ADR-006).
+_PACK_IMAGE = "buildpacksio/pack:0.32.1"
+
+
+def _registry_env() -> dict:
+    return {
+        "REGISTRY_USERNAME": {"from_secret": "registry_username"},
+        "REGISTRY_PASSWORD": {"from_secret": "registry_password"},
+    }
+
+
+def _cnb_ref(contract: dict) -> str:
+    """Tagged reference `pack build --publish` pushes to."""
+    ref = _image_ref(contract)
+    if ref == "$CI_REPO_NAME":
+        ref = "${REGISTRY_USERNAME}/${CI_REPO_NAME}"
+    return f"{ref}:${{CI_COMMIT_SHA:0:7}}"
+
+
 def _build_step(contract: dict) -> dict:
     build_cfg = contract.get("build", {})
     builder = build_cfg.get("builder", "cnb")
@@ -245,7 +265,18 @@ def _build_step(contract: dict) -> dict:
         cnb_builder = build_cfg.get("cnb", {}).get(
             "builder", "paketobuildpacks/builder:base"
         )
-        cmd = f"pack build {image_ref} --builder {cnb_builder}"
+        return {
+            "name": "build",
+            "image": _PACK_IMAGE,
+            "environment": _registry_env(),
+            "commands": [
+                'mkdir -p "$HOME/.docker"',
+                "AUTH=$(printf '%s:%s' \"$REGISTRY_USERNAME\" \"$REGISTRY_PASSWORD\" | base64 | tr -d '\\n')",
+                # shortcut: Docker Hub only; other registries need their own auths key.
+                'printf \'{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}\' "$AUTH" > "$HOME/.docker/config.json"',
+                f"pack build {_cnb_ref(contract)} --builder {cnb_builder} --path . --publish",
+            ],
+        }
     elif builder == "docker":
         docker_cfg = build_cfg.get("docker", {})
         dockerfile = docker_cfg.get("dockerfile", "Dockerfile")
@@ -259,17 +290,22 @@ def _build_step(contract: dict) -> dict:
 
 
 def _image_scan_step(contract: dict) -> dict:
-    return {
+    is_cnb = contract.get("build", {}).get("builder", "cnb") == "cnb"
+    ref = _cnb_ref(contract) if is_cnb else _image_ref(contract)
+    step: dict[str, object] = {
         "name": "image-scan",
         "image": "aquasec/trivy:latest",
         "commands": [
             f"mkdir -p {ARTIFACTS_DIR}",
             (
                 "trivy image --exit-code 1 --format json "
-                f"--output {ARTIFACTS_DIR}/trivy-image.json {_image_ref(contract)}"
+                f"--output {ARTIFACTS_DIR}/trivy-image.json {ref}"
             ),
         ],
     }
+    if is_cnb:  # the image is in the registry, so the scan needs the same login
+        step["environment"] = _registry_env()
+    return step
 
 
 def _dast_step(contract: dict) -> dict:
@@ -363,7 +399,9 @@ def _defectdojo_step(contract: dict) -> dict:
     }
 
 
-def _push_step(contract: dict) -> dict:
+def _push_step(contract: dict) -> dict | None:
+    if contract.get("build", {}).get("builder", "cnb") == "cnb":
+        return None  # `pack build --publish` already pushed the image
     return {
         "name": "push",
         "image": "docker:24-cli",
@@ -438,6 +476,44 @@ def _deploy_step(contract: dict) -> dict:
     }
 
 
+# Fields required by contracts/dora-events/deployment-event.schema.json.
+_DORA_BODY_CMD = (
+    r"""BODY=$(printf '{"schema_version":"1.0","event_type":"deployment","repo":"%s","""
+    r""""service":"%s","environment":"production","commit_sha":"%s","deployed_at":"%s","""
+    r""""status":"%s","pipeline_url":"%s"}' "$CI_REPO" "$CI_REPO_NAME" "$CI_COMMIT_SHA" """
+    r""""$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$DEPLOY_STATUS" "$CI_PIPELINE_URL")"""
+)
+
+
+def _notify_obs_step(contract: dict) -> dict:
+    """Send the deployment event uFawkesObs counts for DORA (same payload as this
+    repo's own notify-obs step). shortcut: no first_commit_at/pr_merged_at lookup,
+    so lead time is not computed; add it when an app repo needs it."""
+    return {
+        "name": "notify-obs",
+        "image": "curlimages/curl:8.6.0",
+        "environment": {
+            "DORA_INGESTION_URL": {"from_secret": "dora_ingestion_url"},
+            "DORA_API_KEY": {"from_secret": "dora_api_key"},
+        },
+        "commands": [
+            ': "${DORA_INGESTION_URL:?dora_ingestion_url secret is not set}"',
+            'DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed',
+            _DORA_BODY_CMD,
+            (
+                'CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DORA_INGESTION_URL/event" '
+                '-H "Content-Type: application/json" '
+                '${DORA_API_KEY:+-H "Authorization: Bearer $DORA_API_KEY"} -d "$BODY")'
+            ),
+            'echo "DORA event HTTP $CODE"',
+            '[ "$CODE" = "201" ]',
+        ],
+        "failure": "ignore",
+        "runs_on": ["success", "failure"],
+        "when": {"event": "push", "branch": "main"},
+    }
+
+
 _STEP_BUILDERS = {
     "lint": _lint_step,
     "test": _test_step,
@@ -449,15 +525,17 @@ _STEP_BUILDERS = {
     "defectdojo": _defectdojo_step,
     "push": _push_step,
     "deploy": _deploy_step,
+    "notify_obs": _notify_obs_step,
 }
 
 
 def render(contract: dict) -> str:
     """Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract."""
     steps = [
-        _STEP_BUILDERS[name](contract)
+        step
         for name in STAGE_ORDER
         if _stage_enabled(contract, name)
+        if (step := _STEP_BUILDERS[name](contract)) is not None
     ]
     if not steps:
         raise ContractError(

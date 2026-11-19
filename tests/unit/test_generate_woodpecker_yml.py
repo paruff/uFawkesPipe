@@ -243,3 +243,157 @@ class TestMigrationExample:
         pipeline = yaml.safe_load((self.EXAMPLE_DIR / ".woodpecker.yml").read_text())
         test_step = next(s for s in pipeline["steps"] if s["name"] == "test")
         assert "pytest" in " ".join(test_step["commands"])
+
+
+def _step(contract, name):
+    pipeline = yaml.safe_load(gen.render(contract))
+    return next((s for s in pipeline["steps"] if s["name"] == name), None)
+
+
+@pytest.mark.unit
+class TestCnbBuildPublishes:
+    """AC-PIPE-01: the contract's CNB build must be a real build that publishes
+    an image. `pack` isn't in docker:24-cli, so the old step could never run."""
+
+    def test_cnb_build_runs_in_a_pinned_pack_image(self):
+        image = _step(_contract(), "build")["image"]
+        assert image.startswith("buildpacksio/pack:")
+        assert not image.endswith(":latest")
+
+    def test_cnb_build_publishes_to_the_registry_user_namespace(self):
+        cmds = " ".join(_step(_contract(), "build")["commands"])
+        assert "--publish" in cmds
+        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
+
+    def test_cnb_build_reads_the_registry_secrets(self):
+        env = _step(_contract(), "build")["environment"]
+        assert env["REGISTRY_USERNAME"] == {"from_secret": "registry_username"}
+        assert env["REGISTRY_PASSWORD"] == {"from_secret": "registry_password"}
+
+    def test_cnb_build_honours_the_contract_image_name(self):
+        contract = _contract()
+        contract["build"]["image"] = {"namespace": "paruff", "name": "sample"}
+        cmds = " ".join(_step(contract, "build")["commands"])
+        assert "paruff/sample:${CI_COMMIT_SHA:0:7}" in cmds
+
+    def test_cnb_emits_no_push_step_because_build_already_published(self):
+        assert _step(_contract(), "push") is None
+
+    def test_docker_builder_still_emits_a_push_step(self):
+        contract = _contract()
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
+        assert _step(contract, "push") is not None
+
+
+@pytest.mark.unit
+class TestNotifyObsStage:
+    def _enabled(self):
+        contract = _contract()
+        contract["stages"]["notify_obs"] = {"enabled": True}
+        return contract
+
+    def test_absent_by_default(self):
+        assert _step(_contract(), "notify-obs") is None
+
+    def test_runs_last_on_main_pushes_even_after_a_failure(self):
+        pipeline = yaml.safe_load(gen.render(self._enabled()))
+        step = pipeline["steps"][-1]
+        assert step["name"] == "notify-obs"
+        assert step["when"] == {"event": "push", "branch": "main"}
+        assert step["runs_on"] == ["success", "failure"]
+
+    def test_never_fails_the_pipeline(self):
+        assert _step(self._enabled(), "notify-obs")["failure"] == "ignore"
+
+    def test_reads_ingestion_url_and_optional_key_from_secrets(self):
+        env = _step(self._enabled(), "notify-obs")["environment"]
+        assert env["DORA_INGESTION_URL"] == {"from_secret": "dora_ingestion_url"}
+        assert env["DORA_API_KEY"] == {"from_secret": "dora_api_key"}
+
+    def _run(self, tmp_path, status):
+        """Run the generated commands with a stub curl; return (exit code, request)."""
+        import json
+        import subprocess
+
+        stub = tmp_path / "curl"
+        stub.write_text(
+            "#!/bin/sh\n"
+            'for a in "$@"; do last="$a"; done\n'
+            'printf "%s" "$last" > "$CURL_BODY"\n'
+            'printf "%s\\n" "$@" > "$CURL_ARGS"\n'
+            "printf 201\n"
+        )
+        stub.chmod(0o755)
+        env = {
+            "PATH": f"{tmp_path}:/usr/bin:/bin",
+            "CURL_BODY": str(tmp_path / "body"),
+            "CURL_ARGS": str(tmp_path / "args"),
+            "DORA_INGESTION_URL": "http://dora-api:8088",
+            "CI_REPO": "paruff/sample",
+            "CI_REPO_NAME": "sample",
+            "CI_COMMIT_SHA": "a" * 40,
+            "CI_PIPELINE_URL": "http://woodpecker/repos/1/pipeline/1",
+            "CI_PIPELINE_STATUS": status,
+        }
+        script = "\n".join(_step(self._enabled(), "notify-obs")["commands"])
+        done = subprocess.run(
+            ["sh", "-c", script], env=env, capture_output=True, text=True
+        )
+        body = (tmp_path / "body").read_text() if (tmp_path / "body").exists() else ""
+        return done, json.loads(body) if body else None, tmp_path
+
+    def test_posts_a_schema_shaped_deployment_event(self, tmp_path):
+        done, event, _ = self._run(tmp_path, "success")
+        assert done.returncode == 0, done.stderr
+        assert event["schema_version"] == "1.0"
+        assert event["event_type"] == "deployment"
+        assert event["repo"] == "paruff/sample"
+        assert event["service"] == "sample"
+        assert event["commit_sha"] == "a" * 40
+        assert event["status"] == "success"
+        assert event["pipeline_url"] == "http://woodpecker/repos/1/pipeline/1"
+        assert event["deployed_at"].endswith("Z")
+
+    def test_a_failed_pipeline_is_sent_as_failed(self, tmp_path):
+        _, event, _ = self._run(tmp_path, "failure")
+        assert event["status"] == "failed"
+
+    def test_posts_to_the_event_endpoint(self, tmp_path):
+        _, _, tmp = self._run(tmp_path, "success")
+        assert "http://dora-api:8088/event" in (tmp / "args").read_text()
+
+    def test_step_fails_visibly_when_ingestion_url_is_unset(self, tmp_path):
+        import subprocess
+
+        script = "\n".join(_step(self._enabled(), "notify-obs")["commands"])
+        done = subprocess.run(
+            ["sh", "-c", script],
+            env={"PATH": "/usr/bin:/bin"},
+            capture_output=True,
+            text=True,
+        )
+        assert done.returncode != 0
+
+
+@pytest.mark.unit
+class TestCnbImageScanTargetsPublishedImage:
+    def test_scans_the_tag_that_build_published(self):
+        step = _step(_contract(), "image-scan")
+        cmds = " ".join(step["commands"])
+        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
+        assert step["environment"]["REGISTRY_USERNAME"] == {
+            "from_secret": "registry_username"
+        }
+
+    def test_docker_builder_scan_is_unchanged(self):
+        contract = _contract()
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
+        step = _step(contract, "image-scan")
+        assert "environment" not in step
+        assert step["commands"][-1].endswith(" $CI_REPO_NAME")
