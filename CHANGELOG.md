@@ -5,6 +5,48 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/paruff/uFawkesPipe/compare/v1.17.1-beta.1...v2.0.0) (2026-11-19)
+
+
+### Added
+
+* **ci:** main-ci-guard can judge main's HEAD, with a fallback ([#266](https://github.com/paruff/uFawkesPipe/issues/266)) ([#274](https://github.com/paruff/uFawkesPipe/issues/274)) ([0e472e2](https://github.com/paruff/uFawkesPipe/commit/0e472e20518b397fe73714c6c0e058f5b475803f))
+* **compose:** configurable host ports for Woodpecker and Portainer ([#253](https://github.com/paruff/uFawkesPipe/issues/253)) ([5223c85](https://github.com/paruff/uFawkesPipe/commit/5223c858ec2d0f99675ab83f56017c0ea54c4550))
+* **generator:** cnb build publishes a real image; optional notify-obs stage ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#267](https://github.com/paruff/uFawkesPipe/issues/267)) ([cfbda5d](https://github.com/paruff/uFawkesPipe/commit/cfbda5d76dda37a9ec162edd2ed1968f86a41f3b))
+* **pipeline:** build-image runs a real CNB build ([#122](https://github.com/paruff/uFawkesPipe/issues/122)) ([#246](https://github.com/paruff/uFawkesPipe/issues/246)) ([30a727c](https://github.com/paruff/uFawkesPipe/commit/30a727cfdf750ff4a88e6a7372dd1db2164efa93))
+* **pipeline:** DORA emission and pipeline-contract accuracy ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#248](https://github.com/paruff/uFawkesPipe/issues/248)) ([97e5bcf](https://github.com/paruff/uFawkesPipe/commit/97e5bcfdd0618071b3ce97efe66a5ed55d4a1472))
+* **runner:** host unit for the ufawkes-ci runner ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#250](https://github.com/paruff/uFawkesPipe/issues/250)) ([ad2ba4a](https://github.com/paruff/uFawkesPipe/commit/ad2ba4a81dbf919d459fe56b270c78579e3d2216))
+* **runner:** optional override to join the Obs network ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#254](https://github.com/paruff/uFawkesPipe/issues/254)) ([4ed332b](https://github.com/paruff/uFawkesPipe/commit/4ed332b5f2881b69149897e4e460bf81c12c0895))
+* **runner:** reach Docker through a filtering socket proxy ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#251](https://github.com/paruff/uFawkesPipe/issues/251)) ([ae83236](https://github.com/paruff/uFawkesPipe/commit/ae832363ac79caea2e60564dafda98bd471fd22d))
+
+
+### Fixed
+
+* **generator:** reference the dora api key secret only when opted in ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#272](https://github.com/paruff/uFawkesPipe/issues/272)) ([df67e08](https://github.com/paruff/uFawkesPipe/commit/df67e08e63cd3a408a358303195f10a81a12b2fc))
+* **pipeline:** drop braces on shell variables, give pack a docker socket ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#275](https://github.com/paruff/uFawkesPipe/issues/275)) ([43221a6](https://github.com/paruff/uFawkesPipe/commit/43221a6a3efee7bd75a9545dd4e6fc9d132af852))
+* **pipeline:** pin pack 0.40.11-base, the first image with CA certs ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#276](https://github.com/paruff/uFawkesPipe/issues/276)) ([03f33ff](https://github.com/paruff/uFawkesPipe/commit/03f33ff000917ea61dcee6dce8ac22cba75a3b8a))
+* **pipeline:** run pack from its -base image so Woodpecker has /bin/sh ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#271](https://github.com/paruff/uFawkesPipe/issues/271)) ([303febe](https://github.com/paruff/uFawkesPipe/commit/303febe1138933170ccecf81bce28c1dd8d86490))
+* **pipeline:** Woodpecker 3 when/status filters, cnb build only on main ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#270](https://github.com/paruff/uFawkesPipe/issues/270)) ([dfa9f57](https://github.com/paruff/uFawkesPipe/commit/dfa9f5707883195c835485d970d0c034bd694b37))
+
+
+### Docs
+
+* **adr:** ADR-006 build-image is a real CNB build ([#122](https://github.com/paruff/uFawkesPipe/issues/122)) ([#244](https://github.com/paruff/uFawkesPipe/issues/244)) ([536bc87](https://github.com/paruff/uFawkesPipe/commit/536bc87b3ef00dfe75e4da2b653977372ba901cc))
+* build-image is no longer called a placeholder ([#120](https://github.com/paruff/uFawkesPipe/issues/120)) ([#262](https://github.com/paruff/uFawkesPipe/issues/262)) ([368302d](https://github.com/paruff/uFawkesPipe/commit/368302d87939f8be6a043a1e5676d294439837de))
+* consolidate planning docs under docs/ai-sdlc/v2.0.0 ([#96](https://github.com/paruff/uFawkesPipe/issues/96)) ([#260](https://github.com/paruff/uFawkesPipe/issues/260)) ([b9f5496](https://github.com/paruff/uFawkesPipe/commit/b9f54962bc7c8cd1058bbb6bcc63b29b27491bf1))
+* merge the security-plane quickstart into QUICKSTART.md ([#96](https://github.com/paruff/uFawkesPipe/issues/96)) ([#261](https://github.com/paruff/uFawkesPipe/issues/261)) ([7e664e3](https://github.com/paruff/uFawkesPipe/commit/7e664e37b0cc74e65c4a9f640cb23ac7ca335df0))
+* **plan:** propose the NAS as the test and integration env ([#249](https://github.com/paruff/uFawkesPipe/issues/249)) ([b85c818](https://github.com/paruff/uFawkesPipe/commit/b85c81827466f41f7c6e4c8e45590f10bd63894c))
+* **plan:** record the first NAS deploy and the real DORA run ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#255](https://github.com/paruff/uFawkesPipe/issues/255)) ([4a1a67d](https://github.com/paruff/uFawkesPipe/commit/4a1a67d5bc04d938f4bed73d52bbaab2fd7791d8))
+* **plan:** record the real run of a generated pipeline against Obs v1.0.1 ([#123](https://github.com/paruff/uFawkesPipe/issues/123)) ([#279](https://github.com/paruff/uFawkesPipe/issues/279)) ([4f65d07](https://github.com/paruff/uFawkesPipe/commit/4f65d078e1d416af997338db30b1ff46b06dd980))
+* **plan:** runbook to deploy Obs and Pipe on the NAS ([#223](https://github.com/paruff/uFawkesPipe/issues/223)) ([#252](https://github.com/paruff/uFawkesPipe/issues/252)) ([8842531](https://github.com/paruff/uFawkesPipe/commit/88425316813ab448f978d7517f759ce35eea6127))
+
+
+### Chores
+
+* **compose:** update woodpecker server and agent to v3.20.1 ([#277](https://github.com/paruff/uFawkesPipe/issues/277)) ([#278](https://github.com/paruff/uFawkesPipe/issues/278)) ([5b88322](https://github.com/paruff/uFawkesPipe/commit/5b88322135a6031c12a58b3ad76f6e258ea3b1a0))
+* **devcontainer:** update fawkes-space to 2.2.0 ([#245](https://github.com/paruff/uFawkesPipe/issues/245)) ([d1e413a](https://github.com/paruff/uFawkesPipe/commit/d1e413a6c07f15a5434b704244fabc378277f712))
+* **release:** cut v2.0.0 as the first stable release ([#120](https://github.com/paruff/uFawkesPipe/issues/120)) ([#263](https://github.com/paruff/uFawkesPipe/issues/263)) ([c3e1727](https://github.com/paruff/uFawkesPipe/commit/c3e1727392927d21c55b2944902b2072cbf7f5e5))
+
 ## [1.17.1-beta.1](https://github.com/paruff/uFawkesPipe/compare/v1.17.0-beta.1...v1.17.1-beta.1) (2026-11-17)
 
 
