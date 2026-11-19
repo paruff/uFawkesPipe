@@ -491,13 +491,15 @@ def _notify_obs_step(contract: dict) -> dict:
     """Send the deployment event uFawkesObs counts for DORA (same payload as this
     repo's own notify-obs step). shortcut: no first_commit_at/pr_merged_at lookup,
     so lead time is not computed; add it when an app repo needs it."""
+    environment = {"DORA_INGESTION_URL": {"from_secret": "dora_ingestion_url"}}
+    # Woodpecker errors with `secret "..." not found` for any referenced secret
+    # that doesn't exist, so the bearer key is referenced only when opted in.
+    if contract["stages"]["notify_obs"].get("api_key", False):
+        environment["DORA_API_KEY"] = {"from_secret": "dora_api_key"}
     return {
         "name": "notify-obs",
         "image": "curlimages/curl:8.6.0",
-        "environment": {
-            "DORA_INGESTION_URL": {"from_secret": "dora_ingestion_url"},
-            "DORA_API_KEY": {"from_secret": "dora_api_key"},
-        },
+        "environment": environment,
         "commands": [
             ': "${DORA_INGESTION_URL:?dora_ingestion_url secret is not set}"',
             'DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed',

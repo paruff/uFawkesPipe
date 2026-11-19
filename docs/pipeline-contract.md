@@ -611,8 +611,9 @@ Sends a `deployment` event to uFawkesObs's DORA ingestion API (`POST <dora_inges
 | Field     | Type    | Required | Default | Description |
 |-----------|---------|----------|---------|-------------|
 | `enabled` | boolean | no       | `false` | Enable the `notify-obs` step |
+| `api_key` | boolean | no       | `false` | Also send the `dora_api_key` secret as a bearer token. Leave `false` when Obs has no auth: Woodpecker refuses to run a pipeline that references a secret which doesn't exist |
 
-It reads the `dora_ingestion_url` Woodpecker secret (required, e.g. `http://dora-api:8088`) and the optional `dora_api_key`. The event has no `first_commit_at` or `pr_merged_at`, so lead time isn't computed for apps that use this generated step.
+It reads the `dora_ingestion_url` Woodpecker secret (required, e.g. `http://dora-api:8088`) and, with `api_key: true`, the `dora_api_key` secret. The event has no `first_commit_at` or `pr_merged_at`, so lead time isn't computed for apps that use this generated step.
 
 ```yaml
 stages:
