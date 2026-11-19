@@ -1169,6 +1169,12 @@ class TestBuildImageIsRealCnbBuild:
         assert image.startswith("buildpacksio/pack:"), image
         assert not image.endswith(":latest")
 
+    def test_pack_image_has_a_shell_for_woodpecker_commands(self, woodpecker_config):
+        # The default buildpacksio/pack image is distroless (no /bin/sh), so
+        # Woodpecker can't start a step with `commands:` ("exec /bin/sh: no
+        # such file"). Only the `-base` (ubuntu) variant has a shell.
+        assert self._step(woodpecker_config)["image"].endswith("-base")
+
     def test_runs_pack_build_and_publishes_the_tag_later_steps_scan(
         self, woodpecker_config
     ):

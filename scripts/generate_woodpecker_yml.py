@@ -239,7 +239,7 @@ def _image_ref(contract: dict) -> str:
 
 
 # Same pinned image as this repo's own build-image step (ADR-006).
-_PACK_IMAGE = "buildpacksio/pack:0.32.1"
+_PACK_IMAGE = "buildpacksio/pack:0.32.1-base"  # -base has a shell; the default image is distroless
 
 
 def _registry_env() -> dict:
