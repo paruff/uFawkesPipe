@@ -13,7 +13,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/reusable-main-ci-guard.yml"
+WORKFLOW = (
+    Path(__file__).resolve().parents[2] / ".github/workflows/reusable-main-ci-guard.yml"
+)
 
 RUNNER = """
 const sc = JSON.parse(process.argv[3]);
@@ -36,14 +38,20 @@ new AsyncFunction("github", "context", "core", script)(github, context, core)
   .catch((e) => console.log(JSON.stringify({ failed: "THROWN: " + e.message })));
 """
 
-pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+pytestmark = pytest.mark.skipif(
+    shutil.which("node") is None, reason="node not installed"
+)
 
 
 @pytest.fixture(scope="module")
 def guard_js(tmp_path_factory):
     wf = yaml.safe_load(WORKFLOW.read_text())
     steps = wf["jobs"]["check-main-ci"]["steps"]
-    script = next(s["with"]["script"] for s in steps if s.get("name", "").startswith("Check latest"))
+    script = next(
+        s["with"]["script"]
+        for s in steps
+        if s.get("name", "").startswith("Check latest")
+    )
     d = tmp_path_factory.mktemp("guard")
     (d / "guard.js").write_text(script)
     (d / "run.js").write_text(RUNNER)
@@ -52,8 +60,15 @@ def guard_js(tmp_path_factory):
 
 def run(guard_js, scenario):
     out = subprocess.run(
-        ["node", str(guard_js / "run.js"), str(guard_js / "guard.js"), json.dumps(scenario)],
-        capture_output=True, text=True, check=True,
+        [
+            "node",
+            str(guard_js / "run.js"),
+            str(guard_js / "guard.js"),
+            json.dumps(scenario),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     return json.loads(out)["failed"]
 
@@ -95,19 +110,39 @@ def test_head_ignores_green_run_for_older_commit(guard_js):
 
 
 def test_head_falls_back_to_green_check_run(guard_js):
-    s = {"judge": True, "fallback": "CI Complete", "runs": [r("OLD", "success")], "checks": [c("completed", "success")]}
+    s = {
+        "judge": True,
+        "fallback": "CI Complete",
+        "runs": [r("OLD", "success")],
+        "checks": [c("completed", "success")],
+    }
     assert run(guard_js, s) is None
 
 
 def test_head_fallback_failed_check_fails(guard_js):
-    s = {"judge": True, "fallback": "CI Complete", "runs": [], "checks": [c("completed", "failure")]}
+    s = {
+        "judge": True,
+        "fallback": "CI Complete",
+        "runs": [],
+        "checks": [c("completed", "failure")],
+    }
     assert run(guard_js, s) is not None
 
 
 def test_head_fallback_running_check_never_passes(guard_js):
-    s = {"judge": True, "fallback": "CI Complete", "runs": [], "checks": [c("in_progress", None)]}
+    s = {
+        "judge": True,
+        "fallback": "CI Complete",
+        "runs": [],
+        "checks": [c("in_progress", None)],
+    }
     assert run(guard_js, s) is not None
 
 
 def test_head_without_fallback_name_fails_when_no_run(guard_js):
-    assert run(guard_js, {"judge": True, "runs": [], "checks": [c("completed", "success")]}) is not None
+    assert (
+        run(
+            guard_js, {"judge": True, "runs": [], "checks": [c("completed", "success")]}
+        )
+        is not None
+    )
