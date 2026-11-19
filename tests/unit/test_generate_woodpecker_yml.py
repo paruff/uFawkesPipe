@@ -4,6 +4,7 @@ Encodes docs/ai-sdlc/v2.0.0/consolidate-sec-spec.md (PIPE-009) AC-01..AC-04 agai
 mapping documented in docs/ai-sdlc/v2.0.0/consolidate-sec-design.md §5.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -268,7 +269,7 @@ class TestCnbBuildPublishes:
     def test_cnb_build_publishes_to_the_registry_user_namespace(self):
         cmds = " ".join(_step(_contract(), "build")["commands"])
         assert "--publish" in cmds
-        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
+        assert "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
 
     def test_cnb_build_reads_the_registry_secrets(self):
         env = _step(_contract(), "build")["environment"]
@@ -402,7 +403,7 @@ class TestCnbImageScanTargetsPublishedImage:
     def test_scans_the_tag_that_build_published(self):
         step = _step(_contract(), "image-scan")
         cmds = " ".join(step["commands"])
-        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
+        assert "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
         assert step["environment"]["REGISTRY_USERNAME"] == {
             "from_secret": "registry_username"
         }
@@ -436,3 +437,38 @@ class TestCnbBuildEventFilter:
             "docker": {"dockerfile": "Dockerfile"},
         }
         assert "when" not in _step(contract, "build")
+
+
+@pytest.mark.unit
+class TestWoodpeckerPreprocessing:
+    """Woodpecker pre-processes every `${...}` in the YAML before the shell
+    runs ("`${variable}` expressions are subject to pre-processing"), and
+    secrets aren't in its scope, so `${REGISTRY_USERNAME}` became an empty
+    string (seen on the NAS: `pack build /python-fawkes-path:<sha>`). Shell-time
+    variables must be written without braces."""
+
+    def _contract(self):
+        contract = _contract()
+        contract["stages"]["notify_obs"] = {"enabled": True, "api_key": True}
+        return contract
+
+    @pytest.mark.parametrize("name", ["build", "image-scan", "notify-obs"])
+    def test_only_woodpecker_variables_use_braces(self, name):
+        for command in _step(self._contract(), name)["commands"]:
+            for var in re.findall(r"\$\{([A-Za-z_][A-Za-z0-9_]*)", command):
+                assert var.startswith("CI_"), f"{name}: ${{{var}}} in: {command}"
+
+
+@pytest.mark.unit
+class TestCnbBuildReachesADockerDaemon:
+    """pack runs the builder in a container, so it needs a Docker daemon even
+    with --publish (seen on the NAS: "Cannot connect to the Docker daemon")."""
+
+    def test_cnb_build_mounts_the_docker_socket(self):
+        step = _step(_contract(), "build")
+        assert "/var/run/docker.sock:/var/run/docker.sock" in step["volumes"]
+
+    def test_docker_builder_build_step_is_unchanged(self):
+        contract = _contract()
+        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        assert "volumes" not in _step(contract, "build")
