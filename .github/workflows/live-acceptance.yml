@@ -55,6 +55,15 @@ jobs:
           docker compose -f compose.yaml ps
           exit 1
 
+      - name: Wait for SonarQube
+        run: |
+          for _ in $(seq 1 60); do
+            curl -fsS http://localhost:9001/api/system/status | grep -q '"status":"UP"' && exit 0
+            sleep 10
+          done
+          docker compose -f compose.yaml logs --tail=100 sonarqube
+          exit 1
+
       - name: Run smoke and acceptance tests
         run: make test-smoke test-acceptance
 

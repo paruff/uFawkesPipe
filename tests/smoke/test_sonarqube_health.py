@@ -32,7 +32,7 @@ class TestSonarQubeHealth:
 
         try:
             resp = urllib.request.urlopen(
-                "http://localhost:9000/api/system/status", timeout=10
+                "http://localhost:9001/api/system/status", timeout=10
             )
             assert resp.status == 200, f"Expected 200, got {resp.status}"
             data = json.loads(resp.read().decode())
@@ -49,7 +49,7 @@ class TestSonarQubeHealth:
         import urllib.request
 
         try:
-            resp = urllib.request.urlopen("http://localhost:9000", timeout=10)
+            resp = urllib.request.urlopen("http://localhost:9001", timeout=10)
             assert resp.status in (200, 302), f"Expected 200/302, got {resp.status}"
         except (urllib.error.URLError, ConnectionRefusedError) as e:
             pytest.fail(f"SonarQube UI check failed: {e}")
