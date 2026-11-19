@@ -24,14 +24,14 @@ class TestWoodpeckerHealth:
             return False
 
     def test_woodpecker_health_endpoint(self, compose_running):
-        """Woodpecker /healthz endpoint must return 200."""
+        """Woodpecker /healthz endpoint must answer 200 or 204 (it sends 204 No Content)."""
         if not compose_running:
             pytest.skip("Compose stack not running")
         import urllib.request
 
         try:
             resp = urllib.request.urlopen("http://localhost:8000/healthz", timeout=5)
-            assert resp.status == 200, f"Expected 200, got {resp.status}"
+            assert resp.status in (200, 204), f"Expected 200/204, got {resp.status}"
         except (urllib.error.URLError, ConnectionRefusedError) as e:
             pytest.fail(f"Woodpecker health check failed: {e}")
 
