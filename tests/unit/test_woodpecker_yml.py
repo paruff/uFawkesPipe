@@ -1195,8 +1195,13 @@ class TestNotifyObsLeadTimeAndFailure:
         return step, " ".join(step["commands"])
 
     def test_runs_on_failure_as_well(self, woodpecker_config):
+        # Woodpecker 3 rejects the old `runs_on` key; status lives in `when`.
         step, _ = self._commands(woodpecker_config)
-        assert set(step.get("runs_on", [])) >= {"success", "failure"}
+        assert "runs_on" not in step
+        statuses = {
+            status for cond in step["when"] for status in cond.get("status", [])
+        }
+        assert statuses >= {"success", "failure"}
 
     def test_status_is_not_hardcoded_success(self, woodpecker_config):
         _, commands = self._commands(woodpecker_config)
