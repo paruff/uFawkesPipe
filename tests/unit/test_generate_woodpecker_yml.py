@@ -318,8 +318,17 @@ class TestNotifyObsStage:
     def test_never_fails_the_pipeline(self):
         assert _step(self._enabled(), "notify-obs")["failure"] == "ignore"
 
-    def test_reads_ingestion_url_and_optional_key_from_secrets(self):
+    def test_by_default_references_only_the_ingestion_url_secret(self):
+        # Woodpecker fails the pipeline with `secret "..." not found` for any
+        # from_secret that doesn't exist, so an optional secret must not be
+        # referenced unless the contract opts in.
         env = _step(self._enabled(), "notify-obs")["environment"]
+        assert env == {"DORA_INGESTION_URL": {"from_secret": "dora_ingestion_url"}}
+
+    def test_api_key_secret_is_referenced_only_when_opted_in(self):
+        contract = self._enabled()
+        contract["stages"]["notify_obs"]["api_key"] = True
+        env = _step(contract, "notify-obs")["environment"]
         assert env["DORA_INGESTION_URL"] == {"from_secret": "dora_ingestion_url"}
         assert env["DORA_API_KEY"] == {"from_secret": "dora_api_key"}
 
