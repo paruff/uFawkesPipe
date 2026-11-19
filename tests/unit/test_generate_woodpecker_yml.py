@@ -417,5 +417,8 @@ class TestCnbBuildEventFilter:
 
     def test_docker_builder_build_step_is_unfiltered_as_before(self):
         contract = _contract()
-        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
         assert "when" not in _step(contract, "build")

@@ -148,7 +148,7 @@ build:
       BP_MAVEN_BUILD_ARGUMENTS: "-DskipTests"
 ```
 
-**What the generated `build` step does:** it runs `pack build --publish` in the pinned `buildpacksio/pack` image and pushes `<registry_username>/<repo name>:<first 7 characters of the commit SHA>` (or `build.image.namespace/name` when both are set) to Docker Hub. It needs the `registry_username` and `registry_password` Woodpecker secrets. Because the build already published the image, no separate `push` step is generated for `builder: cnb`, and `image_scan` scans that published tag. Other registries than Docker Hub are not supported yet. `cnb.buildpacks` and `cnb.env` are accepted but not passed to `pack` yet.
+**What the generated `build` step does:** it runs `pack build --publish` in the pinned `buildpacksio/pack` image and pushes `<registry_username>/<repo name>:<first 7 characters of the commit SHA>` (or `build.image.namespace/name` when both are set) to Docker Hub. It needs the `registry_username` and `registry_password` Woodpecker secrets, which must be allowed for the `push` and `manual` events, because the step only runs for `push` and `manual` pipelines on `main`. Because the build already published the image, no separate `push` step is generated for `builder: cnb`, and `image_scan` scans that published tag. Other registries than Docker Hub are not supported yet. `cnb.buildpacks` and `cnb.env` are accepted but not passed to `pack` yet.
 
 **Common CNB environment variables:**
 
@@ -606,7 +606,7 @@ stages:
 
 ### notify_obs
 
-Sends a `deployment` event to uFawkesObs's DORA ingestion API (`POST <dora_ingestion_url>/event`, see [dora-contract.md](dora-contract.md)), so the run counts in Deployment Frequency and Change Failure Rate. Optional; off by default. Runs last, only on `push` to `main`, and also after a failed pipeline (sent as `status: failed`). The step never fails the pipeline, but it shows as failed when Obs doesn't answer `201`.
+Sends a `deployment` event to uFawkesObs's DORA ingestion API (`POST <dora_ingestion_url>/event`, see [dora-contract.md](dora-contract.md)), so the run counts in Deployment Frequency and Change Failure Rate. Optional; off by default. Runs last, only on `push` or `manual` pipelines on `main`, and also after a failed pipeline (sent as `status: failed`). The step never fails the pipeline, but it shows as failed when Obs doesn't answer `201`.
 
 | Field     | Type    | Required | Default | Description |
 |-----------|---------|----------|---------|-------------|

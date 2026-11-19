@@ -606,7 +606,7 @@ steps:
           dora_warn "observability" "DORA_INGESTION_URL not set — deployment will not be counted in DORA metrics"
         fi
       - dora_end "notify-obs"
-    runs_on: [success, failure]
     when:
       - event: push
         branch: main
+        status: [success, failure]
