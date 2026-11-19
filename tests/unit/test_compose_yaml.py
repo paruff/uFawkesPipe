@@ -187,6 +187,31 @@ class TestImageTags:
         assert not latest_services, f"Services with :latest tag: {latest_services}"
 
 
+# ── Woodpecker version (#277) ─────────────────────────────────────────────
+
+
+def _version(image: str) -> tuple[int, ...]:
+    tag = image.rsplit(":", 1)[1]
+    assert tag.startswith("v"), f"expected a vX.Y.Z tag, got {image}"
+    return tuple(int(part) for part in tag[1:].split("."))
+
+
+class TestWoodpeckerVersion:
+    """Server and agent must run the same release, and not 3.20.0, which
+    shipped an unintended breaking change (woodpecker-ci/woodpecker#7398;
+    upstream says to use 3.20.1)."""
+
+    def test_server_and_agent_are_on_the_same_version(self, compose_data):
+        services = compose_data["services"]
+        server = services["woodpecker-server"]["image"].rsplit(":", 1)[1]
+        agent = services["woodpecker-agent"]["image"].rsplit(":", 1)[1]
+        assert server == agent
+
+    def test_version_is_at_least_3_20_1(self, compose_data):
+        image = compose_data["services"]["woodpecker-server"]["image"]
+        assert _version(image) >= (3, 20, 1), image
+
+
 # ── Secret Assertions ─────────────────────────────────────────────────────
 
 
