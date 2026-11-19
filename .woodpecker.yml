@@ -391,7 +391,7 @@ steps:
   # --publish pushes straight to the registry, so no Docker socket is needed and
   # the later trivy/cosign steps pull the same ${REGISTRY_USERNAME}/${CI_REPO_NAME}:<sha>.
   - name: build-image
-    image: buildpacksio/pack:0.32.1
+    image: buildpacksio/pack:0.32.1-base
     depends_on: [vuln-scan-fs, vuln-scan-image, policy-check]
     environment:
       REGISTRY_USERNAME:
