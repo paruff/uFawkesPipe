@@ -281,7 +281,10 @@ class TestCnbBuildPublishes:
 
     def test_docker_builder_still_emits_a_push_step(self):
         contract = _contract()
-        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
         assert _step(contract, "push") is not None
 
 
@@ -313,16 +316,15 @@ class TestNotifyObsStage:
     def _run(self, tmp_path, status):
         """Run the generated commands with a stub curl; return (exit code, request)."""
         import json
-        import os
         import subprocess
 
         stub = tmp_path / "curl"
         stub.write_text(
-            '#!/bin/sh\n'
+            "#!/bin/sh\n"
             'for a in "$@"; do last="$a"; done\n'
             'printf "%s" "$last" > "$CURL_BODY"\n'
             'printf "%s\\n" "$@" > "$CURL_ARGS"\n'
-            'printf 201\n'
+            "printf 201\n"
         )
         stub.chmod(0o755)
         env = {
@@ -337,7 +339,9 @@ class TestNotifyObsStage:
             "CI_PIPELINE_STATUS": status,
         }
         script = "\n".join(_step(self._enabled(), "notify-obs")["commands"])
-        done = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True)
+        done = subprocess.run(
+            ["sh", "-c", script], env=env, capture_output=True, text=True
+        )
         body = (tmp_path / "body").read_text() if (tmp_path / "body").exists() else ""
         return done, json.loads(body) if body else None, tmp_path
 
@@ -366,7 +370,10 @@ class TestNotifyObsStage:
 
         script = "\n".join(_step(self._enabled(), "notify-obs")["commands"])
         done = subprocess.run(
-            ["sh", "-c", script], env={"PATH": "/usr/bin:/bin"}, capture_output=True, text=True
+            ["sh", "-c", script],
+            env={"PATH": "/usr/bin:/bin"},
+            capture_output=True,
+            text=True,
         )
         assert done.returncode != 0
 
@@ -383,7 +390,10 @@ class TestCnbImageScanTargetsPublishedImage:
 
     def test_docker_builder_scan_is_unchanged(self):
         contract = _contract()
-        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        contract["build"] = {
+            "builder": "docker",
+            "docker": {"dockerfile": "Dockerfile"},
+        }
         step = _step(contract, "image-scan")
         assert "environment" not in step
         assert step["commands"][-1].endswith(" $CI_REPO_NAME")

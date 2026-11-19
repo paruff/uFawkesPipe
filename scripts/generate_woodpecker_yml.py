@@ -292,7 +292,7 @@ def _build_step(contract: dict) -> dict:
 def _image_scan_step(contract: dict) -> dict:
     is_cnb = contract.get("build", {}).get("builder", "cnb") == "cnb"
     ref = _cnb_ref(contract) if is_cnb else _image_ref(contract)
-    step = {
+    step: dict[str, object] = {
         "name": "image-scan",
         "image": "aquasec/trivy:latest",
         "commands": [
@@ -500,8 +500,11 @@ def _notify_obs_step(contract: dict) -> dict:
             ': "${DORA_INGESTION_URL:?dora_ingestion_url secret is not set}"',
             'DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed',
             _DORA_BODY_CMD,
-            'CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DORA_INGESTION_URL/event" '
-            '-H "Content-Type: application/json" ${DORA_API_KEY:+-H "Authorization: Bearer $DORA_API_KEY"} -d "$BODY")',
+            (
+                'CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DORA_INGESTION_URL/event" '
+                '-H "Content-Type: application/json" '
+                '${DORA_API_KEY:+-H "Authorization: Bearer $DORA_API_KEY"} -d "$BODY")'
+            ),
             'echo "DORA event HTTP $CODE"',
             '[ "$CODE" = "201" ]',
         ],
