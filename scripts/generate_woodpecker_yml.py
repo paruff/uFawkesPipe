@@ -253,7 +253,9 @@ def _cnb_ref(contract: dict) -> str:
     """Tagged reference `pack build --publish` pushes to."""
     ref = _image_ref(contract)
     if ref == "$CI_REPO_NAME":
-        ref = "${REGISTRY_USERNAME}/${CI_REPO_NAME}"
+        # No braces on REGISTRY_USERNAME: Woodpecker pre-processes ${...} in the
+        # YAML and secrets aren't in its scope, so it would become empty.
+        ref = "$REGISTRY_USERNAME/${CI_REPO_NAME}"
     return f"{ref}:${{CI_COMMIT_SHA:0:7}}"
 
 
@@ -276,6 +278,10 @@ def _build_step(contract: dict) -> dict:
                 'printf \'{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}\' "$AUTH" > "$HOME/.docker/config.json"',
                 f"pack build {_cnb_ref(contract)} --builder {cnb_builder} --path . --publish",
             ],
+            # pack runs the builder in a container, so it needs a Docker daemon even
+            # with --publish. Mounting the socket needs the Woodpecker repo to be
+            # trusted (Settings > Trusted > Volumes) and is root-equivalent on the agent.
+            "volumes": ["/var/run/docker.sock:/var/run/docker.sock"],
             # Publishing needs the registry secrets, which pull_request runs don't get.
             "when": {"event": ["push", "manual"], "branch": "main"},
         }
@@ -501,14 +507,13 @@ def _notify_obs_step(contract: dict) -> dict:
         "image": "curlimages/curl:8.6.0",
         "environment": environment,
         "commands": [
-            ': "${DORA_INGESTION_URL:?dora_ingestion_url secret is not set}"',
+            '[ -n "$DORA_INGESTION_URL" ] || { echo "dora_ingestion_url secret is not set"; exit 1; }',
             'DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed',
             _DORA_BODY_CMD,
-            (
-                'CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$DORA_INGESTION_URL/event" '
-                '-H "Content-Type: application/json" '
-                '${DORA_API_KEY:+-H "Authorization: Bearer $DORA_API_KEY"} -d "$BODY")'
-            ),
+            # Arguments built with `set --` so no ${...} reaches Woodpecker's pre-processor.
+            'set -- -s -o /dev/null -w "%{http_code}" -X POST "$DORA_INGESTION_URL/event" -H "Content-Type: application/json"',
+            '[ -z "$DORA_API_KEY" ] || set -- "$@" -H "Authorization: Bearer $DORA_API_KEY"',
+            'CODE=$(curl "$@" -d "$BODY")',
             'echo "DORA event HTTP $CODE"',
             '[ "$CODE" = "201" ]',
         ],

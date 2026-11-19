@@ -364,7 +364,7 @@ steps:
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "vuln-scan-image"
-      - trivy image --format json --output artifacts/security/trivy-image.json --no-progress ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - trivy image --format json --output artifacts/security/trivy-image.json --no-progress $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy image scan completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
@@ -389,10 +389,12 @@ steps:
 
   # Container image build via CNB
   # --publish pushes straight to the registry, so no Docker socket is needed and
-  # the later trivy/cosign steps pull the same ${REGISTRY_USERNAME}/${CI_REPO_NAME}:<sha>.
+  # the later trivy/cosign steps pull the same $REGISTRY_USERNAME/${CI_REPO_NAME}:<sha>.
   - name: build-image
     image: buildpacksio/pack:0.32.1-base
     depends_on: [vuln-scan-fs, vuln-scan-image, policy-check]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       REGISTRY_USERNAME:
         from_secret: registry_username
@@ -404,7 +406,7 @@ steps:
       - mkdir -p "$HOME/.docker"
       - AUTH=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 | tr -d '\n')
       - printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > "$HOME/.docker/config.json"
-      - pack build "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" --builder paketobuildpacks/builder:base --path . --publish && rc=$? || rc=$?
+      - pack build "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" --builder paketobuildpacks/builder:base --path . --publish && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "build" "CNB image build completed" ",\"exit_code\":$rc"
       - dora_end "build-image"
       - exit $rc
@@ -427,7 +429,7 @@ steps:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "generate-sbom"
       - mkdir -p artifacts/security
-      - trivy image --format cyclonedx --output artifacts/security/sbom.cdx.json ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - trivy image --format cyclonedx --output artifacts/security/sbom.cdx.json $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "SBOM generation completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
@@ -448,7 +450,7 @@ steps:
     commands:
       - source /drone/src/scripts/dora-log.sh
       - dora_start "sign-image"
-      - cosign sign --key env://COSIGN_PRIVATE_KEY --yes ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - cosign sign --key env://COSIGN_PRIVATE_KEY --yes $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "Image signing completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
