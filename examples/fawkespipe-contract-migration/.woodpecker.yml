@@ -47,8 +47,10 @@ steps:
   - AUTH=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 | tr
     -d '\n')
   - printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > "$HOME/.docker/config.json"
-  - pack build ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} --builder
-    paketobuildpacks/builder:base --path . --publish
+  - pack build $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} --builder paketobuildpacks/builder:base
+    --path . --publish
+  volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
   when:
     event:
     - push
@@ -59,7 +61,7 @@ steps:
   commands:
   - mkdir -p artifacts/security
   - trivy image --exit-code 1 --format json --output artifacts/security/trivy-image.json
-    ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}
+    $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}
   environment:
     REGISTRY_USERNAME:
       from_secret: registry_username

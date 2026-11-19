@@ -1181,7 +1181,20 @@ class TestBuildImageIsRealCnbBuild:
         commands = " ".join(self._step(woodpecker_config)["commands"])
         assert "pack build" in commands
         assert "--publish" in commands
-        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in commands
+        assert "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in commands
+
+    def test_registry_username_is_not_a_braced_variable(self, woodpecker_config):
+        # Woodpecker pre-processes ${...} in the YAML and secrets aren't in
+        # scope, so ${REGISTRY_USERNAME} became empty on the NAS.
+        for name in ("vuln-scan-image", "build-image", "generate-sbom", "sign-image"):
+            step = next(s for s in woodpecker_config["steps"] if s["name"] == name)
+            assert "${REGISTRY_USERNAME" not in " ".join(step["commands"]), name
+
+    def test_mounts_the_docker_socket_pack_needs(self, woodpecker_config):
+        # pack runs the builder in a container, so it needs a Docker daemon
+        # even with --publish.
+        step = self._step(woodpecker_config)
+        assert "/var/run/docker.sock:/var/run/docker.sock" in step["volumes"]
 
     def test_is_not_a_placeholder(self, woodpecker_config):
         commands = " ".join(self._step(woodpecker_config)["commands"]).lower()
