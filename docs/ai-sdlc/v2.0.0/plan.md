@@ -38,13 +38,17 @@ Woodpecker pipeline #7 (manual, on `main`), on the NAS. The pipeline was generat
 `scripts/generate_woodpecker_yml.py` from the repo's `.fawkespipe.yml` (a `builder: cnb` contract with
 `stages.notify_obs` enabled). `build` ran `pack build --publish` (`buildpacksio/pack:0.40.11-base`, Paketo
 builder) and pushed `paruff/python-fawkes-path:c316182` to Docker Hub; `notify-obs` printed
-`DORA event HTTP 201`, so uFawkesObs accepted the deployment event. The run needed six fixes, each found
-by a failed run and merged test-first: #270, #271, #272, #275 and #276 (the finding list is in the
-comment on #123). **Not yet against a released Obs:** the NAS's uFawkesObs checkout was `main` at
-`45a7d56`, 38 commits after the released `v1.0.1`, including changes to the ingestion validator
-(`dora/ingestion/api/validator.py`). AC-PIPE-01 and the compatibility matrix need a released
-version, so the `notify-obs` step is to be re-run with the NAS's Obs on `v1.0.1`, or a newer
-release, before the matrix row is written (uFawkes.dev, after the v2.0.0 tag exists).
+`DORA event HTTP 201`, so uFawkesObs accepted the deployment event. Getting it through took six fixes in five
+PRs, each found by a failed run and merged test-first: #270, #271, #272, #275 and #276 (the finding
+list is in the comment on #123).
+
+**Against a released uFawkesObs (#123, AC-PIPE-01):** the first run's Obs was `main` at `45a7d56`, 38
+commits after `v1.0.1` and with a changed ingestion validator, so the NAS's Obs checkout was set to
+`v1.0.1` (commit `77c3c0c`), `dora-api` was rebuilt and recreated, and the pipeline was run again.
+`notify-obs` printed `DORA event HTTP 201`, and Obs's own log shows
+`"POST /event HTTP/1.1" 201 Created` followed by `Processed event 7 (deployment)`; `ufawkesdora-ingestion`
+was the only DORA container on the `observability-lab` network. The compatibility matrix row for
+uFawkesPipe `v2.0.0` therefore names uFawkesObs `v1.0.1` (written in uFawkes.dev once the v2.0.0 tag exists).
 
 **Evidence so far (#220, #221):** `notify-obs`'s commands, run under `sh` against a stub
 ingestion server that validates each POST against `contracts/dora-events/deployment-event.schema.json`,
