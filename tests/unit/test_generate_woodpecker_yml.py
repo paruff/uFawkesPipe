@@ -475,3 +475,22 @@ class TestCnbBuildReachesADockerDaemon:
             "docker": {"dockerfile": "Dockerfile"},
         }
         assert "volumes" not in _step(contract, "build")
+
+
+def _pack_version(image: str) -> tuple[int, ...]:
+    match = re.fullmatch(r"buildpacksio/pack:(\d+)\.(\d+)\.(\d+)-base", image)
+    assert match, f"expected buildpacksio/pack:X.Y.Z-base, got {image}"
+    return tuple(int(part) for part in match.groups())
+
+
+# buildpacks/pack#2488: the -base image shipped without CA certificates until
+# 0.40.11, so pack failed with "x509: certificate signed by unknown authority"
+# when it connected to the registry for the run image.
+MIN_PACK_WITH_CA_CERTS = (0, 40, 11)
+
+
+@pytest.mark.unit
+class TestPackImageHasCaCertificates:
+    def test_generated_cnb_build_uses_a_pack_with_ca_certificates(self):
+        image = _step(_contract(), "build")["image"]
+        assert _pack_version(image) >= MIN_PACK_WITH_CA_CERTS, image

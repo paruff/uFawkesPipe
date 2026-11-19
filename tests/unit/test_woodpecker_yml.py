@@ -4,6 +4,8 @@ Validates step ordering, image pinning, and required commands
 for the v0.2 pipeline specification.
 """
 
+import re
+
 import pytest
 
 
@@ -1182,6 +1184,14 @@ class TestBuildImageIsRealCnbBuild:
         assert "pack build" in commands
         assert "--publish" in commands
         assert "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in commands
+
+    def test_pack_image_has_ca_certificates(self, woodpecker_config):
+        # buildpacks/pack#2488: -base had no CA bundle until 0.40.11, so pack
+        # failed with "x509: certificate signed by unknown authority".
+        image = self._step(woodpecker_config)["image"]
+        match = re.fullmatch(r"buildpacksio/pack:(\d+)\.(\d+)\.(\d+)-base", image)
+        assert match, image
+        assert tuple(int(p) for p in match.groups()) >= (0, 40, 11), image
 
     def test_registry_username_is_not_a_braced_variable(self, woodpecker_config):
         # Woodpecker pre-processes ${...} in the YAML and secrets aren't in
