@@ -36,12 +36,27 @@ steps:
   - trivy fs --exit-code 1 --format json --output artifacts/security/trivy-repo.json
     .
 - name: build
-  image: docker:24-cli
+  image: buildpacksio/pack:0.32.1
+  environment:
+    REGISTRY_USERNAME:
+      from_secret: registry_username
+    REGISTRY_PASSWORD:
+      from_secret: registry_password
   commands:
-  - pack build $CI_REPO_NAME --builder paketobuildpacks/builder:base
+  - mkdir -p "$HOME/.docker"
+  - AUTH=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 | tr
+    -d '\n')
+  - printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > "$HOME/.docker/config.json"
+  - pack build ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} --builder
+    paketobuildpacks/builder:base --path . --publish
 - name: image-scan
   image: aquasec/trivy:latest
   commands:
   - mkdir -p artifacts/security
   - trivy image --exit-code 1 --format json --output artifacts/security/trivy-image.json
-    $CI_REPO_NAME
+    ${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}
+  environment:
+    REGISTRY_USERNAME:
+      from_secret: registry_username
+    REGISTRY_PASSWORD:
+      from_secret: registry_password

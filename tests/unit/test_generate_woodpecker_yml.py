@@ -369,3 +369,21 @@ class TestNotifyObsStage:
             ["sh", "-c", script], env={"PATH": "/usr/bin:/bin"}, capture_output=True, text=True
         )
         assert done.returncode != 0
+
+
+@pytest.mark.unit
+class TestCnbImageScanTargetsPublishedImage:
+    def test_scans_the_tag_that_build_published(self):
+        step = _step(_contract(), "image-scan")
+        cmds = " ".join(step["commands"])
+        assert "${REGISTRY_USERNAME}/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in cmds
+        assert step["environment"]["REGISTRY_USERNAME"] == {
+            "from_secret": "registry_username"
+        }
+
+    def test_docker_builder_scan_is_unchanged(self):
+        contract = _contract()
+        contract["build"] = {"builder": "docker", "docker": {"dockerfile": "Dockerfile"}}
+        step = _step(contract, "image-scan")
+        assert "environment" not in step
+        assert step["commands"][-1].endswith(" $CI_REPO_NAME")

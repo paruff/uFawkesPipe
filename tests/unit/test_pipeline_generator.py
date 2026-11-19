@@ -235,7 +235,7 @@ class TestRenderEdgeCases:
         result = render(contract)
         parsed = yaml.safe_load(result)
         build_step = next(s for s in parsed["steps"] if s["name"] == "build")
-        assert "paketobuildpacks/builder:base" in build_step["commands"][0]
+        assert "paketobuildpacks/builder:base" in build_step["commands"][-1]
 
     def test_cnb_builder_custom(self):
         """Acceptance: CNB builder uses custom builder when specified."""
@@ -253,7 +253,7 @@ class TestRenderEdgeCases:
         result = render(contract)
         parsed = yaml.safe_load(result)
         build_step = next(s for s in parsed["steps"] if s["name"] == "build")
-        assert "my/custom-builder:latest" in build_step["commands"][0]
+        assert "my/custom-builder:latest" in build_step["commands"][-1]
 
 
 @pytest.mark.unit
@@ -1035,4 +1035,4 @@ class TestImageReferenceConsistency:
         result = render(contract)
         parsed = yaml.safe_load(result)
         build_step = next(s for s in parsed["steps"] if s["name"] == "build")
-        assert "pack build paruff/java-fawkes-path" in build_step["commands"][0]
+        assert "pack build paruff/java-fawkes-path" in build_step["commands"][-1]
