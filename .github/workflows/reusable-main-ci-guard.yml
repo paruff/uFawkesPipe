@@ -12,6 +12,16 @@ on:
         required: false
         type: string
         default: "CI Pipeline"
+      judge-head:
+        description: "Judge the run for main's HEAD commit instead of the latest finished run, and never pass without a completed result for it"
+        required: false
+        type: boolean
+        default: false
+      fallback-check-name:
+        description: "With judge-head: the check run on main's HEAD to judge when the run listing has none for it yet (e.g. '✅ CI Complete'); empty = no fallback"
+        required: false
+        type: string
+        default: ""
 
 permissions: {}  # deny all at workflow level; grant per job below
 
@@ -20,6 +30,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      checks: read
     name: "🛡️ Main CI Health"
     runs-on: ubuntu-latest
     steps:
@@ -31,8 +42,55 @@ jobs:
         env:
           WORKFLOW_ID: ${{ inputs.workflow-id }}
           WORKFLOW_NAME: ${{ inputs.workflow-name }}
+          JUDGE_HEAD: ${{ inputs.judge-head }}
+          FALLBACK_CHECK_NAME: ${{ inputs.fallback-check-name }}
         with:
           script: |
+            if (process.env.JUDGE_HEAD === "true") {
+              // Judge main's HEAD. The run listing can lag right after a merge, so
+              // fall back to the HEAD commit's own check run when one is named.
+              // Never a pass by default: no completed result fails.
+              const { data: branch } = await github.rest.repos.getBranch({
+                owner: context.repo.owner, repo: context.repo.repo, branch: "main",
+              });
+              const headSha = branch.commit.sha;
+              const { data: headRuns } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner, repo: context.repo.repo,
+                workflow_id: process.env.WORKFLOW_ID, branch: "main",
+                status: "completed", per_page: 100,
+              });
+              let conclusion;
+              let url;
+              const forHead = headRuns.workflow_runs.find((r) => r.head_sha === headSha);
+              if (forHead) {
+                conclusion = forHead.conclusion;
+                url = forHead.html_url;
+              } else {
+                const checkName = process.env.FALLBACK_CHECK_NAME;
+                if (!checkName) {
+                  core.setFailed(`No completed ${process.env.WORKFLOW_NAME} run for main HEAD ${headSha}; re-run this check once it completes.`);
+                  return;
+                }
+                core.warning(`No completed ${process.env.WORKFLOW_NAME} run listed for main HEAD ${headSha}; falling back to the "${checkName}" check run.`);
+                const { data: checks } = await github.rest.checks.listForRef({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  ref: headSha, check_name: checkName, per_page: 100,
+                });
+                const check = checks.check_runs.find((c) => c.status === "completed");
+                if (!check) {
+                  core.setFailed(`No completed "${checkName}" result for main HEAD ${headSha} from the workflow runs or the commit check runs: main CI has not finished (or never ran). Re-run this check once it completes.`);
+                  return;
+                }
+                conclusion = check.conclusion;
+                url = check.html_url;
+              }
+              core.info(`CI result for main HEAD ${headSha}: ${url} (${conclusion})`);
+              if (conclusion !== "success") {
+                core.setFailed(`${process.env.WORKFLOW_NAME} for current main HEAD is ${conclusion}. Fix main CI before merging PRs. ${url}`);
+              }
+              return;
+            }
+
             const { data: runs } = await github.rest.actions.listWorkflowRuns({
               owner: context.repo.owner,
               repo: context.repo.repo,
