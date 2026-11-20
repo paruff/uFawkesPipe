@@ -5,6 +5,18 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1](https://github.com/paruff/uFawkesPipe/compare/v2.0.0...v2.0.1) (2026-11-19)
+
+
+### Fixed
+
+* **tests:** smoke tests match the stack's real ports and healthz ([#125](https://github.com/paruff/uFawkesPipe/issues/125)) ([#282](https://github.com/paruff/uFawkesPipe/issues/282)) ([b923435](https://github.com/paruff/uFawkesPipe/commit/b923435ca901b16d829c32c08858c62d15025eee))
+
+
+### Chores
+
+* **release:** drop release-as now that v2.0.0 has shipped ([#120](https://github.com/paruff/uFawkesPipe/issues/120)) ([#280](https://github.com/paruff/uFawkesPipe/issues/280)) ([e4c910d](https://github.com/paruff/uFawkesPipe/commit/e4c910d09a56681cef5279ed82bebae0b171a1ad))
+
 ## [2.0.0](https://github.com/paruff/uFawkesPipe/compare/v1.17.1-beta.1...v2.0.0) (2026-11-19)
 
 
