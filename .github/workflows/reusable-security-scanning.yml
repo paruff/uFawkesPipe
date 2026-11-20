@@ -129,7 +129,7 @@ jobs:
       # base/head straight from the event payload, not a paginated API call.
       - name: Run secret scanning (TruffleHog)
         if: inputs.scan-type == 'all' || inputs.scan-type == 'secrets'
-        uses: trufflesecurity/trufflehog@ea68ca03c865c5f324e86e849ced20ed3cf9dbbb  # v3.99.8
+        uses: trufflesecurity/trufflehog@3bd2b5887eb0efb8fa18bfd1d296032924e4ffdc  # v3.99.9
         with:
           path: .
           extra_args: --only-verified
