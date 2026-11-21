@@ -123,6 +123,7 @@ up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
 up-ui: ## Start uFawkesPipe stack + optional Arcane Docker UI (profile ui)
+	@test -n "$$ARCANE_ENCRYPTION_KEY" || grep -qs '^ARCANE_ENCRYPTION_KEY=.' .env || { echo "Set ARCANE_ENCRYPTION_KEY (openssl rand -hex 16) in .env or the environment; Arcane crash-loops without it" >&2; exit 1; }
 	docker compose -f compose.yaml --profile ui up -d
 
 up-security: ## Start uFawkesPipe stack + security plane (DefectDojo/Infisical/Falco)
