@@ -151,6 +151,43 @@ check "hooks CI runs by id count as covered" bash -c '! grep -qE "FAIL.*(lint|re
 check "a hook CI never runs by id or by stage still fails" says "FAIL.*tests"
 check "an id without --all-files or a range doesn't count" bash -c 'printf "jobs:\n  a:\n    steps:\n      - run: pre-commit run tests\n" > "$1/.github/workflows/x.yml"; cd "$1" && bash "$2/scripts/shift-left/check-shift-left-parity.sh" 2>&1 | grep -q "FAIL.*tests"' _ "$R" "$HERE"
 
+echo "CI runs a hook the config doesn't have (#155):"
+scenario ghost
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  hooks:
+    steps:
+      - run: pre-commit run --all-files --show-diff-on-failure
+      - run: pre-commit run --all-files --hook-stage pre-push
+      - run: pre-commit run --hook-stage commit-msg --commit-msg-filename "$f"
+      - run: pre-commit run ghost --all-files
+      - run: pre-commit run lint --all-files
+YML
+parity "$R"
+check "an unconfigured id fails" test "$rc" -eq 1
+check "names the id, the workflow and the line" says "FAIL CI runs hook ghost, which \.pre-commit-config\.yaml does not configure \(\.github/workflows/ci\.yml:7\)"
+check "a configured id is not flagged" bash -c '! grep -q "hook lint," <<< "$0"' "$out"
+scenario ghost-range
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  hooks:
+    steps:
+      - run: pre-commit run --all-files
+      - run: pre-commit run --all-files --hook-stage pre-push
+      - run: pre-commit run --hook-stage commit-msg --commit-msg-filename "$f"
+      - run: pre-commit run mypy --from-ref "$BASE" --to-ref HEAD
+YML
+parity "$R"
+check "a --from-ref range line for a missing id fails" says "FAIL CI runs hook mypy.*ci\.yml:7"
+scenario ghost-reusable
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+jobs:
+  preflight:
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@v1.9.0
+YML
+parity "$R"
+check "reusable-preflight lines are unaffected" test "$rc" -eq 0
+
 echo ".shift-left.yml itself:"
 scenario no-reason
 printf 'local-only:\n  - id: stamp\n' > "$R/.shift-left.yml"
