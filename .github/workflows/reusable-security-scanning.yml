@@ -149,6 +149,7 @@ jobs:
           trivy --version
 
       - name: Run Trivy filesystem scanner
+        id: trivy-fs
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == ''
         env:
           SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
@@ -163,7 +164,24 @@ jobs:
             --output trivy-results.sarif \
             "$SCAN_PATH"
 
+      # SARIF is for the Security tab; this prints the same findings in the job log.
+      - name: Print Trivy findings table (filesystem)
+        if: always() && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == '' && steps.trivy-fs.outcome != 'skipped'
+        env:
+          SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+          IGNORE_UNFIXED: ${{ inputs.ignore-unfixed }}
+          SCAN_PATH: ${{ inputs.scan-path }}
+        run: |
+          trivy fs \
+            --scanners vuln \
+            --severity "$SEVERITY_THRESHOLD" \
+            --ignore-unfixed="$IGNORE_UNFIXED" \
+            --format table \
+            --exit-code 0 \
+            "$SCAN_PATH"
+
       - name: Run Trivy image scanner
+        id: trivy-image
         if: (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != ''
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
@@ -175,6 +193,19 @@ jobs:
           severity: ${{ inputs.severity-threshold }}
           ignore-unfixed: ${{ inputs.ignore-unfixed }}
           exit-code: ${{ inputs.fail-on-critical && '1' || '0' }}
+
+      # Runs even when the scan above failed, so the failing package/CVE is in the log.
+      - name: Print Trivy findings table (image)
+        if: always() && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != '' && steps.trivy-image.outcome != 'skipped'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          version: v0.76.2
+          scan-type: "image"
+          image-ref: ${{ inputs.image-ref }}
+          format: "table"
+          severity: ${{ inputs.severity-threshold }}
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          exit-code: "0"
 
       - name: Upload Trivy results to GitHub Security
         if: inputs.upload-sarif && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities')
