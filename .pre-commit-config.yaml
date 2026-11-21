@@ -96,6 +96,30 @@ repos:
         args: ["--severity=warning"]
 
   # ============================================================================
+  # Woodpecker pipeline guardrails (#297). Steps run under /bin/sh, so a bashism
+  # passes on a laptop and fails only in the agent.
+  #   woodpecker-lint:       woodpecker-cli lint in the image pinned below (same
+  #                          version as the server/agent in compose.yaml).
+  #   woodpecker-shellcheck: shellcheck -s sh over every step's commands:.
+  # ============================================================================
+  - repo: local
+    hooks:
+      - id: woodpecker-lint
+        name: Lint Woodpecker pipeline (woodpecker-cli)
+        entry: >-
+          scripts/shift-left/require-tool.sh docker -- bash -c
+          'docker run --rm -v "$PWD:/src:ro" -w /src
+          woodpeckerci/woodpecker-cli:v3.20.1 lint "$@"' --
+        language: script
+        files: ^\.woodpecker\.yml$
+      - id: woodpecker-shellcheck
+        name: Shellcheck Woodpecker step commands (POSIX sh)
+        entry: scripts/shift-left/require-tool.sh shellcheck -- python scripts/woodpecker_shellcheck.py
+        language: python
+        additional_dependencies: ["pyyaml==6.0.2"]
+        files: ^\.woodpecker\.yml$
+
+  # ============================================================================
   # Shell Formatting (shfmt)
   # ============================================================================
   - repo: https://github.com/scop/pre-commit-shfmt
