@@ -31,11 +31,12 @@ steps:
     { :; }; otel_span_end() { :; }; fi; otel_span_start "sast" && trap 'otel_span_end
     "sast" "$([ "$?" = 0 ] && echo ok || echo error)"' EXIT
   - sonar-scanner -Dsonar.projectKey="$SONARQUBE_PROJECT_KEY"
-  - 'STATUS="PENDING"; TRIES=0; while [ "$STATUS" = "PENDING" ] && [ "$TRIES" -lt
-    60 ]; do   sleep 5; TRIES=$((TRIES+1));   STATUS=$(curl -s -u "$SONARQUBE_TOKEN:"     "$SONARQUBE_URL/api/qualitygates/project_status?projectKey=$SONARQUBE_PROJECT_KEY"     |
-    python3 -c "import sys,json; print(json.load(sys.stdin).get(''projectStatus'',{}).get(''status'',''PENDING''))"     2>/dev/null
-    || echo PENDING);   echo "Quality gate status: $STATUS"; done; if [ "$STATUS"
-    != "OK" ]; then   echo "Quality gate failed or timed out with status: $STATUS";   exit
+  - 'STATUS="PENDING"; TRIES=0; while { [ "$STATUS" = "PENDING" ] || [ "$STATUS" =
+    "NONE" ]; } && [ "$TRIES" -lt 60 ]; do   sleep 5; TRIES=$((TRIES+1));   STATUS=$(curl
+    -s -u "$SONARQUBE_TOKEN:"     "$SONARQUBE_URL/api/qualitygates/project_status?projectKey=$SONARQUBE_PROJECT_KEY"     |
+    python3 -c "import sys,json; print(json.load(sys.stdin).get(''projectStatus'',{}).get(''status'',''PENDING''))"     ||
+    echo PENDING);   echo "Quality gate status: $STATUS"; done; if [ "$STATUS" !=
+    "OK" ]; then   echo "Quality gate failed or timed out with status: $STATUS";   exit
     1; fi'
   - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
   - mkdir -p artifacts/security

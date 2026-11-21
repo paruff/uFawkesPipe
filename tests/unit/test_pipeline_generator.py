@@ -1102,3 +1102,34 @@ class TestSastStepRunsAsGenerated:
             )
         assert r.returncode == 1
         assert r.stdout.count("Quality gate status: PENDING") == 60
+
+    def test_gate_keeps_waiting_on_none_then_passes_on_ok(self):
+        import os
+        import subprocess
+        import tempfile
+
+        gate = next(c for c in _sast()["commands"] if "qualitygates" in c)
+        gate = gate.replace("sleep 5", "true")
+        with tempfile.TemporaryDirectory() as d:
+            state = os.path.join(d, "n")
+            stub = os.path.join(d, "curl")
+            with open(stub, "w") as f:
+                f.write(
+                    "#!/bin/sh\n"
+                    f"n=$(cat {state} 2>/dev/null || echo 0); echo $((n+1)) > {state}\n"
+                    'if [ "$n" -lt 2 ]; then s=NONE; else s=OK; fi\n'
+                    'echo "{\\"projectStatus\\":{\\"status\\":\\"$s\\"}}"\n'
+                )
+            os.chmod(stub, 0o755)
+            env = {
+                **os.environ,
+                "PATH": d + os.pathsep + os.environ["PATH"],
+                "SONARQUBE_URL": "http://x",
+                "SONARQUBE_TOKEN": "t",
+                "SONARQUBE_PROJECT_KEY": "k",
+            }
+            r = subprocess.run(
+                ["sh", "-c", gate], env=env, capture_output=True, text=True, timeout=30
+            )
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "Quality gate status: OK" in r.stdout

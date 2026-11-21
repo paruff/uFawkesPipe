@@ -147,15 +147,15 @@ def _sast_step(contract: dict) -> dict:
 
     if quality_gate:
         # Polls /api/qualitygates/project_status (.projectStatus.status), at most
-        # 60 x 5s, so a stuck analysis fails the step instead of hanging it.
+        # 60 x 5s (NONE = analysis not processed yet, keep waiting), so a stuck analysis fails the step instead of hanging it.
         commands.append(
             'STATUS="PENDING"; TRIES=0; '
-            'while [ "$STATUS" = "PENDING" ] && [ "$TRIES" -lt 60 ]; do '
+            'while { [ "$STATUS" = "PENDING" ] || [ "$STATUS" = "NONE" ]; } && [ "$TRIES" -lt 60 ]; do '
             "  sleep 5; TRIES=$((TRIES+1)); "
             '  STATUS=$(curl -s -u "$SONARQUBE_TOKEN:" '
             '    "$SONARQUBE_URL/api/qualitygates/project_status?projectKey=$SONARQUBE_PROJECT_KEY" '
             "    | python3 -c \"import sys,json; print(json.load(sys.stdin).get('projectStatus',{}).get('status','PENDING'))\" "
-            "    2>/dev/null || echo PENDING); "
+            "    || echo PENDING); "
             '  echo "Quality gate status: $STATUS"; '
             "done; "
             'if [ "$STATUS" != "OK" ]; then '
