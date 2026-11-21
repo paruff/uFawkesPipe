@@ -221,6 +221,8 @@ services:
       # ("populate the local Maven cache before scanning" is Trivy's own
       # error message).
       - WOODPECKER_BACKEND_DOCKER_VOLUMES=maven-cache:/root/.m2
+      # Step containers join the compose network so they can reach defectdojo-nginx.
+      - WOODPECKER_BACKEND_DOCKER_NETWORK=ufawkespipe_default
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -297,7 +299,8 @@ services:
       POSTGRES_USER: dojo
       POSTGRES_PASSWORD: ${DOJO_DB_PASSWORD}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # Postgres 18+ keeps data in a versioned subdir and needs the parent mounted.
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "dojo"]
       interval: 10s
@@ -344,6 +347,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      defectdojo-initializer:
+        condition: service_completed_successfully
       defectdojo-celery-worker:
         condition: service_started
     healthcheck:
@@ -356,12 +361,67 @@ services:
       - "component=vuln-mgmt"
       - "managed-by=fawkes"
 
+  # One-shot: migrate, load fixtures, create the admin user, then pin the API
+  # token to DOJO_API_TOKEN so the Woodpecker `defectdojo_api_token` secret works.
+  defectdojo-initializer:
+    image: defectdojo/defectdojo-django:2.38.0
+    container_name: defectdojo-initializer
+    profiles: [security]
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -eo pipefail
+        /entrypoint-initializer.sh
+        # The script above loads DD_*_FILE secrets in its own process; do it here too.
+        . /secret-file-loader.sh
+        python manage.py shell -c "
+        import os
+        from django.contrib.auth import get_user_model
+        from rest_framework.authtoken.models import Token
+        user = get_user_model().objects.get(username=os.environ['DD_ADMIN_USER'])
+        Token.objects.filter(user=user).delete()
+        Token.objects.create(user=user, key=os.environ['DOJO_API_TOKEN'])
+        "
+    environment:
+      DD_DATABASE_URL: postgresql://dojo:${DOJO_DB_PASSWORD}@postgres:5432/dojo
+      DD_SECRET_KEY_FILE: /run/secrets/defectdojo_secret_key
+      DD_CREDENTIAL_AES_256_KEY_FILE: /run/secrets/defectdojo_aes_key
+      DD_INITIALIZE: "true"
+      DD_ADMIN_USER: admin
+      DD_ADMIN_PASSWORD: ${DOJO_ADMIN_PASSWORD}
+      DD_ADMIN_MAIL: admin@defectdojo.local
+      DD_ADMIN_FIRST_NAME: Admin
+      DD_ADMIN_LAST_NAME: User
+      DOJO_API_TOKEN: ${DOJO_API_TOKEN}
+    secrets:
+      - defectdojo_secret_key
+      - defectdojo_aes_key
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # One-shot job with no long-running process to probe; this placeholder
+    # only satisfies the required-healthcheck policy. Completion is gated
+    # by depends_on: service_completed_successfully, not by this check.
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 30s
+      timeout: 5s
+      retries: 1
+    restart: "no"
+    labels:
+      - "plane=ufawkespipe"
+      - "component=vuln-mgmt-init"
+      - "managed-by=fawkes"
+
   defectdojo-nginx:
     image: defectdojo/defectdojo-nginx:2.38.0
     container_name: defectdojo-nginx
     profiles: [security]
     ports:
       - "8080:8080"
+    environment:
+      # The image defaults to an upstream named `uwsgi`; our service is `defectdojo`.
+      DD_UWSGI_HOST: defectdojo
     depends_on:
       - defectdojo
     healthcheck:
@@ -392,6 +452,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      defectdojo-initializer:
+        condition: service_completed_successfully
     labels:
       - "plane=ufawkespipe"
       - "component=vuln-mgmt"
@@ -415,6 +477,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      defectdojo-initializer:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "celery", "-A", "dojo", "inspect", "ping"]
       interval: 30s
