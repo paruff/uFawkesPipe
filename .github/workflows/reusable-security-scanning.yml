@@ -166,6 +166,7 @@ jobs:
 
       # SARIF is for the Security tab; this prints the same findings in the job log.
       - name: Print Trivy findings table (filesystem)
+        continue-on-error: true  # display only; never gate on it
         if: always() && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref == '' && steps.trivy-fs.outcome != 'skipped'
         env:
           SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
@@ -196,6 +197,7 @@ jobs:
 
       # Runs even when the scan above failed, so the failing package/CVE is in the log.
       - name: Print Trivy findings table (image)
+        continue-on-error: true  # display only; never gate on it
         if: always() && (inputs.scan-type == 'all' || inputs.scan-type == 'vulnerabilities') && inputs.image-ref != '' && steps.trivy-image.outcome != 'skipped'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
         with:
