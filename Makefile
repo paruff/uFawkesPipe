@@ -4,7 +4,7 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-# ============================================================================
+# =====================================================================
 # Test Commands
 # ============================================================================
 
@@ -37,6 +37,27 @@ test-policy: ## Validate compose/pipeline config against Rego policies (requires
 # ============================================================================
 
 validate: pre-commit-run validate-docker validate-agents ## The local gate: hooks, compose.yaml and agent definitions
+
+# Pinned to the server/agent version in compose.yaml. Needs no server or login.
+WOODPECKER_CLI_IMAGE ?= woodpeckerci/woodpecker-cli:v3.20.1
+# .woodpecker/steps/common.yaml is a fragment library, not a pipeline, so it is not linted.
+LINT_CI_FILES ?= .woodpecker.yml
+
+lint-ci: ## Lint the Woodpecker pipeline in Docker (no host install, no server)
+	docker run --rm -v "$(CURDIR):/src:ro" -w /src $(WOODPECKER_CLI_IMAGE) lint $(LINT_CI_FILES)
+	@echo "✅ Woodpecker pipeline lint passed"
+
+# Runs the pipeline on this machine, in Docker. --pipeline-event push is required: exec
+# defaults to "manual" and silently skips every push-filtered step. Root in the CLI
+# container only so it can use the docker socket. Secrets: gitignored CI_EXEC_SECRETS.
+CI_FILE ?= .woodpecker.yml
+CI_EXEC_SECRETS ?= .ci-exec-secrets.yaml
+
+ci-exec: ## Run the Woodpecker pipeline locally in Docker (CI_FILE=path to override)
+	docker run --rm --user 0 -v /var/run/docker.sock:/var/run/docker.sock \
+		-v "$(CURDIR):$(CURDIR)" -w "$(CURDIR)" $(WOODPECKER_CLI_IMAGE) exec --local \
+		--repo-path "$(CURDIR)" --backend-engine docker --pipeline-event push \
+		$(if $(wildcard $(CI_EXEC_SECRETS)),--secrets-file "$(CURDIR)/$(CI_EXEC_SECRETS)") $(CI_FILE)
 
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
@@ -82,6 +103,8 @@ pre-commit-setup: ## Install pre-commit hooks
 	pip install pre-commit
 	pre-commit install
 	pre-commit install --hook-type pre-push
+
+precommit: pre-commit-run ## Alias for pre-commit-run (the name AGENTS.md uses)
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
