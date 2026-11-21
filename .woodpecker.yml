@@ -276,6 +276,25 @@ steps:
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "shellcheck completed" ",\"exit_code\":$rc"
       - exit $rc
 
+  # Pipeline self-lint: woodpecker-cli has no shell, so it runs as a plain step
+  # (entrypoint override) at the version pinned in compose.yaml.
+  - name: lint-pipeline
+    image: woodpeckerci/woodpecker-cli:v3.20.1
+    depends_on: [init]
+    entrypoint: [/bin/woodpecker-cli, lint, .woodpecker.yml]
+
+  # Steps run under /bin/sh: reject bashisms in commands: (pre-commit is bypassable)
+  - name: lint-pipeline-shell
+    image: koalaman/shellcheck-alpine:stable
+    depends_on: [init]
+    commands:
+      - apk add --no-cache python3 py3-yaml
+      - . /drone/src/scripts/dora-log.sh
+      - dora_start "lint-pipeline-shell"
+      - python3 scripts/woodpecker_shellcheck.py .woodpecker.yml && rc=$? || rc=$?
+      - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "woodpecker shellcheck completed" ",\"exit_code\":$rc"
+      - exit $rc
+
   # Agent & skill validation
   - name: validate-agents
     image: alpine:3.20
@@ -295,7 +314,7 @@ steps:
   # Unit tests — fast, isolated, no external deps
   - name: unit-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell, validate-agents]
+    depends_on: [lint-yaml, lint-shell, lint-pipeline, lint-pipeline-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - . /drone/src/scripts/dora-log.sh
@@ -307,7 +326,7 @@ steps:
   # Integration tests — cross-component, may require Docker
   - name: integration-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell, validate-agents]
+    depends_on: [lint-yaml, lint-shell, lint-pipeline, lint-pipeline-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - . /drone/src/scripts/dora-log.sh
@@ -319,7 +338,7 @@ steps:
   # Contract tests — pipeline contract validation
   - name: contract-tests
     image: python:3.12-slim
-    depends_on: [lint-yaml, lint-shell, validate-agents]
+    depends_on: [lint-yaml, lint-shell, lint-pipeline, lint-pipeline-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
       - . /drone/src/scripts/dora-log.sh
