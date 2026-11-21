@@ -346,12 +346,14 @@ def _image_scan_step(contract: dict) -> dict:
     return step
 
 
-def _dast_step(contract: dict) -> dict:
+def _dast_step(contract: dict) -> list[dict]:
     dast_cfg = contract.get("stages", {}).get("dast", {})
     target_url = dast_cfg.get("target_url", "")
     tool = dast_cfg.get("tool", "zap")
     fail_on = dast_cfg.get("fail_on", "HIGH")
     timeout = dast_cfg.get("timeout", 300)
+    # Optional: with none, only the baseline scan runs.
+    openapi_url = dast_cfg.get("openapi_url")
     # dast.rules ("Default Policy" in examples) has no wired ZAP config-file
     # equivalent yet — it would need a generated -c rules file, not just a name.
     # Not implemented; see docs/KNOWN_LIMITATIONS.md.
@@ -369,28 +371,37 @@ def _dast_step(contract: dict) -> dict:
     # ZAP's -T is minutes; the contract's timeout is seconds.
     timeout_mins = max(1, round(timeout / 60))
 
-    # ZAP baseline scan + active scan (exit code now propagates — no `|| true`).
-    # -x writes the XML report DefectDojo's "ZAP Scan" parser reads; -r is
-    # the human-readable HTML report.
+    # ZAP runs as the non-root `zap` user and insists on /zap/wrk. The
+    # workspace is root-owned, so a root prep step makes the reports dir
+    # writable, and /zap/wrk (zap-owned) is symlinked to it: relative -r/-x
+    # paths then land in artifacts/security where defectdojo-upload reads them.
+    prep = {
+        "name": "dast-prep",
+        "image": "busybox:1.36.1",
+        "commands": [f"mkdir -p {ARTIFACTS_DIR}", f"chmod 777 {ARTIFACTS_DIR}"],
+    }
     commands = [
         _otel_trace_prefix("dast"),
-        f"mkdir -p {ARTIFACTS_DIR}",
+        f'ln -sfn "$CI_WORKSPACE/{ARTIFACTS_DIR}" /zap/wrk',
         (
             f"zap-baseline.py -t {target_url} -T {timeout_mins} "
-            f"-r {ARTIFACTS_DIR}/zap-baseline.html -x {ARTIFACTS_DIR}/zap-baseline.xml"
-            f"{ignore_warn_flag}"
-        ),
-        (
-            f"zap-api-scan.py -t {target_url}/openapi.json -f openapi -T {timeout_mins} "
-            f"-r {ARTIFACTS_DIR}/zap-api.html -x {ARTIFACTS_DIR}/zap-api.xml{ignore_warn_flag}"
+            f"-r zap-baseline.html -x zap-baseline.xml{ignore_warn_flag}"
         ),
     ]
+    if openapi_url:
+        commands.append(
+            f"zap-api-scan.py -t {openapi_url} -f openapi -T {timeout_mins} "
+            f"-r zap-api.html -x zap-api.xml{ignore_warn_flag}"
+        )
 
-    return {
-        "name": "dast",
-        "image": "zaproxy/zap-stable:latest",
-        "commands": commands,
-    }
+    return [
+        prep,
+        {
+            "name": "dast",
+            "image": "zaproxy/zap-stable:latest",
+            "commands": commands,
+        },
+    ]
 
 
 def _defectdojo_step(contract: dict) -> dict:

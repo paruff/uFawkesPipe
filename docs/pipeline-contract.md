@@ -428,6 +428,7 @@ Dynamic Application Security Testing — OWASP ZAP active scanning against runni
 | `enabled`     | boolean | no       | `false`         | Enable DAST stage |
 | `tool`        | string  | no       | `zap`           | DAST tool to use |
 | `target_url`  | string  | yes      | —               | URL of running application (e.g., `http://app:8000`) |
+| `openapi_url` | string  | no       | —               | OpenAPI spec URL; when set, `zap-api-scan.py` also runs. Unset = baseline scan only |
 | `rules`       | array   | no       | `Default Policy` | ZAP policy/rules to run |
 | `fail_on`     | string  | no       | `HIGH`          | Severity threshold to fail (HIGH, MEDIUM, LOW) |
 | `timeout`     | integer | no       | `300`           | Max scan time in seconds |

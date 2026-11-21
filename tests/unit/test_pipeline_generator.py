@@ -629,6 +629,7 @@ class TestDastStage:
                 "dast": {
                     "enabled": True,
                     "target_url": "http://my-app:8000",
+                    "openapi_url": "http://my-app:8000/openapi.json",
                 },
                 "test": {
                     "enabled": True,
@@ -660,6 +661,22 @@ class TestDastStage:
         )
         # fail_on defaults to HIGH -> only FAIL-level alerts break the build
         assert " -I" in commands_str, "default fail_on: HIGH must pass -I to ZAP"
+
+    def test_dast_reports_reach_workspace_and_api_scan_is_optional(self):
+        """#289: /zap/wrk -> workspace reports dir; API scan only with openapi_url."""
+        contract = {
+            "app": {"name": "test", "language": "python"},
+            "stages": {"dast": {"enabled": True, "target_url": "http://my-app:8000"}},
+        }
+        parsed = yaml.safe_load(render(contract))
+        names = [s["name"] for s in parsed["steps"]]
+        assert names.index("dast-prep") < names.index("dast")
+        dast = next(s for s in parsed["steps"] if s["name"] == "dast")
+        cmds = " ".join(dast["commands"])
+        assert "/zap/wrk" in cmds and "artifacts/security" in cmds
+        assert "zap-api-scan.py" not in cmds
+        assert "user" not in dast
+        assert "source " not in cmds
 
     def test_dast_fail_on_non_high_does_not_ignore_warnings(self):
         """Acceptance: fail_on other than HIGH must fail the build on WARN too."""
