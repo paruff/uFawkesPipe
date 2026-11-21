@@ -406,7 +406,7 @@ def _dast_step(contract: dict) -> list[dict]:
 
 def _defectdojo_step(contract: dict) -> dict:
     dd_cfg = contract.get("stages", {}).get("defectdojo", {})
-    url = dd_cfg.get("url", "http://defectdojo:8080")
+    url = dd_cfg.get("url", "http://defectdojo-nginx:8080")
     engagement = dd_cfg.get("engagement_name", "CI-Engagement")
 
     # (report path, DefectDojo parser name). A report that a given pipeline
@@ -423,16 +423,29 @@ def _defectdojo_step(contract: dict) -> dict:
         (f"{ARTIFACTS_DIR}/zap-api.xml", "ZAP Scan"),
         (f"{ARTIFACTS_DIR}/osv.json", "OSV Scan"),
     ]
-    commands = [_otel_trace_prefix("defectdojo-upload")] + [
-        f'[ -f "{path}" ] && curl -sf -X POST "{url}/api/v2/import-scan/" '
+    # Woodpecker joins `commands` into one script, so the function and FAILED
+    # persist across entries. auto_create_context creates the product and
+    # engagement on first import; any non-201 fails the step (after all
+    # reports were tried). No ${...}: Woodpecker would pre-process it.
+    upload_fn = (
+        'FAILED=0; upload() { [ -f "$1" ] || return 0; '
+        'CODE=$(curl -s -o /dev/null -w "%{http_code}" '
+        f'-X POST "{url}/api/v2/import-scan/" '
         '-H "Authorization: Token $DEFECTDOJO_API_TOKEN" '
         '-F "active=true" -F "verified=false" '
-        f'-F "scan_type={scan_type}" '
+        '-F "scan_type=$2" '
         f'-F "engagement_name={engagement}" '
         '-F "product_name=$CI_REPO_NAME" '
-        f'-F "file=@{path}" || true'
-        for path, scan_type in reports
-    ]
+        '-F "product_type_name=Research and Development" '
+        '-F "auto_create_context=true" '
+        '-F "file=@$1") || CODE=000; '
+        'echo "$1 -> HTTP $CODE"; [ "$CODE" = "201" ] || FAILED=1; }'
+    )
+    commands = (
+        [_otel_trace_prefix("defectdojo-upload"), upload_fn]
+        + [f'upload "{path}" "{scan_type}"' for path, scan_type in reports]
+        + ['[ "$FAILED" = "0" ]']
+    )
 
     return {
         "name": "defectdojo-upload",
@@ -444,7 +457,13 @@ def _defectdojo_step(contract: dict) -> dict:
             "DEFECTDOJO_API_TOKEN": {"from_secret": "defectdojo_api_token"}
         },
         "commands": commands,
-        "when": {"event": "push", "branch": "main"},
+        # status: also upload the reports of a pipeline whose scan step failed;
+        # manual: runs started from the API/UI, not only webhooks.
+        "when": {
+            "event": ["push", "manual"],
+            "branch": "main",
+            "status": ["success", "failure"],
+        },
     }
 
 

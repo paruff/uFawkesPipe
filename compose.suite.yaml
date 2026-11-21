@@ -257,6 +257,10 @@ services:
     networks:
       - fawkes-net
 
+  defectdojo-initializer:
+    networks:
+      - fawkes-net
+
   defectdojo-nginx:
     networks:
       - fawkes-net

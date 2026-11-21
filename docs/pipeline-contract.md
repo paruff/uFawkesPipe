@@ -461,12 +461,12 @@ Uploads whatever machine-readable security reports the earlier stages produced (
 | Field             | Type    | Required | Default                    | Description |
 |-------------------|---------|----------|-----------------------------|-------------|
 | `enabled`         | boolean | no       | `false`                     | Enable DefectDojo upload stage |
-| `url`             | string  | no       | `http://defectdojo:8080`   | DefectDojo base URL |
+| `url`             | string  | no       | `http://defectdojo-nginx:8080` | DefectDojo base URL (the nginx front end, not uwsgi) |
 | `engagement_name` | string  | no       | `CI-Engagement`             | Engagement to import findings into |
 
 Requires a Woodpecker secret named `defectdojo_api_token`.
 
-Each report is uploaded independently as `[ -f <report> ] && curl ... || true` — a report a given pipeline never produced (e.g. `dast` disabled, so no `zap-*.xml`) is silently skipped, and a failed upload never fails the build. Only runs on `push` to `main`.
+Each report is uploaded independently with `auto_create_context=true` (the product and engagement are created on first import). A report a given pipeline never produced (e.g. `dast` disabled) is skipped, but a failed import **fails the step** (after every report was tried). Runs on `push` and `manual` events on `main`, including after a failed scan step. With `make up-security`, `defectdojo-initializer` migrates, loads fixtures, creates `admin` (`DOJO_ADMIN_PASSWORD`) and pins its API token to `DOJO_API_TOKEN` — store the same value as the `defectdojo_api_token` secret.
 
 **Example:**
 
