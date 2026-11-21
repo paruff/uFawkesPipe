@@ -370,8 +370,10 @@ services:
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        set -euo pipefail
+        set -eo pipefail
         /entrypoint-initializer.sh
+        # The script above loads DD_*_FILE secrets in its own process; do it here too.
+        . /secret-file-loader.sh
         python manage.py shell -c "
         import os
         from django.contrib.auth import get_user_model
@@ -397,8 +399,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # One-shot job: healthy once the process has exited cleanly is not
-    # observable, so the check only asserts the DB is reachable.
+    # One-shot job with no long-running process to probe; this placeholder
+    # only satisfies the required-healthcheck policy. Completion is gated
+    # by depends_on: service_completed_successfully, not by this check.
     healthcheck:
       test: ["CMD", "true"]
       interval: 30s
@@ -449,6 +452,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      defectdojo-initializer:
+        condition: service_completed_successfully
     labels:
       - "plane=ufawkespipe"
       - "component=vuln-mgmt"
@@ -472,6 +477,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      defectdojo-initializer:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "celery", "-A", "dojo", "inspect", "ping"]
       interval: 30s

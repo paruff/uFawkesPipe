@@ -44,7 +44,7 @@ def _call(path, data=None, headers=None):
         data=data,
         headers={"Authorization": f"Token {TOKEN}", **(headers or {})},
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 - fixed local URL
+    with urllib.request.urlopen(req, timeout=30) as resp:
         return resp.status, json.load(resp)
 
 
@@ -72,9 +72,13 @@ def test_trivy_import_creates_finding():
         for k, v in fields.items()
     )
     body += (
-        f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
-        'filename="trivy.json"\r\nContent-Type: application/json\r\n\r\n'
-    ).encode() + json.dumps(TRIVY_REPORT).encode() + f"\r\n--{boundary}--\r\n".encode()
+        (
+            f'--{boundary}\r\nContent-Disposition: form-data; name="file"; '
+            'filename="trivy.json"\r\nContent-Type: application/json\r\n\r\n'
+        ).encode()
+        + json.dumps(TRIVY_REPORT).encode()
+        + f"\r\n--{boundary}--\r\n".encode()
+    )
 
     status, _ = _call(
         "/api/v2/import-scan/",
