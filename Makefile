@@ -38,6 +38,15 @@ test-policy: ## Validate compose/pipeline config against Rego policies (requires
 
 validate: pre-commit-run validate-docker validate-agents ## The local gate: hooks, compose.yaml and agent definitions
 
+# Pinned to the server/agent version in compose.yaml. Needs no server or login.
+WOODPECKER_CLI_IMAGE ?= woodpeckerci/woodpecker-cli:v3.20.1
+# .woodpecker/steps/common.yaml is a fragment library, not a pipeline, so it is not linted.
+LINT_CI_FILES ?= .woodpecker.yml
+
+lint-ci: ## Lint the Woodpecker pipeline in Docker (no host install, no server)
+	docker run --rm -v "$(CURDIR):/src:ro" -w /src $(WOODPECKER_CLI_IMAGE) lint $(LINT_CI_FILES)
+	@echo "✅ Woodpecker pipeline lint passed"
+
 validate-docker: ## Validate compose.yaml
 	@echo "Validating compose.yaml..."
 	docker compose -f compose.yaml config --quiet
