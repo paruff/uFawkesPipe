@@ -11,7 +11,8 @@
 # reusable-preflight.yml counts as all three stages: that is what it runs.
 # A line that names a hook (`pre-commit run <id> --all-files`, or on a
 # --from-ref/--to-ref range, as a repo that checks only changed files does)
-# covers that hook alone, never its whole stage.
+# covers that hook alone, never its whole stage; an id the config doesn't
+# have fails, since CI would die with "No hook with id".
 #
 # .shift-left.yml:
 #   local-only: [{id, reason}]  runs on a laptop, skipped in CI
@@ -58,9 +59,10 @@ local_only, ci_only = lists["local-only"], lists["ci-only"]
 
 ci_stages = set()
 ci_hooks = set()  # hooks CI runs by id
+ci_refs = []  # (id, workflow, line number) for each such line
 REUSABLE = re.compile(r"uses:\s*paruff/ufawkespipe/\.github/workflows/reusable-preflight\.ya?ml@", re.I)
 for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
-    for line in open(wf):
+    for n, line in enumerate(open(wf), 1):
         line = line.split("#", 1)[0]
         if REUSABLE.search(line):
             ci_stages |= {"pre-commit", "pre-push", "commit-msg"}
@@ -73,6 +75,7 @@ for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
         if named and not named.group(1).startswith("-"):
             if "--all-files" in line or "--from-ref" in line:
                 ci_hooks.add(named.group(1))
+                ci_refs.append((named.group(1), wf, n))
             continue
         if stage == "commit-msg" and "--commit-msg-filename" in line:
             ci_stages.add(stage)
@@ -87,6 +90,10 @@ if args[:1] == ["--skip-list"]:
         skip |= {i for i, st in hooks if "pre-push" in st and "pre-commit" in st}
     print(",".join(sorted(skip)))
     sys.exit(0)
+
+for i, wf, n in ci_refs:
+    if i not in ids:
+        errors.append(f"CI runs hook {i}, which .pre-commit-config.yaml does not configure ({wf}:{n})")
 
 for i, stages in hooks:
     if i in local_only:

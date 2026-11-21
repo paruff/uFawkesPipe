@@ -165,7 +165,7 @@ jobs:
 YML
 parity "$R"
 check "an unconfigured id fails" test "$rc" -eq 1
-check "names the id, the workflow and the line" says "FAIL CI runs hook ghost, which \.pre-commit-config\.yaml does not configure \(\.github/workflows/ci\.yml:6\)"
+check "names the id, the workflow and the line" says "FAIL CI runs hook ghost, which \.pre-commit-config\.yaml does not configure \(\.github/workflows/ci\.yml:7\)"
 check "a configured id is not flagged" bash -c '! grep -q "hook lint," <<< "$0"' "$out"
 scenario ghost-range
 cat > "$R/.github/workflows/ci.yml" << 'YML'
@@ -178,7 +178,7 @@ jobs:
       - run: pre-commit run mypy --from-ref "$BASE" --to-ref HEAD
 YML
 parity "$R"
-check "a --from-ref range line for a missing id fails" says "FAIL CI runs hook mypy.*ci\.yml:6"
+check "a --from-ref range line for a missing id fails" says "FAIL CI runs hook mypy.*ci\.yml:7"
 scenario ghost-reusable
 cat > "$R/.github/workflows/ci.yml" << 'YML'
 jobs:
