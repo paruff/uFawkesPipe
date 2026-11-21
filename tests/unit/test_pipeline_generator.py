@@ -279,7 +279,7 @@ class TestSonarQubeQualityGate:
         parsed = yaml.safe_load(result)
         sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
         commands_str = " ".join(sast_step["commands"])
-        assert "qualitygates/project" in commands_str, (
+        assert "qualitygates/project_status" in commands_str, (
             "SAST step must include quality gate wait when sonarqube.qualityGate: true"
         )
 
@@ -324,7 +324,7 @@ class TestSonarQubeQualityGate:
         parsed = yaml.safe_load(result)
         sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
         commands_str = " ".join(sast_step["commands"])
-        assert "qualitygates/project" in commands_str, (
+        assert "qualitygates/project_status" in commands_str, (
             "SAST step must include quality gate wait by default (qualityGate defaults to true)"
         )
 
@@ -953,7 +953,7 @@ class TestOtelTracing:
         for name in ("sast", "dast", "defectdojo-upload"):
             step = next(s for s in parsed["steps"] if s["name"] == name)
             first_cmd = step["commands"][0]
-            assert "source /drone/src/scripts/otel-trace.sh" in first_cmd
+            assert "$CI_WORKSPACE/scripts/otel-trace.sh" in first_cmd
             assert f'otel_span_start "{name}"' in first_cmd
             assert "trap" in first_cmd and "otel_span_end" in first_cmd
 
@@ -1036,3 +1036,100 @@ class TestImageReferenceConsistency:
         parsed = yaml.safe_load(result)
         build_step = next(s for s in parsed["steps"] if s["name"] == "build")
         assert "pack build paruff/java-fawkes-path" in build_step["commands"][-1]
+
+
+def _sast(**sonarqube):
+    contract = {
+        "app": {"name": "my-app", "language": "python"},
+        "stages": {"sast": {"enabled": True, "sonarqube": sonarqube}},
+    }
+    return next(
+        s for s in yaml.safe_load(render(contract))["steps"] if s["name"] == "sast"
+    )
+
+
+@pytest.mark.unit
+class TestSastStepRunsAsGenerated:
+    """#287: workspace path, credentials and a bounded quality-gate poll."""
+
+    def test_no_hardcoded_drone_workspace(self):
+        assert "/drone/src" not in " ".join(_sast()["commands"])
+
+    def test_helper_script_is_optional(self):
+        first = _sast()["commands"][0]
+        assert "$CI_WORKSPACE/scripts/otel-trace.sh" in first
+        assert 'if [ -f "$T" ]' in first and "otel_span_start() { :; }" in first
+
+    def test_environment_uses_secrets(self):
+        env = _sast()["environment"]
+        assert env["SONAR_TOKEN"] == {"from_secret": "sonarqube_token"}
+        assert env["SONARQUBE_TOKEN"] == {"from_secret": "sonarqube_token"}
+        assert env["SONAR_HOST_URL"] == {"from_secret": "sonarqube_url"}
+        assert env["SONARQUBE_URL"] == {"from_secret": "sonarqube_url"}
+
+    def test_project_key_defaults_to_app_name_and_is_overridable(self):
+        assert _sast()["environment"]["SONARQUBE_PROJECT_KEY"] == "my-app"
+        assert _sast(projectKey="k")["environment"]["SONARQUBE_PROJECT_KEY"] == "k"
+
+    def test_gate_polls_project_status_and_is_bounded(self):
+        gate = next(c for c in _sast()["commands"] if "qualitygates" in c)
+        assert "/api/qualitygates/project_status?" in gate
+        assert "projectStatus" in gate
+        assert "-lt 60" in gate and "TRIES" in gate
+
+    def test_gate_loop_terminates_and_fails_on_timeout(self):
+        """Run the real loop against a curl stub that always says PENDING."""
+        import os
+        import subprocess
+        import tempfile
+
+        gate = next(c for c in _sast()["commands"] if "qualitygates" in c)
+        gate = gate.replace("sleep 5", "true")  # don't actually wait
+        with tempfile.TemporaryDirectory() as d:
+            stub = os.path.join(d, "curl")
+            with open(stub, "w") as f:
+                f.write('#!/bin/sh\necho \'{"projectStatus":{"status":"PENDING"}}\'\n')
+            os.chmod(stub, 0o755)
+            env = {
+                **os.environ,
+                "PATH": d + os.pathsep + os.environ["PATH"],
+                "SONARQUBE_URL": "http://x",
+                "SONARQUBE_TOKEN": "t",
+                "SONARQUBE_PROJECT_KEY": "k",
+            }
+            r = subprocess.run(
+                ["sh", "-c", gate], env=env, capture_output=True, text=True, timeout=30
+            )
+        assert r.returncode == 1
+        assert r.stdout.count("Quality gate status: PENDING") == 60
+
+    def test_gate_keeps_waiting_on_none_then_passes_on_ok(self):
+        import os
+        import subprocess
+        import tempfile
+
+        gate = next(c for c in _sast()["commands"] if "qualitygates" in c)
+        gate = gate.replace("sleep 5", "true")
+        with tempfile.TemporaryDirectory() as d:
+            state = os.path.join(d, "n")
+            stub = os.path.join(d, "curl")
+            with open(stub, "w") as f:
+                f.write(
+                    "#!/bin/sh\n"
+                    f"n=$(cat {state} 2>/dev/null || echo 0); echo $((n+1)) > {state}\n"
+                    'if [ "$n" -lt 2 ]; then s=NONE; else s=OK; fi\n'
+                    'echo "{\\"projectStatus\\":{\\"status\\":\\"$s\\"}}"\n'
+                )
+            os.chmod(stub, 0o755)
+            env = {
+                **os.environ,
+                "PATH": d + os.pathsep + os.environ["PATH"],
+                "SONARQUBE_URL": "http://x",
+                "SONARQUBE_TOKEN": "t",
+                "SONARQUBE_PROJECT_KEY": "k",
+            }
+            r = subprocess.run(
+                ["sh", "-c", gate], env=env, capture_output=True, text=True, timeout=30
+            )
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "Quality gate status: OK" in r.stdout
