@@ -21,7 +21,7 @@
 
 | If you change...                                   | You must also update...                                                |
 | -------------------------------------------------- | ---------------------------------------------------------------------- |
-| Woodpecker image version                           | Check compatibility with `.woodpecker.yml` step images; test run       |
+| Woodpecker image version                           | Keep in step: `dev/compose.pilot.yaml`, `Makefile` (`WOODPECKER_CLI_IMAGE`), `scripts/woodpecker-lint.sh`, `lint-pipeline` step in `.woodpecker.yml`; test run |
 | Woodpecker port (8000 UI / 9000 gRPC)              | `.env.example`; `Makefile`; `docs/`; GitHub webhook URL               |
 | SonarQube image version                            | Test SAST pipeline step; `docs/`                                      |
 | SonarQube port (9001→9000)                         | `docs/`; user access instructions                                     |
@@ -54,6 +54,7 @@
 | `notify-obs` event format           | uFawkesObs OTEL log parsing; `docs/` telemetry reference                  |
 | Structured JSON log format           | uFawkesObs Alloy log parsing config; `docs/` logging reference            |
 | Adding or removing a step           | `docs/ARCHITECTURE.md`; test pipeline contract validation                 |
+| Step `commands:` syntax             | Must be POSIX `sh` (`make lint-ci`, `make precommit`); `docs/DEVELOPING.md` |
 | Security scan severity thresholds   | `docs/`; team notification about changed gate                            |
 
 ---
