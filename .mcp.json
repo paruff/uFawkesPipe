@@ -2,10 +2,7 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp"
-      ]
+      "args": ["-y", "@playwright/mcp"]
     },
     "serena": {
       "command": "uvx",
@@ -30,10 +27,7 @@
     },
     "github": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
       }
@@ -43,19 +37,6 @@
       "url": "https://mcp.sentry.dev/mcp",
       "headers": {
         "Authorization": "Bearer ${SENTRY_API_KEY}"
-      }
-    },
-    "woodpecker": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@ni-c/woodpecker-ci-mcp@0.4.0"
-      ],
-      "env": {
-        "WOODPECKER_URL": "${WOODPECKER_URL:-http://localhost:8000}",
-        "WOODPECKER_TOKEN": "${WOODPECKER_MCP_TOKEN}",
-        "WOODPECKER_READ_ONLY": "true",
-        "WOODPECKER_ALLOW_TOOLS": "essential"
       }
     }
   }

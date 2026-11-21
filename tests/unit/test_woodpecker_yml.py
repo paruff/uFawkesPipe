@@ -142,8 +142,8 @@ class TestSecretsScanStep:
         assert step is not None, "Step 'secrets-scan' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "secrets-scan must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "secrets-scan must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "secrets-scan"' in command_str, (
             "secrets-scan must call dora_start with step name"
@@ -246,8 +246,8 @@ class TestValidateAgentsStep:
         assert step is not None, "Step 'validate-agents' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "validate-agents must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "validate-agents must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "validate-agents"' in command_str, (
             "validate-agents must call dora_start with step name"
@@ -366,8 +366,8 @@ class TestVulnScanFsStep:
         assert step is not None, "Step 'vuln-scan-fs' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "vuln-scan-fs must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "vuln-scan-fs must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "vuln-scan-fs"' in command_str, (
             "vuln-scan-fs must call dora_start with step name"
@@ -488,8 +488,8 @@ class TestVulnScanImageStep:
         assert step is not None, "Step 'vuln-scan-image' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "vuln-scan-image must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "vuln-scan-image must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "vuln-scan-image"' in command_str, (
             "vuln-scan-image must call dora_start with step name"
@@ -657,8 +657,8 @@ class TestUploadDefectDojoStep:
         assert step is not None, "Step 'upload-defectdojo' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "upload-defectdojo must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "upload-defectdojo must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "upload-defectdojo"' in command_str, (
             "upload-defectdojo must call dora_start with step name"
@@ -772,8 +772,8 @@ class TestNotifyObsStep:
         assert step is not None, "Step 'notify-obs' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "notify-obs must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "notify-obs must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "notify-obs"' in command_str, (
             "notify-obs must call dora_start with step name"
@@ -992,8 +992,8 @@ class TestGenerateSbomStep:
         assert step is not None, "Step 'generate-sbom' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "generate-sbom must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "generate-sbom must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "generate-sbom"' in command_str, (
             "generate-sbom must call dora_start with step name"
@@ -1092,8 +1092,8 @@ class TestSignImageStep:
         assert step is not None, "Step 'sign-image' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "sign-image must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "sign-image must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "sign-image"' in command_str, (
             "sign-image must call dora_start with step name"
@@ -1151,8 +1151,8 @@ class TestPolicyCheckStep:
         assert step is not None, "Step 'policy-check' not found"
         commands = step.get("commands", [])
         command_str = " ".join(commands)
-        assert "source /drone/src/scripts/dora-log.sh" in command_str, (
-            "policy-check must source dora-log.sh for DORA logging"
+        assert ". /drone/src/scripts/dora-log.sh" in command_str, (
+            "policy-check must source dora-log.sh (POSIX `.`) for DORA logging"
         )
         assert 'dora_start "policy-check"' in command_str, (
             "policy-check must call dora_start with step name"
@@ -1183,7 +1183,11 @@ class TestBuildImageIsRealCnbBuild:
         commands = " ".join(self._step(woodpecker_config)["commands"])
         assert "pack build" in commands
         assert "--publish" in commands
-        assert "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" in commands
+        # POSIX sh has no ${var:0:7}; the short SHA comes from cut.
+        assert (
+            '"$REGISTRY_USERNAME/${CI_REPO_NAME}:'
+            '$(echo "$CI_COMMIT_SHA" | cut -c1-7)"' in commands
+        )
 
     def test_pack_image_has_ca_certificates(self, woodpecker_config):
         # buildpacks/pack#2488: -base had no CA bundle until 0.40.11, so pack

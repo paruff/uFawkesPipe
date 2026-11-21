@@ -230,12 +230,12 @@ when:
 
 x-dora-log: &dora-log
   commands:
-    - source /drone/src/scripts/dora-log.sh
+    - . /drone/src/scripts/dora-log.sh
     - dora_start "${CI_STEP_NAME}"
 
 x-dora-end: &dora-end
   commands:
-    - source /drone/src/scripts/dora-log.sh
+    - . /drone/src/scripts/dora-log.sh
     - dora_end "${CI_STEP_NAME}"
 
 # ============================================================================
@@ -247,7 +247,7 @@ steps:
   - name: init
     image: alpine:3.20
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "init"
       - mkdir -p artifacts/security artifacts/coverage artifacts/tests
       - dora_info "init" "Artifact directories created"
@@ -259,7 +259,7 @@ steps:
     depends_on: [init]
     commands:
       - pip install yamllint pyyaml --quiet
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "lint-yaml"
       - yamllint compose.yaml .woodpecker.yml .env.example && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "yamllint completed" ",\"exit_code\":$rc"
@@ -270,7 +270,7 @@ steps:
     image: koalaman/shellcheck-alpine:stable
     depends_on: [init]
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "lint-shell"
       - shellcheck scripts/*.sh validate.sh && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'warn'; fi)" "validate" "shellcheck completed" ",\"exit_code\":$rc"
@@ -282,7 +282,7 @@ steps:
     depends_on: [init]
     commands:
       - apk add --no-cache bash
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "validate-agents"
       - bash scripts/validate-agents.sh && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "validate" "Agent validation completed" ",\"exit_code\":$rc"
@@ -298,9 +298,9 @@ steps:
     depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "unit-tests"
-      - pytest tests/unit/ -v --tb=short -m "not integration and not smoke and not acceptance" --junitxml=artifacts/tests/junit.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - (pytest tests/unit/ -v --tb=short -m "not integration and not smoke and not acceptance" --junitxml=artifacts/tests/junit.xml; echo $? > artifacts/tests/.rc) 2>&1 | tee /dev/stderr; rc=$(cat artifacts/tests/.rc)
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Unit tests completed" ",\"exit_code\":$rc"
       - exit $rc
 
@@ -310,9 +310,9 @@ steps:
     depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "integration-tests"
-      - pytest tests/integration/ -v --tb=short -m integration --junitxml=artifacts/tests/junit-integration.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - (pytest tests/integration/ -v --tb=short -m integration --junitxml=artifacts/tests/junit-integration.xml; echo $? > artifacts/tests/.rc) 2>&1 | tee /dev/stderr; rc=$(cat artifacts/tests/.rc)
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Integration tests completed" ",\"exit_code\":$rc"
       - exit $rc
 
@@ -322,9 +322,9 @@ steps:
     depends_on: [lint-yaml, lint-shell, validate-agents]
     commands:
       - pip install -r tests/requirements.txt --quiet
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "contract-tests"
-      - pytest tests/ tests/integration/ -v --tb=short -k "contract or compose or yaml" --junitxml=artifacts/tests/junit-contract.xml 2>&1 | tee /dev/stderr; rc=${PIPESTATUS[0]}
+      - (pytest tests/ tests/integration/ -v --tb=short -k "contract or compose or yaml" --junitxml=artifacts/tests/junit-contract.xml; echo $? > artifacts/tests/.rc) 2>&1 | tee /dev/stderr; rc=$(cat artifacts/tests/.rc)
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "test" "Contract tests completed" ",\"exit_code\":$rc"
       - exit $rc
 
@@ -337,7 +337,7 @@ steps:
     image: zricethezav/gitleaks:v8.18.2
     depends_on: [unit-tests, integration-tests, contract-tests]
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "secrets-scan"
       - gitleaks detect --source=. --report-format=json --report-path=artifacts/security/gitleaks.json --exit-code=1 && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Gitleaks scan completed" ",\"exit_code\":$rc,\"secrets_found\":$(if [ $rc -eq 0 ]; then echo 'false'; else echo 'true'; fi)"
@@ -348,7 +348,7 @@ steps:
     image: aquasec/trivy:0.74.0
     depends_on: [secrets-scan]
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "vuln-scan-fs"
       - trivy fs --severity HIGH,CRITICAL --format json --output artifacts/security/trivy-repo.json --no-progress . && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy filesystem scan completed" ",\"exit_code\":$rc"
@@ -362,9 +362,9 @@ steps:
       REGISTRY_USERNAME:
         from_secret: registry_username
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "vuln-scan-image"
-      - trivy image --format json --output artifacts/security/trivy-image.json --no-progress $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - trivy image --format json --output artifacts/security/trivy-image.json --no-progress "$REGISTRY_USERNAME/${CI_REPO_NAME}:$(echo "$CI_COMMIT_SHA" | cut -c1-7)" && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Trivy image scan completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
@@ -377,7 +377,7 @@ steps:
     depends_on: [vuln-scan-fs]
     timeout: 5
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "policy-check"
       - conftest test --policy policy/ compose.yaml compose.suite.yaml .woodpecker.yml && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "security" "Policy check completed" ",\"exit_code\":$rc"
@@ -401,12 +401,12 @@ steps:
       REGISTRY_PASSWORD:
         from_secret: registry_password
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "build-image"
       - mkdir -p "$HOME/.docker"
       - AUTH=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 | tr -d '\n')
       - printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > "$HOME/.docker/config.json"
-      - pack build "$REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7}" --builder paketobuildpacks/builder:base --path . --publish && rc=$? || rc=$?
+      - pack build "$REGISTRY_USERNAME/${CI_REPO_NAME}:$(echo "$CI_COMMIT_SHA" | cut -c1-7)" --builder paketobuildpacks/builder:base --path . --publish && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "build" "CNB image build completed" ",\"exit_code\":$rc"
       - dora_end "build-image"
       - exit $rc
@@ -426,10 +426,10 @@ steps:
       REGISTRY_USERNAME:
         from_secret: registry_username
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "generate-sbom"
       - mkdir -p artifacts/security
-      - trivy image --format cyclonedx --output artifacts/security/sbom.cdx.json $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - trivy image --format cyclonedx --output artifacts/security/sbom.cdx.json "$REGISTRY_USERNAME/${CI_REPO_NAME}:$(echo "$CI_COMMIT_SHA" | cut -c1-7)" && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "SBOM generation completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
@@ -448,9 +448,9 @@ steps:
       COSIGN_PASSWORD:
         from_secret: cosign_password  # pragma: allowlist secret
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "sign-image"
-      - cosign sign --key env://COSIGN_PRIVATE_KEY --yes $REGISTRY_USERNAME/${CI_REPO_NAME}:${CI_COMMIT_SHA:0:7} && rc=$? || rc=$?
+      - cosign sign --key env://COSIGN_PRIVATE_KEY --yes "$REGISTRY_USERNAME/${CI_REPO_NAME}:$(echo "$CI_COMMIT_SHA" | cut -c1-7)" && rc=$? || rc=$?
       - dora_emit "$(if [ $rc -eq 0 ]; then echo 'info'; else echo 'error'; fi)" "supply-chain" "Image signing completed" ",\"exit_code\":$rc"
       - exit $rc
     when:
@@ -465,7 +465,7 @@ steps:
       DOJO_API_TOKEN:
         from_secret: defectdojo_api_token
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "upload-defectdojo"
       - |
         for f in gitleaks trivy-repo trivy-image; do
@@ -522,7 +522,7 @@ steps:
       GITHUB_TOKEN:
         from_secret: github_token
     commands:
-      - source /drone/src/scripts/dora-log.sh
+      - . /drone/src/scripts/dora-log.sh
       - dora_start "notify-obs"
       # CI_PIPELINE_STATUS is success or failure; the schema calls a failure "failed".
       - DEPLOY_STATUS=success; [ "${CI_PIPELINE_STATUS:-success}" = "success" ] || DEPLOY_STATUS=failed
@@ -537,7 +537,7 @@ steps:
                   "attributes": [
                     {"key": "service.name", "value": {"stringValue": "ufawkespipe"}},
                     {"key": "deployment.environment", "value": {"stringValue": "production"}},
-                    {"key": "deployment.version", "value": {"stringValue": "'"${CI_COMMIT_SHA:0:7}"'"}},
+                    {"key": "deployment.version", "value": {"stringValue": "'"$(echo "$CI_COMMIT_SHA" | cut -c1-7)"'"}},
                     {"key": "deployment.status", "value": {"stringValue": "'"${DEPLOY_STATUS}"'"}}
                   ]
                 },
