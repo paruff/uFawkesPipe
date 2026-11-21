@@ -51,3 +51,4 @@ graphify-out/
 .graphify_python
 .graphify_root
 manifest.json
+.ci-exec-secrets.yaml
