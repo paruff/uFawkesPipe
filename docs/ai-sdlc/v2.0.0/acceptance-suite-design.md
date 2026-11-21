@@ -1,7 +1,7 @@
 # Design — uFawkesPipe Acceptance Test Suite v0.3
 
 > Technical architecture for the automated acceptance test suite.
-> Consumes: specification.md, acceptance-criteria.md
+> Consumes: [spec.md](spec.md), [acceptance-criteria.md](../../acceptance-criteria.md)
 > Produces: tasks.json (via plan agent)
 
 ---
