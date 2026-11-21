@@ -83,6 +83,8 @@ pre-commit-setup: ## Install pre-commit hooks
 	pre-commit install
 	pre-commit install --hook-type pre-push
 
+precommit: pre-commit-run ## Alias for pre-commit-run (the name AGENTS.md uses)
+
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
 
