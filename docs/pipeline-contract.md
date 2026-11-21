@@ -318,6 +318,14 @@ Static Application Security Testing — SonarQube analysis, Bandit (Python), Tri
 | `bandit.severity`     | string  | no       | `MEDIUM` | Severity filter (LOW, MEDIUM, HIGH) |
 | `bandit.confidence`   | string  | no       | `MEDIUM` | Confidence filter (LOW, MEDIUM, HIGH) |
 
+**Setup (once per app repo).** The `sast` step reads two Woodpecker secrets:
+
+1. In SonarQube, create a project whose key is `sonarqube.projectKey` (default `app.name`) and generate a token (My Account → Security).
+2. In Woodpecker, add repo secrets `sonarqube_url` (e.g. `http://sonarqube:9000`) and `sonarqube_token`:
+   `woodpecker-cli repo secret add --repository <owner>/<repo> --name sonarqube_token --value <token>`.
+
+The quality-gate wait polls `/api/qualitygates/project_status` up to 60 times (5 s apart) and fails the step if the gate is not `OK` by then. Tracing uses `$CI_WORKSPACE/scripts/otel-trace.sh` when present and is skipped otherwise.
+
 **Example:**
 
 ```yaml

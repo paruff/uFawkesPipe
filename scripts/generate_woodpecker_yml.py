@@ -99,7 +99,10 @@ def _otel_trace_prefix(step_name: str) -> str:
     Only used in steps whose image has curl (sonar-scanner-cli, zap-stable,
     curlimages/curl) — see scripts/otel-trace.sh for why the others don't."""
     return (
-        "source /drone/src/scripts/otel-trace.sh && "
+        # $CI_WORKSPACE, not /drone/src (Woodpecker 3 differs). App repos don't
+        # carry the helper, so fall back to no-op functions when it's absent.
+        'T="$CI_WORKSPACE/scripts/otel-trace.sh"; '
+        'if [ -f "$T" ]; then . "$T"; else otel_span_start() { :; }; otel_span_end() { :; }; fi; '
         f'otel_span_start "{step_name}" && '
         f'trap \'otel_span_end "{step_name}" "$([ "$?" = 0 ] && echo ok || echo error)"\' EXIT'
     )
@@ -137,22 +140,26 @@ def _sast_step(contract: dict) -> dict:
     bandit_severity = bandit_cfg.get("severity", "MEDIUM")
     bandit_confidence = bandit_cfg.get("confidence", "MEDIUM")
 
-    commands = [_otel_trace_prefix("sast"), "sonar-scanner"]
+    commands = [
+        _otel_trace_prefix("sast"),
+        'sonar-scanner -Dsonar.projectKey="$SONARQUBE_PROJECT_KEY"',
+    ]
 
     if quality_gate:
-        # Wait for SonarQube quality gate to complete
-        # Polls the /api/qualitygates/project endpoint until status is not PENDING
+        # Polls /api/qualitygates/project_status (.projectStatus.status), at most
+        # 60 x 5s, so a stuck analysis fails the step instead of hanging it.
         commands.append(
-            'STATUS="PENDING"; '
-            'while [ "$STATUS" = "PENDING" ]; do '
-            "  sleep 5; "
+            'STATUS="PENDING"; TRIES=0; '
+            'while [ "$STATUS" = "PENDING" ] && [ "$TRIES" -lt 60 ]; do '
+            "  sleep 5; TRIES=$((TRIES+1)); "
             '  STATUS=$(curl -s -u "$SONARQUBE_TOKEN:" '
-            '    "$SONARQUBE_URL/api/qualitygates/project?projectKey=$SONARQUBE_PROJECT_KEY" '
-            "    | python3 -c \"import sys,json; print(json.load(sys.stdin).get('status','PENDING'))\"); "
+            '    "$SONARQUBE_URL/api/qualitygates/project_status?projectKey=$SONARQUBE_PROJECT_KEY" '
+            "    | python3 -c \"import sys,json; print(json.load(sys.stdin).get('projectStatus',{}).get('status','PENDING'))\" "
+            "    2>/dev/null || echo PENDING); "
             '  echo "Quality gate status: $STATUS"; '
             "done; "
             'if [ "$STATUS" != "OK" ]; then '
-            '  echo "Quality gate failed with status: $STATUS"; '
+            '  echo "Quality gate failed or timed out with status: $STATUS"; '
             "  exit 1; "
             "fi"
         )
@@ -175,9 +182,18 @@ def _sast_step(contract: dict) -> dict:
             f"--confidence-level {bandit_confidence.lower()}"
         )
 
+    project_key = sonarqube_cfg.get("projectKey") or contract["app"]["name"]
     return {
         "name": "sast",
         "image": "sonarsource/sonar-scanner-cli:latest",
+        "environment": {
+            # SONAR_* are read natively by sonar-scanner; SONARQUBE_* by the gate poll.
+            "SONAR_HOST_URL": {"from_secret": "sonarqube_url"},
+            "SONAR_TOKEN": {"from_secret": "sonarqube_token"},
+            "SONARQUBE_URL": {"from_secret": "sonarqube_url"},
+            "SONARQUBE_TOKEN": {"from_secret": "sonarqube_token"},
+            "SONARQUBE_PROJECT_KEY": project_key,
+        },
         "commands": commands,
     }
 

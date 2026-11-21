@@ -16,15 +16,27 @@ steps:
   - lint
 - name: sast
   image: sonarsource/sonar-scanner-cli:latest
+  environment:
+    SONAR_HOST_URL:
+      from_secret: sonarqube_url
+    SONAR_TOKEN:
+      from_secret: sonarqube_token
+    SONARQUBE_URL:
+      from_secret: sonarqube_url
+    SONARQUBE_TOKEN:
+      from_secret: sonarqube_token
+    SONARQUBE_PROJECT_KEY: example-internal-tool
   commands:
-  - source /drone/src/scripts/otel-trace.sh && otel_span_start "sast" && trap 'otel_span_end
+  - T="$CI_WORKSPACE/scripts/otel-trace.sh"; if [ -f "$T" ]; then . "$T"; else otel_span_start()
+    { :; }; otel_span_end() { :; }; fi; otel_span_start "sast" && trap 'otel_span_end
     "sast" "$([ "$?" = 0 ] && echo ok || echo error)"' EXIT
-  - sonar-scanner
-  - 'STATUS="PENDING"; while [ "$STATUS" = "PENDING" ]; do   sleep 5;   STATUS=$(curl
-    -s -u "$SONARQUBE_TOKEN:"     "$SONARQUBE_URL/api/qualitygates/project?projectKey=$SONARQUBE_PROJECT_KEY"     |
-    python3 -c "import sys,json; print(json.load(sys.stdin).get(''status'',''PENDING''))");   echo
-    "Quality gate status: $STATUS"; done; if [ "$STATUS" != "OK" ]; then   echo "Quality
-    gate failed with status: $STATUS";   exit 1; fi'
+  - sonar-scanner -Dsonar.projectKey="$SONARQUBE_PROJECT_KEY"
+  - 'STATUS="PENDING"; TRIES=0; while [ "$STATUS" = "PENDING" ] && [ "$TRIES" -lt
+    60 ]; do   sleep 5; TRIES=$((TRIES+1));   STATUS=$(curl -s -u "$SONARQUBE_TOKEN:"     "$SONARQUBE_URL/api/qualitygates/project_status?projectKey=$SONARQUBE_PROJECT_KEY"     |
+    python3 -c "import sys,json; print(json.load(sys.stdin).get(''projectStatus'',{}).get(''status'',''PENDING''))"     2>/dev/null
+    || echo PENDING);   echo "Quality gate status: $STATUS"; done; if [ "$STATUS"
+    != "OK" ]; then   echo "Quality gate failed or timed out with status: $STATUS";   exit
+    1; fi'
   - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
   - mkdir -p artifacts/security
   - bandit -r src/ -ll -ii -f json -o artifacts/security/bandit.json || true
