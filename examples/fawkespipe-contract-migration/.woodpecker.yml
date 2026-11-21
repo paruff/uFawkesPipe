@@ -38,7 +38,14 @@ steps:
     echo PENDING);   echo "Quality gate status: $STATUS"; done; if [ "$STATUS" !=
     "OK" ]; then   echo "Quality gate failed or timed out with status: $STATUS";   exit
     1; fi'
+- name: sast-trivy
+  image: aquasec/trivy:0.74.0
+  commands:
   - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+- name: sast-bandit
+  image: python:3.12-slim
+  commands:
+  - pip install --no-cache-dir bandit
   - mkdir -p artifacts/security
   - bandit -r src/ -ll -ii -f json -o artifacts/security/bandit.json || true
   - bandit -r src/ --severity-level medium --confidence-level medium

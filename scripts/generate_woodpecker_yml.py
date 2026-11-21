@@ -129,17 +129,11 @@ def _test_step(contract: dict) -> dict:
     return step
 
 
-def _sast_step(contract: dict) -> dict:
+def _sast_step(contract: dict) -> list[dict]:
+    """Sonar, Trivy and Bandit each get their own step: no single image has all three."""
     sast_cfg = contract.get("stages", {}).get("sast", {})
     sonarqube_cfg = sast_cfg.get("sonarqube", {})
     quality_gate = sonarqube_cfg.get("qualityGate", True)
-    trivy_cfg = sast_cfg.get("trivy", {})
-    trivy_enabled = trivy_cfg.get("enabled", True)
-    bandit_cfg = sast_cfg.get("bandit", {})
-    bandit_enabled = bandit_cfg.get("enabled", True)
-    bandit_severity = bandit_cfg.get("severity", "MEDIUM")
-    bandit_confidence = bandit_cfg.get("confidence", "MEDIUM")
-
     commands = [
         _otel_trace_prefix("sast"),
         'sonar-scanner -Dsonar.projectKey="$SONARQUBE_PROJECT_KEY"',
@@ -164,26 +158,8 @@ def _sast_step(contract: dict) -> dict:
             "fi"
         )
 
-    if trivy_enabled:
-        trivy_severity = trivy_cfg.get("severity", "HIGH,CRITICAL")
-        commands.append(f"trivy fs --severity {trivy_severity} --exit-code 1 .")
-
-    if bandit_enabled:
-        commands.append(f"mkdir -p {ARTIFACTS_DIR}")
-        commands.append(
-            f"bandit -r src/ -ll -ii -f json -o {ARTIFACTS_DIR}/bandit.json || true"
-        )
-        # -s/--skips and -c/--config are different bandit flags; severity/confidence
-        # thresholds are --severity-level/--confidence-level, values lowercase.
-        # Bandit's own exit code is already non-zero when issues meet the
-        # threshold, so no --exit-code flag exists (or is needed).
-        commands.append(
-            f"bandit -r src/ --severity-level {bandit_severity.lower()} "
-            f"--confidence-level {bandit_confidence.lower()}"
-        )
-
     project_key = sonarqube_cfg.get("projectKey") or contract["app"]["name"]
-    return {
+    sonar = {
         "name": "sast",
         "image": "sonarsource/sonar-scanner-cli:latest",
         "environment": {
@@ -196,6 +172,44 @@ def _sast_step(contract: dict) -> dict:
         },
         "commands": commands,
     }
+    return [sonar, *_sast_trivy_steps(sast_cfg), *_sast_bandit_steps(sast_cfg)]
+
+
+def _sast_trivy_steps(sast_cfg: dict) -> list[dict]:
+    cfg = sast_cfg.get("trivy", {})
+    if not cfg.get("enabled", True):
+        return []
+    severity = cfg.get("severity", "HIGH,CRITICAL")
+    return [
+        {
+            "name": "sast-trivy",
+            "image": "aquasec/trivy:0.74.0",
+            "commands": [f"trivy fs --severity {severity} --exit-code 1 ."],
+        }
+    ]
+
+
+def _sast_bandit_steps(sast_cfg: dict) -> list[dict]:
+    cfg = sast_cfg.get("bandit", {})
+    if not cfg.get("enabled", True):
+        return []
+    severity = cfg.get("severity", "MEDIUM").lower()
+    confidence = cfg.get("confidence", "MEDIUM").lower()
+    return [
+        {
+            "name": "sast-bandit",
+            "image": "python:3.12-slim",
+            "commands": [
+                "pip install --no-cache-dir bandit",
+                f"mkdir -p {ARTIFACTS_DIR}",
+                # Report for the DefectDojo upload; the gate below decides pass/fail.
+                f"bandit -r src/ -ll -ii -f json -o {ARTIFACTS_DIR}/bandit.json || true",
+                # -s/-c are --skips/--config; thresholds are --severity-level/--confidence-level.
+                # Bandit exits non-zero itself when issues meet the threshold.
+                f"bandit -r src/ --severity-level {severity} --confidence-level {confidence}",
+            ],
+        }
+    ]
 
 
 def _dependency_scan_step(contract: dict) -> dict:
@@ -562,12 +576,14 @@ _STEP_BUILDERS = {
 
 def render(contract: dict) -> str:
     """Render full .woodpecker.yml text from a parsed .fawkespipe.yml contract."""
-    steps = [
-        step
-        for name in STAGE_ORDER
-        if _stage_enabled(contract, name)
-        if (step := _STEP_BUILDERS[name](contract)) is not None
-    ]
+    steps: list = []
+    for name in STAGE_ORDER:
+        if not _stage_enabled(contract, name):
+            continue
+        built = _STEP_BUILDERS[name](contract)
+        if built is None:
+            continue
+        steps.extend(built if isinstance(built, list) else [built])
     if not steps:
         raise ContractError(
             "no stages are enabled in .fawkespipe.yml — nothing to build"
