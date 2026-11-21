@@ -130,17 +130,17 @@ up-security: ## Start uFawkesPipe stack + security plane (DefectDojo/Infisical/F
 	docker compose -f compose.yaml --profile security up -d
 
 down: ## Stop uFawkesPipe stack — standalone mode (compose.yaml)
-	docker compose -f compose.yaml down -v
+	docker compose -f compose.yaml --profile ui down -v
 
 logs: ## View uFawkesPipe stack logs — standalone mode (compose.yaml)
-	docker compose -f compose.yaml logs -f
+	docker compose -f compose.yaml --profile ui logs -f
 
 status: ## List running containers — standalone mode
-	docker compose -f compose.yaml ps
+	docker compose -f compose.yaml --profile ui ps
 
 health: ## Show container health status table — standalone mode
 	@echo "Container Health Status (standalone mode):"
-	@docker compose -f compose.yaml ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+	@docker compose -f compose.yaml --profile ui ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
 
 health-suite: ## Show container health status table — suite mode
 	@echo "Container Health Status (suite mode):"
@@ -171,7 +171,7 @@ status-suite: ## List running containers — suite mode
 clean: ## Clean up test artifacts
 	rm -rf .pytest_cache __pycache__ tests/__pycache__ tests/unit/__pycache__ tests/integration/__pycache__ tests/smoke/__pycache__ tests/acceptance/__pycache__
 	rm -rf htmlcov .coverage coverage.xml
-	docker compose -f compose.yaml down -v --remove-orphans 2>/dev/null || true
+	docker compose -f compose.yaml --profile ui down -v --remove-orphans 2>/dev/null || true
 
 init: ## Initialize .env from .env.example if not present
 	@if [ ! -f .env ]; then \
