@@ -114,7 +114,7 @@ class TestComposeSuiteMode:
             "woodpecker-server",
             "woodpecker-agent",
             "sonarqube",
-            "portainer",
+            "arcane",
         ]
 
         for service_name in required_services:

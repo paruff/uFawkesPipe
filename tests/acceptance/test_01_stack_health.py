@@ -59,51 +59,21 @@ class TestStackHealth:
             f"SonarQube UI expected 200/302, got {resp.status_code}"
         )
 
-    # ── Portainer ──────────────────────────────────────────────────────
+    # ── Arcane (optional ``ui`` profile) ───────────────────────────────
 
-    def test_portainer_ui_accessible(
-        self, http_session, portainer_url, ensure_stack_running
+    def test_arcane_ui_accessible(
+        self, http_session, arcane_url, ensure_ui_profile_running
     ):
-        """Portainer UI must return HTTP 200 on port 9443 (HTTPS)."""
-        resp = http_session.get(f"{portainer_url}/", timeout=10)
+        """Arcane UI must return HTTP 200 on port 3552."""
+        resp = http_session.get(f"{arcane_url}/", timeout=10)
         assert resp.status_code == 200, (
-            f"Portainer UI expected 200, got {resp.status_code}"
+            f"Arcane UI expected 200, got {resp.status_code}"
         )
-
-    def test_portainer_admin_init_endpoint(
-        self, http_session, portainer_url, ensure_stack_running
-    ):
-        """Portainer /api/users/admin/init must respond (any status).
-
-        The endpoint may return 200 (first-run), 400/409 (already
-        initialized), or 303 with "timeout" message (security timeout).
-        Any response indicates the service is reachable.
-        """
-        resp = http_session.post(
-            f"{portainer_url}/api/users/admin/init",
-            json={
-                "Username": "admin",
-                "Password": "probe-only",  # pragma: allowlist secret
-            },
-            timeout=10,
-        )
-        assert resp.status_code in (200, 201, 400, 409, 303), (
-            f"Portainer init endpoint expected 200/400/409/303, "
-            f"got {resp.status_code}: {resp.text[:100]}"
-        )
-        # If timeout response, give clear guidance
-        if resp.status_code == 303:
-            body = resp.text.lower()
-            if "timeout" in body:
-                pytest.fail(
-                    "Portainer security timeout detected. "
-                    "Restart Portainer: docker compose restart portainer"
-                )
 
     # ── Service count ──────────────────────────────────────────────────
 
     def test_all_services_running(self, ensure_stack_running, compose_running):
-        """All 4 compose services must report 'running' status."""
+        """All 3 default compose services must report 'running' status."""
         assert compose_running is True, (
             "Not all compose services are running. "
             "Run 'docker compose -f compose.yaml ps --status running' to check."
