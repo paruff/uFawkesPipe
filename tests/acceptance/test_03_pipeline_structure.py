@@ -18,6 +18,8 @@ EXPECTED_STEPS = [
     "init",
     "lint-yaml",
     "lint-shell",
+    "lint-pipeline",
+    "lint-pipeline-shell",
     "validate-agents",
     "unit-tests",
     "integration-tests",
