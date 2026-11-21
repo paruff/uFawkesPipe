@@ -68,4 +68,5 @@ def test_real_pipeline_is_clean():
 def test_hooks_are_registered_and_pinned():
     cfg = (REPO / ".pre-commit-config.yaml").read_text(encoding="utf-8")
     assert "id: woodpecker-lint" in cfg and "id: woodpecker-shellcheck" in cfg
-    assert "woodpecker-cli:v3." in cfg and "pyyaml==" in cfg
+    lint = (REPO / "scripts" / "woodpecker-lint.sh").read_text(encoding="utf-8")
+    assert "woodpecker-cli:v3." in lint and "pyyaml==" in cfg
