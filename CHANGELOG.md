@@ -5,6 +5,45 @@ All notable changes to uFawkesPipe will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/paruff/uFawkesPipe/compare/v2.0.1...v2.1.0) (2026-11-21)
+
+
+### Added
+
+* **ci:** add make ci-exec and a pilot Woodpecker stack ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#304](https://github.com/paruff/uFawkesPipe/issues/304)) ([20af336](https://github.com/paruff/uFawkesPipe/commit/20af336a14293555d06cd7142e83365210ce9926))
+* **ci:** add make lint-ci running woodpecker-cli lint in Docker ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#298](https://github.com/paruff/uFawkesPipe/issues/298)) ([b76d5d4](https://github.com/paruff/uFawkesPipe/commit/b76d5d4abdb215b11565a55099f755a011a935e3))
+* **ci:** lint pipeline and its shell in CI ([#297](https://github.com/paruff/uFawkesPipe/issues/297) task 8) ([#306](https://github.com/paruff/uFawkesPipe/issues/306)) ([231da70](https://github.com/paruff/uFawkesPipe/commit/231da703b89774ba743f88d4f63a8277335eabca))
+* **ci:** print Trivy findings table beside SARIF ([#195](https://github.com/paruff/uFawkesPipe/issues/195)) ([#309](https://github.com/paruff/uFawkesPipe/issues/309)) ([21f8129](https://github.com/paruff/uFawkesPipe/commit/21f8129cd6852f6b7e395051f1a490f8d9030db1))
+* **ci:** woodpecker-lint and woodpecker-shellcheck hooks ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#305](https://github.com/paruff/uFawkesPipe/issues/305)) ([a7b08fa](https://github.com/paruff/uFawkesPipe/commit/a7b08fa2ec362234877870ac62806598d84e11c3))
+* **mcp:** add read-only woodpecker MCP server entry ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#303](https://github.com/paruff/uFawkesPipe/issues/303)) ([6857396](https://github.com/paruff/uFawkesPipe/commit/68573966c5f3a59bb4f9a6ef982a184f184099de))
+
+
+### Fixed
+
+* **dast:** write ZAP reports to the workspace, make API scan optional ([#289](https://github.com/paruff/uFawkesPipe/issues/289)) ([#312](https://github.com/paruff/uFawkesPipe/issues/312)) ([4aac462](https://github.com/paruff/uFawkesPipe/commit/4aac46210bba1751086391469d2e2c044f9dc712))
+* **defectdojo:** working security profile and failing upload step ([#290](https://github.com/paruff/uFawkesPipe/issues/290)) ([#313](https://github.com/paruff/uFawkesPipe/issues/313)) ([8dcf259](https://github.com/paruff/uFawkesPipe/commit/8dcf259300784dc34080fe620ccc1b2c81c88cd2))
+* restore [#297](https://github.com/paruff/uFawkesPipe/issues/297) work reverted by the [#305](https://github.com/paruff/uFawkesPipe/issues/305) squash ([#308](https://github.com/paruff/uFawkesPipe/issues/308)) ([652aa1c](https://github.com/paruff/uFawkesPipe/commit/652aa1c59fdaa5aaf317d420cae3c9fa90f50e36))
+* **sast:** run Trivy and Bandit in images that contain them ([#288](https://github.com/paruff/uFawkesPipe/issues/288)) ([#311](https://github.com/paruff/uFawkesPipe/issues/311)) ([5ba03a8](https://github.com/paruff/uFawkesPipe/commit/5ba03a81f47aa877d2618af2c9360afa8c26f0d1))
+* **sast:** workspace path, credentials and bounded quality-gate poll ([#287](https://github.com/paruff/uFawkesPipe/issues/287)) ([#310](https://github.com/paruff/uFawkesPipe/issues/310)) ([d060b1a](https://github.com/paruff/uFawkesPipe/commit/d060b1adb9df719e41cb2d9e63df0af8e551d12a))
+* **shift-left:** parity fails when CI runs an unconfigured hook id ([#293](https://github.com/paruff/uFawkesPipe/issues/293)) ([c87f1d0](https://github.com/paruff/uFawkesPipe/commit/c87f1d0c83b4de09cd934b7736ac3d87d3edf382))
+* **shift-left:** parity ignores workflows nothing can trigger ([#145](https://github.com/paruff/uFawkesPipe/issues/145)) ([#294](https://github.com/paruff/uFawkesPipe/issues/294)) ([1707330](https://github.com/paruff/uFawkesPipe/commit/17073302c39b9412422b64bc0dc3aa56b6887495))
+
+
+### Docs
+
+* add pipeline-checks block and make precommit to AGENTS.md ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#300](https://github.com/paruff/uFawkesPipe/issues/300)) ([dfa5e43](https://github.com/paruff/uFawkesPipe/commit/dfa5e431ad77b84d70e1363c0a0f52136b88930f))
+* **agents:** add reviewed woodpecker-authoring-pipelines skill ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#302](https://github.com/paruff/uFawkesPipe/issues/302)) ([6a4be30](https://github.com/paruff/uFawkesPipe/commit/6a4be3005a71d294c9be5d5ee4995d0c8e4ece44))
+* **agents:** add woodpecker-pipeline-conventions skill ([#297](https://github.com/paruff/uFawkesPipe/issues/297)) ([#301](https://github.com/paruff/uFawkesPipe/issues/301)) ([6a0a36d](https://github.com/paruff/uFawkesPipe/commit/6a0a36deea868ecf4d313fe8b679af03bcf40bb7))
+* DEVELOPING.md with the three pipeline checks ([#297](https://github.com/paruff/uFawkesPipe/issues/297) task 9) ([#307](https://github.com/paruff/uFawkesPipe/issues/307)) ([849ec6e](https://github.com/paruff/uFawkesPipe/commit/849ec6e5eb89719855a15adede476dbf0a40ff6d))
+* link acceptance-suite design to spec.md ([#121](https://github.com/paruff/uFawkesPipe/issues/121)) ([#296](https://github.com/paruff/uFawkesPipe/issues/296)) ([37d5a6b](https://github.com/paruff/uFawkesPipe/commit/37d5a6bb779e052e5af9f653422399a40ef5cebc))
+
+
+### Chores
+
+* **deps:** bump DavidAnson/markdownlint-cli2-action ([#284](https://github.com/paruff/uFawkesPipe/issues/284)) ([715eb95](https://github.com/paruff/uFawkesPipe/commit/715eb95bd98e5a072547f7eb9262557d972996bc))
+* **deps:** bump trufflesecurity/trufflehog from 3.99.8 to 3.99.9 ([#283](https://github.com/paruff/uFawkesPipe/issues/283)) ([e1bec99](https://github.com/paruff/uFawkesPipe/commit/e1bec9992774a68c9887009883b3cc517e348252))
+* **portainer:** replace Portainer with optional Arcane behind ui profile ([#314](https://github.com/paruff/uFawkesPipe/issues/314)) ([f08f165](https://github.com/paruff/uFawkesPipe/commit/f08f165498e7450695b570256ea38e8097fff137))
+
 ## [2.0.1](https://github.com/paruff/uFawkesPipe/compare/v2.0.0...v2.0.1) (2026-11-19)
 
 
