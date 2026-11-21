@@ -443,6 +443,12 @@ class TestRenderOutputFormat:
         assert test_step["depends_on"] == ["lint"]
 
 
+_SAST_DEFAULT = {
+    "app": {"name": "test", "language": "python"},
+    "stages": {"sast": {"enabled": True}},
+}
+
+
 @pytest.mark.unit
 class TestBanditInSast:
     """Test Bandit Python security linting in SAST stage."""
@@ -464,7 +470,7 @@ class TestBanditInSast:
         }
         result = render(contract)
         parsed = yaml.safe_load(result)
-        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast-bandit")
         commands_str = " ".join(sast_step["commands"])
         assert "bandit -r src/" in commands_str, (
             "SAST step must include bandit when bandit.enabled: true"
@@ -487,11 +493,7 @@ class TestBanditInSast:
         }
         result = render(contract)
         parsed = yaml.safe_load(result)
-        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
-        commands_str = " ".join(sast_step["commands"])
-        assert "bandit" not in commands_str, (
-            "SAST step must NOT include bandit when bandit.enabled: false"
-        )
+        assert "sast-bandit" not in [s["name"] for s in parsed["steps"]]
 
     def test_bandit_custom_severity_confidence(self):
         """Acceptance: Custom bandit severity/confidence used in commands."""
@@ -514,7 +516,7 @@ class TestBanditInSast:
         }
         result = render(contract)
         parsed = yaml.safe_load(result)
-        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast-bandit")
         commands_str = " ".join(sast_step["commands"])
         assert (
             "bandit -r src/ --severity-level high --confidence-level high"
@@ -559,7 +561,7 @@ class TestBanditInSast:
         }
         result = render(contract)
         parsed = yaml.safe_load(result)
-        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast")
+        sast_step = next(s for s in parsed["steps"] if s["name"] == "sast-bandit")
         gate_cmd = next(
             c for c in sast_step["commands"] if c.startswith("bandit") and "-o" not in c
         )
@@ -572,6 +574,47 @@ class TestBanditInSast:
         assert proc.returncode in (0, 1), (
             f"bandit rejected the generated flags (exit {proc.returncode}): {proc.stderr}"
         )
+
+    def test_bandit_step_image_has_bandit_and_writes_report(self):
+        parsed = yaml.safe_load(render(_SAST_DEFAULT))
+        step = next(s for s in parsed["steps"] if s["name"] == "sast-bandit")
+        cmds = " ".join(step["commands"])
+        assert step["image"].startswith("python:")
+        assert "pip install --no-cache-dir bandit" in cmds
+        assert "artifacts/security/bandit.json" in cmds
+        assert "--severity-level medium --confidence-level medium" in cmds
+
+
+@pytest.mark.unit
+class TestTrivyInSast:
+    def test_trivy_default_runs_in_trivy_image(self):
+        parsed = yaml.safe_load(render(_SAST_DEFAULT))
+        step = next(s for s in parsed["steps"] if s["name"] == "sast-trivy")
+        assert step["image"].startswith("aquasec/trivy:")
+        assert "latest" not in step["image"]
+        assert step["commands"] == ["trivy fs --severity HIGH,CRITICAL --exit-code 1 ."]
+
+    def test_trivy_custom_severity_and_disable(self):
+        contract = {
+            **_SAST_DEFAULT,
+            "stages": {"sast": {"enabled": True, "trivy": {"severity": "CRITICAL"}}},
+        }
+        step = next(
+            s
+            for s in yaml.safe_load(render(contract))["steps"]
+            if s["name"] == "sast-trivy"
+        )
+        assert "--severity CRITICAL" in step["commands"][0]
+        contract["stages"]["sast"]["trivy"] = {"enabled": False}
+        assert "sast-trivy" not in [
+            s["name"] for s in yaml.safe_load(render(contract))["steps"]
+        ]
+
+    def test_sonar_step_has_no_trivy_or_bandit(self):
+        parsed = yaml.safe_load(render(_SAST_DEFAULT))
+        sast = next(s for s in parsed["steps"] if s["name"] == "sast")
+        assert "trivy" not in " ".join(sast["commands"])
+        assert "bandit" not in " ".join(sast["commands"])
 
 
 @pytest.mark.unit
