@@ -44,7 +44,7 @@ make up
 pytest tests/ -v
 ```
 
-This starts the full stack (Woodpecker CI, Portainer CE, SonarQube) and runs the unit tests. No external services required.
+This starts the full stack (Woodpecker CI, SonarQube; Arcane with `make up-ui`) and runs the unit tests. No external services required.
 
 ## Code Conventions
 
@@ -54,12 +54,12 @@ We use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 fix(woodpecker): correct pipeline step order
-feat(portainer): add stack deployment automation
+feat(arcane): add stack deployment automation
 docs: update README
 test(sonarqube): add quality gate validation
 ```
 
-**Valid scopes:** `woodpecker`, `portainer`, `sonarqube`, `scripts`, `docs`, `ci`
+**Valid scopes:** `woodpecker`, `arcane`, `sonarqube`, `scripts`, `docs`, `ci`
 
 ### YAML
 

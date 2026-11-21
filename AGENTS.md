@@ -328,7 +328,7 @@ the `policy-check` step in `.woodpecker.yml`.
 
 | Path | Language | What Lives Here | Do Not |
 | ---- | -------- | --------------- | ------ |
-| `compose.yaml` | YAML | Woodpecker server + agent, SonarQube, Portainer, security plane (DefectDojo, Infisical, Trivy, Falco) | Hardcode credentials |
+| `compose.yaml` | YAML | Woodpecker server + agent, SonarQube, optional Arcane UI (profile `ui`), security plane (DefectDojo, Infisical, Trivy, Falco) | Hardcode credentials |
 | `policy/` | Rego | Conftest policies enforced by the `policy-check` pipeline step | Weaken a policy to dodge a real violation |
 | `config/` | YAML | DefectDojo/Infisical/Falco service configuration | Store secrets here |
 | `.woodpecker.yml` | YAML | CI pipeline definition for uFawkesPipe itself | Store secrets here |

@@ -1,4 +1,4 @@
-.PHONY: help doctor init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help doctor init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-ui up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -121,6 +121,9 @@ fix-and-commit: ## Run pre-commit, stage fixes, commit with conventional message
 
 up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
+
+up-ui: ## Start uFawkesPipe stack + optional Arcane Docker UI (profile ui)
+	docker compose -f compose.yaml --profile ui up -d
 
 up-security: ## Start uFawkesPipe stack + security plane (DefectDojo/Infisical/Falco)
 	docker compose -f compose.yaml --profile security up -d

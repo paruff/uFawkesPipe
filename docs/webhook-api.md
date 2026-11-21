@@ -13,7 +13,6 @@ The platform provides:
 1. **GitHub Webhooks** — Automatic pipeline triggers from GitHub push / pull request
 2. **Woodpecker REST API** — Programmatic pipeline control (list, trigger, query)
 3. **Woodpecker CLI** — `woodpecker-cli` for interactive / scripted control
-4. **Portainer Webhook (CD)** — Stack redeploy via Portainer webhook URL
 
 ---
 
@@ -102,23 +101,6 @@ woodpecker-cli pipeline start <org/repo> <pipeline-number>
 ```
 
 See [Woodpecker CLI documentation](https://woodpecker-ci.org/docs/cli) for full usage.
-
----
-
-## 4. Portainer Webhook (CD)
-
-Deployments use a **Portainer stack webhook**: a POST to the Portainer webhook
-URL triggers a stack redeploy with the latest image.
-
-### Endpoint
-
-```
-POST <portainer-webhook-url>
-```
-
-The webhook URL is provided as the `PORTAINER_WEBHOOK_URL` secret (Woodpecker
-secret store / `.env`) and is called by the pipeline's CD step after a
-successful publish.
 
 ---
 

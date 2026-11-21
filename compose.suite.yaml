@@ -239,7 +239,7 @@ services:
       - observability-lab
       - fawkes-net
 
-  portainer:
+  arcane:
     networks:
       - observability-lab
       - fawkes-net

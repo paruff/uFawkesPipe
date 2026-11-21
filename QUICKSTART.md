@@ -101,7 +101,7 @@ All settings live in `.env` (created from `.env.example` by `make init`).
 |---|---|---|
 | Woodpecker CI | <http://localhost:8000> | GitHub OAuth |
 | SonarQube | <http://localhost:9001> | `admin` / `admin` (change on first login) |
-| Portainer | <https://localhost:9443> | Create admin user on first visit |
+| Arcane (optional, `make up-ui`) | <http://localhost:3552> | See Arcane docs for the default login; set `ARCANE_ENCRYPTION_KEY` in `.env` first |
 
 ## Create Your First Pipeline
 

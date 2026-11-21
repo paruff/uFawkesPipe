@@ -275,17 +275,26 @@ services:
       - "managed-by=fawkes"
     restart: unless-stopped
 
-  portainer:
-    image: portainer/portainer-ce:2.39.3
+  # Optional Docker management UI (`make up-ui`, profile `ui`). The pipeline never calls it.
+  arcane:
+    image: getarcaneapp/manager:v3.1.1
+    profiles: [ui]
     ports:
-      - "${PORTAINER_HTTPS_PORT:-9443}:9443"  # HTTPS UI (default from CE 2.9+)
-      - "${PORTAINER_EDGE_PORT:-9002}:8000"  # Edge agent tunnel
+      - "${ARCANE_PORT:-3552}:3552"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - arcane_data:/app/data
+    environment:
+      ARCANE_ENCRYPTION_KEY: ${ARCANE_ENCRYPTION_KEY:-}
+    healthcheck:
+      test: ["CMD", "./arcane", "health", "--timeout", "2s"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
     labels:
       - "plane=ufawkespipe"
-      - "component=cd-engine"
+      - "component=docker-ui"
       - "managed-by=fawkes"
     restart: unless-stopped
 
@@ -568,7 +577,7 @@ volumes:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
-  portainer_data:
+  arcane_data:
   postgres-data:
   valkey-data:
   defectdojo-media:

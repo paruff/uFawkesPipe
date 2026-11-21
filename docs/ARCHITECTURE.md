@@ -33,10 +33,10 @@ uFawkesPipe is a **CI/CD platform** for polyglot application development. It pro
 │                                                      │ ephemeral step   │
 │                                                      │ containers       │
 │  ┌──────────────────────┐  ┌──────────────────────┐  │                  │
-│  │  sonarqube           │  │  portainer            │  │                  │
-│  │  lts-community       │  │  2.39.3               │  │                  │
-│  │  :9001→:9000         │  │  :9443 (HTTPS UI)     │  │                  │
-│  │                      │  │  :9002→:8000 (edge)   │  │                  │
+│  │  sonarqube           │  │  arcane (opt, `ui`)   │  │                  │
+│  │  lts-community       │  │  v3.1.1               │  │                  │
+│  │  :9001→:9000         │  │  :3552 (UI)           │  │                  │
+│  │                      │  │                       │  │                  │
 │  └──────────────────────┘  └──────────────────────┘  │                  │
 │                                                      │                  │
 │  GitHub ──push webhook──► woodpecker-server          │                  │
@@ -51,7 +51,7 @@ uFawkesPipe is a **CI/CD platform** for polyglot application development. It pro
 | **woodpecker-server** | `woodpeckerci/woodpecker-server:v3.20.1` | `8000` (UI), `9000` (gRPC) | CI/CD orchestration, webhook receiver, pipeline state |
 | **woodpecker-agent** | `woodpeckerci/woodpecker-agent:v3.20.1` | — | Pipeline step execution via Docker-in-Docker |
 | **sonarqube** | `sonarqube:lts-community` | `9001→:9000` | SAST code quality analysis |
-| **portainer** | `portainer/portainer-ce:2.39.3` | `9443` (HTTPS), `9002` (edge) | Container management, CD via webhook stacks |
+| **arcane** (profile `ui`, optional) | `getarcaneapp/manager:v3.1.1` | `3552` | Docker management UI; not called by the pipeline |
 
 Security-plane services (DefectDojo, Infisical, Falco, plus their embedded
 `postgres`/`valkey`) also live in `compose.yaml`, gated behind the `security`
@@ -177,7 +177,7 @@ All services run on `ufawkespipe_default` (auto-created Docker bridge network).
 - **Woodpecker agent-to-step containers**: Docker socket mounted at `/var/run/docker.sock`
 - **External ingress**:
   - GitHub webhooks → woodpecker-server :8000
-  - User access: Woodpecker UI (:8000), SonarQube (:9001), Portainer (:9443)
+  - User access: Woodpecker UI (:8000), SonarQube (:9001), Arcane (:3552, optional)
 
 ---
 
@@ -198,9 +198,8 @@ All services run on `ufawkespipe_default` (auto-created Docker bridge network).
 ### Deployment
 
 ```
-1. Push to main → deploy-portainer step triggered (.woodpecker.yml)
-2. curl POST to Portainer webhook URL (from secret PORTAINER_WEBHOOK_URL)
-3. Portainer pulls latest image, recreates stack atomically
+The generated deploy step runs `docker run` / `docker compose` / `ssh` directly.
+No management UI is involved.
 ```
 
 ### Security Pipeline
@@ -208,7 +207,7 @@ All services run on `ufawkespipe_default` (auto-created Docker bridge network).
 ```
 1. trivy fs scans filesystem for HIGH/CRITICAL vulnerabilities
 2. SonarQube is available for SAST (via sonarqube:9000 on the network)
-3. Results viewable in SonarQube UI (:9001) or Portainer (:9443)
+3. Results viewable in SonarQube UI (:9001) or Arcane (:3552, optional)
 ```
 
 ---
@@ -285,7 +284,7 @@ graph TB
         WP[woodpecker-server]
         WA[woodpecker-agent]
         SQ[sonarqube]
-        PT[portainer]
+        AR[arcane]
         DD[defectdojo]
         DDN[defectdojo-nginx]
         I[infisical]
@@ -464,7 +463,7 @@ docker-compose.yml (deprecated):
 | CI server | Jenkins | Woodpecker Server | ✅ Done |
 | Pipeline exec | Jenkins agents | Woodpecker Agent | ✅ Done |
 | SAST | SonarQube | SonarQube | ✅ Same |
-| CD | Jenkins pipeline | Portainer webhook | ✅ Done |
+| CD | Jenkins pipeline | Generated deploy step | ✅ Done |
 | Buildpacks | Pack CLI (on-demand) | CNB via .fawkespipe.yml | ✅ Done |
 | Dependency scan | OWASP Dependency-Check | Trivy fs scan | ✅ Done |
 | Artifact repo | Nexus (commented out) | OCI registry | ✅ Done |
@@ -504,7 +503,7 @@ Tests validate:
 
 | Path | Language | Purpose |
 | ---- | -------- | ------- |
-| `compose.yaml` | YAML | Service orchestration — standalone mode (Woodpecker, SonarQube, Portainer) |
+| `compose.yaml` | YAML | Service orchestration — standalone mode (Woodpecker, SonarQube, optional Arcane) |
 | `compose.suite.yaml` | YAML | Suite mode overlay — connects to uFawkesObs, but still points Woodpecker at uFawkesRes's `fawkes-postgres` on `fawkes-backbone-net` although uFawkesRes is decommissioned (§12.2); unsupported until #97 |
 | `.woodpecker.yml` | YAML | Pipeline definition for uFawkesPipe's own CI |
 | `.fawkespipe.yml.example` | YAML | Pipeline contract template for app teams |
