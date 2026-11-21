@@ -516,14 +516,3 @@ Tests validate:
 | `docs/` | Markdown | Documentation |
 | `policy/` | Rego | Conftest policies enforced by `policy-check` (§3.2, §13.3) |
 | `config/{defectdojo,infisical,falco}/` | YAML | Security-plane service configuration (no secrets) |
-
-## Woodpecker MCP (read-only)
-
-`.mcp.json` and `.opencode/opencode.json` register `@ni-c/woodpecker-ci-mcp` at an exact
-version with `WOODPECKER_READ_ONLY=true` and `WOODPECKER_ALLOW_TOOLS=essential`, using a
-non-admin token (`WOODPECKER_MCP_TOKEN`). No write entry is committed; add a
-`woodpecker-write` entry only when first needed, set to `ask` in `opencode.json`.
-
-Server sharp edges: a repository that exists in the forge returns 404 until it is
-activated in Woodpecker; `perPage` above 50 is silently clamped; a cron schedule has
-five fields, not six.

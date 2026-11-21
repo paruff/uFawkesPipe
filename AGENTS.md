@@ -147,21 +147,6 @@ steps another agent calls directly.
 **Error handling in checks/validators/tests:**
 - Never swallow an exception in a check without logging what broke. A bare `except: pass` around a validation step makes "the check failed to run" indistinguishable from "the check ran and found nothing wrong" — both report clean, and a real failure hides indefinitely.
 
-### Pipeline checks before you push
-
-Pipeline steps run in the Woodpecker agent under `/bin/sh`, not your shell. Run these
-first; all run in Docker (no host installs):
-
-```bash
-make lint-ci      # woodpecker-cli lint on .woodpecker.yml (no server, no login)
-make precommit    # all hooks, incl. woodpecker-lint and woodpecker-shellcheck
-make ci-exec      # run the pipeline locally with --pipeline-event push
-```
-
-- Write step `commands:` as POSIX `sh`: no `source`, `[[ ]]`, arrays, `${var:0:7}`, `$PIPESTATUS`.
-- No real secrets locally; `ci-exec` reads a gitignored secrets file.
-- Always `--pipeline-event push`: exec defaults to `manual` and silently skips push-filtered steps.
-
 ---
 
 ## 5. The PM–Agent Contract
