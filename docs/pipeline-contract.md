@@ -448,6 +448,8 @@ stages:
     timeout: 300
 ```
 
+**Migration (#289):** the API scan used to run by default against `<target_url>/openapi.json`. It now runs only when `openapi_url` is set; add `openapi_url: <target_url>/openapi.json` to keep the old behaviour.
+
 **Note:** DAST requires the application to be running and accessible. Typically runs in a staging/integration environment after deployment.
 
 ---
