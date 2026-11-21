@@ -58,8 +58,8 @@ class TestComposeStandalone:
             )
 
     def test_standalone_agent_uses_default_network(self, compose_config):
-        """Acceptance: standalone woodpecker-agent does NOT set
-        WOODPECKER_BACKEND_DOCKER_NETWORK (uses compose default)."""
+        """Acceptance: standalone woodpecker-agent uses the compose
+        default network (not fawkes-net) for step containers."""
         agent = compose_config.get("services", {}).get("woodpecker-agent", {})
         env_vars = agent.get("environment", [])
         env_str = " ".join(env_vars) if isinstance(env_vars, list) else str(env_vars)
@@ -67,9 +67,9 @@ class TestComposeStandalone:
         assert "WOODPECKER_BACKEND_DOCKER_NETWORK=fawkes-net" not in env_str, (
             f"Standalone woodpecker-agent must not reference fawkes-net, got: {env_str}"
         )
-        assert "WOODPECKER_BACKEND_DOCKER_NETWORK" not in env_str, (
-            f"Standalone woodpecker-agent should not set "
-            f"WOODPECKER_BACKEND_DOCKER_NETWORK at all (uses default network), "
+        # Steps must join the compose default network to reach defectdojo-nginx (#290).
+        assert "WOODPECKER_BACKEND_DOCKER_NETWORK=ufawkespipe_default" in env_str, (
+            f"Standalone agent should attach steps to the compose default network, "
             f"got: {env_str}"
         )
 

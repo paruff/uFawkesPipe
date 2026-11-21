@@ -946,18 +946,17 @@ class TestDefectDojoStage:
             assert path in commands_str, f"missing upload for {path}"
             assert scan_type in commands_str, f"missing scan_type for {path}"
 
-    def test_missing_report_file_does_not_fail_step(self):
-        """Each upload is `[ -f path ] && curl ... || true` so a report a
-        given pipeline never produced (e.g. bandit disabled) can't fail the
-        step — matches the non-blocking pattern in this repo's own
-        .woodpecker.yml upload-defectdojo step."""
-        result = render(self._contract({}))
-        parsed = yaml.safe_load(result)
+    def test_missing_report_skipped_but_failed_import_fails_step(self):
+        """A report never produced is skipped; a failed import must fail the
+        step (no `|| true`), and the step reaches the end before failing."""
+        parsed = yaml.safe_load(render(self._contract({})))
         step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
-        upload_cmds = [c for c in step["commands"] if "import-scan" in c]
-        assert upload_cmds, "expected at least one DefectDojo upload command"
-        for cmd in upload_cmds:
-            assert cmd.rstrip().endswith("|| true")
+        cmds = step["commands"]
+        script = " ".join(cmds)
+        assert '[ -f "$1" ] || return 0' in script
+        assert "|| true" not in script
+        assert "auto_create_context=true" in script
+        assert cmds[-1] == '[ "$FAILED" = "0" ]'
 
     def test_custom_url_and_engagement(self):
         result = render(
@@ -971,11 +970,22 @@ class TestDefectDojoStage:
         assert "http://dojo.internal:9000/api/v2/import-scan/" in commands_str
         assert "engagement_name=nightly" in commands_str
 
-    def test_only_runs_on_push_to_main(self):
+    def test_runs_on_main_push_and_manual_even_after_failed_scan(self):
         result = render(self._contract({}))
         parsed = yaml.safe_load(result)
         step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
-        assert step["when"] == {"event": "push", "branch": "main"}
+        assert step["when"] == {
+            "event": ["push", "manual"],
+            "branch": "main",
+            "status": ["success", "failure"],
+        }
+
+    def test_default_url_is_nginx(self):
+        parsed = yaml.safe_load(render(self._contract({})))
+        step = next(s for s in parsed["steps"] if s["name"] == "defectdojo-upload")
+        assert "http://defectdojo-nginx:8080/api/v2/import-scan/" in " ".join(
+            step["commands"]
+        )
 
     def test_api_token_secret_is_wired(self):
         """Regression: commands reference $DEFECTDOJO_API_TOKEN, but Woodpecker
