@@ -25,8 +25,8 @@
 | Woodpecker port (8000 UI / 9000 gRPC)              | `.env.example`; `Makefile`; `docs/`; GitHub webhook URL               |
 | SonarQube image version                            | Test SAST pipeline step; `docs/`                                      |
 | SonarQube port (9001→9000)                         | `docs/`; user access instructions                                     |
-| Portainer image version                            | Test Portainer webhook stack redeploy                                  |
-| Portainer port (9443 HTTPS / 9002 edge)            | `docs/`; user access instructions                                     |
+| Arcane image version (profile `ui`)                | `make up-ui`; check UI loads                                           |
+| Arcane port (3552)                                 | `docs/`; user access instructions                                     |
 | Volume names                                       | `make down -v` would lose data; document backup                       |
 | Network name (`ufawkespipe_default`)               | `compose.suite.yaml` reference; step container network configuration   |
 

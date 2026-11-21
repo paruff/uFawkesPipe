@@ -14,7 +14,7 @@
 | **Requirement** | FR-3.1.1 |
 | **Given** | `make up` has completed and all compose services show "running" |
 | **When** | `make test-acceptance` runs the health verification tests |
-| **Then** | Woodpecker UI returns HTTP 200, Woodpecker `/healthz` returns HTTP 200, Woodpecker agent gRPC port is reachable, SonarQube `/api/system/status` returns `{"status":"UP"}`, SonarQube UI returns HTTP 200/302, Portainer UI serves HTTPS on :9443 |
+| **Then** | Woodpecker UI returns HTTP 200, Woodpecker `/healthz` returns HTTP 200, Woodpecker agent gRPC port is reachable, SonarQube `/api/system/status` returns `{"status":"UP"}`, SonarQube UI returns HTTP 200/302, Arcane UI answers on :3552 when the optional `ui` profile is running (otherwise skipped) |
 | **Priority** | must-have |
 | **Test method** | acceptance (`tests/acceptance/test_01_stack_health.py`) |
 | **Measurable** | true — HTTP status codes, JSON body assertions |
@@ -51,15 +51,15 @@
 
 ---
 
-## AC-04: Portainer Health Verification
+## AC-04: Arcane Health Verification (optional `ui` profile)
 
 | Field | Value |
 |-------|-------|
 | **AC ID** | AC-04 |
 | **Requirement** | FR-3.1.6, FR-3.1.7 |
-| **Given** | Portainer is running on :9443 (HTTPS) |
-| **When** | HTTPS GET to `https://localhost:9443` (with TLS verification disabled for localhost) |
-| **Then** | Returns HTTP 200 (UI accessible). First-run admin initialization via `POST /api/users/admin/init` succeeds with HTTP 200/201 and generates a valid admin user. |
+| **Given** | `make up-ui` has started Arcane on :3552 |
+| **When** | HTTP GET to `http://localhost:3552` |
+| **Then** | Returns HTTP 200. Skipped when the `ui` profile is not running. |
 | **Priority** | must-have |
 | **Test method** | acceptance |
 | **Measurable** | true |
@@ -96,18 +96,9 @@
 
 ---
 
-## AC-07: Portainer First-Run Initialization + Authentication
+## AC-07: Retired
 
-| Field | Value |
-|-------|-------|
-| **AC ID** | AC-07 |
-| **Requirement** | FR-3.2.3 |
-| **Given** | Portainer is running on :9443, fresh or already initialized |
-| **When** | (1) `POST /api/users/admin/init` with `Username=admin` and `Password=<generated>` for first-run, or (2) `POST /api/auth` with `{"Username":"admin","Password":"<known>"}` if already initialized |
-| **Then** | Returns a valid JWT token (`jwt` field). Token can be used to access `GET /api/endpoints` with HTTP 200. |
-| **Priority** | must-have |
-| **Test method** | acceptance |
-| **Measurable** | true |
+Portainer was removed from the default stack (#291); no replacement auth check.
 
 ---
 
@@ -156,18 +147,9 @@
 
 ---
 
-## AC-11: Portainer CD Readiness Verification
+## AC-11: Retired
 
-| Field | Value |
-|-------|-------|
-| **AC ID** | AC-11 |
-| **Requirement** | FR-3.5.1 |
-| **Given** | Portainer is initialized and authenticated |
-| **When** | The test accesses `GET /api/endpoints` with a valid JWT |
-| **Then** | Returns at least one endpoint (the local Docker environment). Portainer is configured as a CD target. |
-| **Priority** | should-have |
-| **Test method** | acceptance |
-| **Measurable** | true |
+Portainer CD readiness was removed with Portainer (#291); the pipeline never called it.
 
 ---
 
@@ -235,7 +217,6 @@
 | `tests/acceptance/test_02_authentication.py` | AC-05, AC-06, AC-07 |
 | `tests/acceptance/test_03_pipeline_structure.py` | AC-08, AC-09, AC-12 |
 | `tests/acceptance/test_04_security_simulation.py` | AC-10 |
-| `tests/acceptance/test_05_portainer_cd.py` | AC-11 |
 | `tests/acceptance/test_06_suite_behavior.py` | AC-13, AC-14 |
 
 ---

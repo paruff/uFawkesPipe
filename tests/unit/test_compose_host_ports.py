@@ -15,9 +15,8 @@ CONFIGURABLE = {
         "8000": ("WOODPECKER_UI_PORT", "8000"),
         "9000": ("WOODPECKER_GRPC_PORT", "9000"),
     },
-    "portainer": {
-        "9443": ("PORTAINER_HTTPS_PORT", "9443"),
-        "8000": ("PORTAINER_EDGE_PORT", "9002"),
+    "arcane": {
+        "3552": ("ARCANE_PORT", "3552"),
     },
 }
 
@@ -44,3 +43,18 @@ def test_env_example_documents_every_port_variable():
     for ports in CONFIGURABLE.values():
         for var, default in ports.values():
             assert f"{var}={default}" in ENV_EXAMPLE, var
+
+
+@pytest.mark.unit
+def test_arcane_is_optional_and_portainer_is_gone():
+    services = COMPOSE["services"]
+    assert services["arcane"]["profiles"] == ["ui"]
+    assert "portainer" not in services
+    assert "portainer_data" not in COMPOSE["volumes"]
+    assert "arcane_data" in COMPOSE["volumes"]
+
+
+@pytest.mark.unit
+def test_arcane_image_is_pinned():
+    image = COMPOSE["services"]["arcane"]["image"]
+    assert not image.endswith(":latest") and ":" in image

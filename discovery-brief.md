@@ -29,7 +29,7 @@ network routing, or service state silently breaks after a compose down/up cycle,
 giving green Docker status but non-functional services?
 
 **Why this is risky:** Today, `make up` gives green Docker container status even
-when Portainer requires HTTPS first-run setup, SonarQube is still warming up,
+when SonarQube is still warming up,
 and Woodpecker's OAuth config may be incomplete. The only verification is manual
 browser testing — no automated guard.
 
@@ -53,12 +53,11 @@ on all services requiring it, and a simulated golden-path pipeline (stack health
 
 None found in uFawkesPipe. Limited smoke tests exist (`tests/smoke/`) for
 Woodpecker and SonarQube health endpoints only — no authentication, no
-Portainer, no pipeline simulation.
+pipeline simulation.
 
 ## Notes
 
-- Stack is currently running (4/4 services). Portainer requires HTTPS on :9443
-  and first-run admin password setup. SonarQube on :9001 accessible.
+- Stack is currently running (3 default services). SonarQube on :9001 accessible.
 - Woodpecker has `WOODPECKER_OPEN=true` — open access, no OAuth requirement.
   This may change in production; tests should handle both modes.
 - Existing `pytest.ini` already has `acceptance` marker and `tests/acceptance/`

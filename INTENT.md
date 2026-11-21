@@ -7,7 +7,7 @@ Docker Compose stack that includes:
 - DefectDojo for scan results;
 - Infisical and Falco, from the merged uFawkesSec;
 - a Conftest/Rego `policy-check` step;
-- Portainer for deploys.
+- An optional Arcane Docker UI (`make up-ui`); deploys run from the generated pipeline step, not a UI.
 
 It also publishes reusable GitHub workflows that other suite repos depend on.
 

@@ -58,8 +58,8 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌────────────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ Woodpecker Server  │  │  SonarQube   │  │  Portainer   │  │
-│  │ + Agent            │  │   (SAST)     │  │   CE (CD)    │  │
+│  │ Woodpecker Server  │  │  SonarQube   │  │  Arcane      │  │
+│  │ + Agent            │  │   (SAST)     │  │  (optional)  │  │
 │  │                    │  │              │  │              │  │
 │  │  - Pipeline YAML   │  │  - Quality   │  │  - Stacks    │  │
 │  │  - GitHub OAuth    │  │    Gates     │  │  - Secrets   │  │
@@ -87,7 +87,7 @@ All steps emit structured JSON logs via `scripts/dora-log.sh` compatible with uF
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **Standalone mode** (`make up`): Woodpecker + SonarQube + Portainer, local storage
+- **Standalone mode** (`make up`): Woodpecker + SonarQube, local storage. Add the optional Arcane Docker UI with `make up-ui`
 - **Suite mode** (`make up-suite`): start uFawkesObs first. It joins Obs's `observability-lab` network, so Woodpecker exports to Obs's OTEL Collector and Prometheus scrapes it. Databases stay this stack's own.
 
 ## 🔐 Security Plane
@@ -145,8 +145,11 @@ step (see [docs/policy-guide.md](docs/policy-guide.md)).
 3. **Start the platform**
 
    ```bash
-   # Standalone mode (Woodpecker + SonarQube + Portainer)
+   # Standalone mode (Woodpecker + SonarQube)
    make up
+
+   # Optional: also start the Arcane Docker UI (profile `ui`)
+   make up-ui
 
    # Suite mode is unsupported until #97 (it still needs the deprecated uFawkesRes)
    # make up-suite
@@ -157,7 +160,7 @@ step (see [docs/policy-guide.md](docs/policy-guide.md)).
    | Service       | Port | URL                    | Auth                     |
    | ------------- | ---- | ---------------------- | ------------------------ |
    | Woodpecker CI | 8000 | http://localhost:8000  | GitHub OAuth             |
-   | Portainer CE  | 9443 | https://localhost:9443 | Admin account (first use)|
+   | Arcane (opt.) | 3552 | http://localhost:3552  | `make up-ui`; default login in Arcane docs |
    | SonarQube     | 9000 | http://localhost:9000  | admin / (from .env)      |
 
 ### First Pipeline
@@ -316,7 +319,7 @@ The `tests/unit/` suite validates the `.woodpecker.yml` pipeline definition stat
 - ❌ SonarQube quality gate evaluation
 - ❌ DefectDojo API ingestion
 - ❌ OTEL collector event emission / Loki ingestion
-- ❌ Cross-service integration (Woodpecker ↔ SonarQube ↔ Portainer)
+- ❌ Cross-service integration (Woodpecker ↔ SonarQube)
 - ❌ Performance / load characteristics
 
 ### Running Tests
@@ -360,7 +363,7 @@ Edit [`compose.yaml`](compose.yaml) to:
 Persistent data is stored in Docker volumes:
 
 - `woodpecker_data` — Woodpecker CI database and config
-- `portainer_data` — Portainer CD data
+- `arcane_data` — Arcane data (optional `ui` profile)
 - `sonarqube_data` — SonarQube analysis data
 - `pack_cache` — CNB build cache
 

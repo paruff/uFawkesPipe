@@ -1,4 +1,4 @@
-.PHONY: help doctor init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-suite down down-suite logs logs-suite status status-suite clean
+.PHONY: help doctor init check-env test test-unit test-integration test-smoke test-acceptance test-policy validate validate-docker validate-suite validate-agents generate-pipeline check-pipeline pre-commit-setup pre-commit-run fix-and-commit up up-ui up-suite down down-suite logs logs-suite status status-suite clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -122,21 +122,25 @@ fix-and-commit: ## Run pre-commit, stage fixes, commit with conventional message
 up: ## Start uFawkesPipe stack — standalone mode (compose.yaml)
 	docker compose -f compose.yaml up -d
 
+up-ui: ## Start uFawkesPipe stack + optional Arcane Docker UI (profile ui)
+	@test -n "$$ARCANE_ENCRYPTION_KEY" || grep -qs '^ARCANE_ENCRYPTION_KEY=.' .env || { echo "Set ARCANE_ENCRYPTION_KEY (openssl rand -hex 16) in .env or the environment; Arcane crash-loops without it" >&2; exit 1; }
+	docker compose -f compose.yaml --profile ui up -d
+
 up-security: ## Start uFawkesPipe stack + security plane (DefectDojo/Infisical/Falco)
 	docker compose -f compose.yaml --profile security up -d
 
 down: ## Stop uFawkesPipe stack — standalone mode (compose.yaml)
-	docker compose -f compose.yaml down -v
+	docker compose -f compose.yaml --profile ui down -v
 
 logs: ## View uFawkesPipe stack logs — standalone mode (compose.yaml)
-	docker compose -f compose.yaml logs -f
+	docker compose -f compose.yaml --profile ui logs -f
 
 status: ## List running containers — standalone mode
-	docker compose -f compose.yaml ps
+	docker compose -f compose.yaml --profile ui ps
 
 health: ## Show container health status table — standalone mode
 	@echo "Container Health Status (standalone mode):"
-	@docker compose -f compose.yaml ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+	@docker compose -f compose.yaml --profile ui ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
 
 health-suite: ## Show container health status table — suite mode
 	@echo "Container Health Status (suite mode):"
@@ -167,7 +171,7 @@ status-suite: ## List running containers — suite mode
 clean: ## Clean up test artifacts
 	rm -rf .pytest_cache __pycache__ tests/__pycache__ tests/unit/__pycache__ tests/integration/__pycache__ tests/smoke/__pycache__ tests/acceptance/__pycache__
 	rm -rf htmlcov .coverage coverage.xml
-	docker compose -f compose.yaml down -v --remove-orphans 2>/dev/null || true
+	docker compose -f compose.yaml --profile ui down -v --remove-orphans 2>/dev/null || true
 
 init: ## Initialize .env from .env.example if not present
 	@if [ ! -f .env ]; then \

@@ -6,16 +6,13 @@ binary pass/fail verification of the running uFawkesPipe stack.
 Architecture decisions (ADR-002, ADR-005):
 - HTTP API only — no browser automation
 - `requests` library for HTTPS session handling and retry support
-- Portainer HTTPS with verify=False for localhost self-signed certs
 
 Fixture usage:
   Tests that require a running compose stack add `ensure_stack_running`
   as a parameter. Tests that don't need the stack omit it.
 """
 
-import json
 import subprocess
-import time
 from pathlib import Path
 
 import pytest
@@ -49,11 +46,11 @@ def ensure_stack_running(compose_running):
 
 @pytest.fixture(scope="session")
 def compose_running():
-    """Check that all 4 compose services are running.
+    """Check that the 3 default compose services are running.
 
     Session-scoped — checked once per test run. Returns True if
-    woodpecker-server, woodpecker-agent, sonarqube, and portainer
-    are all in 'running' state.
+    woodpecker-server, woodpecker-agent and sonarqube are all in
+    'running' state. Arcane (profile ``ui``) is optional.
     """
     try:
         result = subprocess.run(
@@ -78,7 +75,7 @@ def compose_running():
         return False
 
     running = set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-    required = {"woodpecker-server", "woodpecker-agent", "sonarqube", "portainer"}
+    required = {"woodpecker-server", "woodpecker-agent", "sonarqube"}
     return required.issubset(running)
 
 
@@ -141,7 +138,7 @@ def sonarqube_session():
     """Dedicated HTTP session for SonarQube API operations.
 
     Separate from the shared http_session to avoid cookie/auth state
-    contamination with other services (Woodpecker, Portainer).
+    contamination with other services (Woodpecker, Arcane).
     Uses basic auth with default admin/admin credentials.
 
     Note: Timeout is set per-request, not on the session object.
@@ -157,9 +154,36 @@ def sonarqube_session():
 
 
 @pytest.fixture(scope="session")
-def portainer_url():
-    """Portainer UI URL (HTTPS required)."""
-    return "https://localhost:9443"
+def arcane_url():
+    """Arcane UI URL (optional ``ui`` profile)."""
+    return "http://localhost:3552"
+
+
+@pytest.fixture(scope="session")
+def ensure_ui_profile_running(compose_running):
+    """Skip unless the optional ``ui`` profile (Arcane) is running."""
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "compose",
+                "-f",
+                str(PROJECT_ROOT / "compose.yaml"),
+                "--profile",
+                "ui",
+                "ps",
+                "--services",
+                "--status",
+                "running",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pytest.skip("Docker unavailable — cannot check the ui profile")
+    if "arcane" not in result.stdout.split():
+        pytest.skip("Arcane not running — start with: make up-ui")
 
 
 # ── Authentication tokens ───────────────────────────────────────────────
@@ -182,100 +206,6 @@ def sonarqube_token(http_session, sonarqube_url, ensure_stack_running):
     )
     assert resp.status_code == 200, f"SonarQube login failed: HTTP {resp.status_code}"
     return http_session.cookies
-
-
-@pytest.fixture(scope="session")
-def portainer_token(http_session, portainer_url, compose_running):
-    """Initialize Portainer admin (if first run) and return JWT.
-
-    Portainer auth flow (Portainer CE 2.39.3):
-    1. First-run: POST /api/users/admin/init → HTTP 200 (user object, no JWT)
-    2. Already initialized: POST /api/users/admin/init → HTTP 400/409
-    3. Auth: POST /api/auth → HTTP 200 with {"jwt": "..."}
-
-    Portainer has a security timeout that locks the API after ~5 min of
-    inactivity (returns "Administrator initialization timeout").
-    If this happens, restart Portainer: docker compose restart portainer
-
-    Session-scoped — initialized once per test run.
-    Skips via pytest.skip when compose stack is not running.
-    """
-    if not compose_running:
-        pytest.skip(
-            "Compose stack not running — acceptance tests require all services up"
-        )
-    test_password = (
-        "portainer-acceptance-2026!"  # pragma: allowlist secret # ggshield-ignore
-    )
-    auth_success = False
-
-    # Step 1: Try first-run admin initialization
-    init_resp = http_session.post(
-        f"{portainer_url}/api/users/admin/init",
-        json={"Username": "admin", "Password": test_password},
-        timeout=15,
-    )
-
-    if init_resp.status_code in (200, 201):
-        # First-run init succeeded — proceed to auth
-        pass
-    elif init_resp.status_code in (400, 409, 303):
-        # Admin already initialized, or timeout lock — check body for clues
-        body = init_resp.text
-        if "timeout" in body.lower():
-            pytest.fail(
-                "Portainer security timeout detected. "
-                "Restart Portainer and re-run: docker compose restart portainer\n"
-                f"Init response: HTTP {init_resp.status_code} — {body[:200]}"
-            )
-        # Already initialized — proceed to auth step below
-    else:
-        pytest.fail(
-            f"Portainer admin init unexpected response: HTTP {init_resp.status_code}"
-            f" — {init_resp.text[:200]}"
-        )
-
-    # Step 2: Authenticate to get JWT
-    if init_resp.status_code in (200, 201):
-        time.sleep(2)  # Small delay after first-run init
-
-    # Try the standard test password
-    auth_resp = http_session.post(
-        f"{portainer_url}/api/auth",
-        json={"Username": "admin", "Password": test_password},
-        timeout=15,
-    )
-    if auth_resp.status_code == 200:
-        auth_success = True
-
-    # Fallback: try alternative passwords from prior test runs
-    if not auth_success:
-        for alt_pwd in ["admin", "password"]:
-            alt = http_session.post(
-                f"{portainer_url}/api/auth",
-                json={"Username": "admin", "Password": alt_pwd},
-                timeout=10,
-            )
-            if alt.status_code == 200:
-                auth_resp = alt
-                auth_success = True
-                break
-
-    assert auth_success, (
-        f"Portainer auth failed. "
-        f"Init status: {init_resp.status_code}, "
-        f"All auth attempts failed. "
-        f"Response body: {auth_resp.text[:200]}"
-    )
-
-    data = auth_resp.json()
-    assert "jwt" in data, (
-        f"Portainer auth response missing 'jwt' field: {json.dumps(data)[:200]}"
-    )
-    return data["jwt"]
-
-
-# ── Pipeline config (re-exports from top-level conftest.py) ─────────────
 
 
 @pytest.fixture(scope="session")
