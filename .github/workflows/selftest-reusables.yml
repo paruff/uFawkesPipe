@@ -29,3 +29,16 @@ jobs:
       fail-on-critical: false
       ignore-unfixed: true
       upload-sarif: false
+
+  security-scanning-fs:
+    name: security-scanning scans the filesystem
+    # Proves the fs path runs and prints its findings table. Not a gate (fs scans don't set an exit code).
+    permissions:
+      contents: read
+      security-events: write
+    uses: ./.github/workflows/reusable-security-scanning.yml
+    with:
+      scan-type: vulnerabilities
+      severity-threshold: CRITICAL
+      fail-on-critical: false
+      upload-sarif: false
