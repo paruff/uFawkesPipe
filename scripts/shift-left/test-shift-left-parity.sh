@@ -209,6 +209,22 @@ jobs:
 YML
 parity "$R"
 check "the same workflow called from a pull_request workflow counts" test "$rc" -eq 0
+cat > "$R/.github/workflows/main.yml" << 'YML'
+on:
+  push:
+jobs:
+  hooks:
+    uses: "./.github/workflows/mid.yml"
+YML
+printf 'on:\n  workflow_call:\njobs:\n  h:\n    uses: ./.github/workflows/ci.yml\n' > "$R/.github/workflows/mid.yml"
+parity "$R"
+check "a quoted call, through a chain, counts" test "$rc" -eq 0
+printf 'on: push\njobs:\n  h:\n    # uses: ./.github/workflows/ci.yml\n    steps: []\n' > "$R/.github/workflows/main.yml"
+parity "$R"
+check "a commented-out call doesn't count" test "$rc" -eq 1
+printf 'on: workflow_call\njobs:\n  h:\n    uses: ./.github/workflows/ci.yml\n' > "$R/.github/workflows/main.yml"
+parity "$R"
+check "a call from a workflow nothing triggers doesn't count" test "$rc" -eq 1
 
 echo ".shift-left.yml itself:"
 scenario no-reason
