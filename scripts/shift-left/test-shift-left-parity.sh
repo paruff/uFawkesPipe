@@ -188,6 +188,44 @@ YML
 parity "$R"
 check "reusable-preflight lines are unaffected" test "$rc" -eq 0
 
+echo "Workflows nothing can trigger (#145):"
+scenario dead
+cat > "$R/.github/workflows/ci.yml" << 'YML'
+on: workflow_call
+jobs:
+  hooks:
+    steps:
+      - run: pre-commit run --all-files
+      - run: pre-commit run --all-files --hook-stage pre-push
+      - run: pre-commit run --hook-stage commit-msg --commit-msg-filename "$f"
+YML
+parity "$R"
+check "an uncalled workflow_call-only workflow doesn't count" test "$rc" -eq 1
+cat > "$R/.github/workflows/main.yml" << 'YML'
+on: [pull_request]
+jobs:
+  hooks:
+    uses: ./.github/workflows/ci.yml
+YML
+parity "$R"
+check "the same workflow called from a pull_request workflow counts" test "$rc" -eq 0
+cat > "$R/.github/workflows/main.yml" << 'YML'
+on:
+  push:
+jobs:
+  hooks:
+    uses: "./.github/workflows/mid.yml"
+YML
+printf 'on:\n  workflow_call:\njobs:\n  h:\n    uses: ./.github/workflows/ci.yml\n' > "$R/.github/workflows/mid.yml"
+parity "$R"
+check "a quoted call, through a chain, counts" test "$rc" -eq 0
+printf 'on: push\njobs:\n  h:\n    # uses: ./.github/workflows/ci.yml\n    steps: []\n' > "$R/.github/workflows/main.yml"
+parity "$R"
+check "a commented-out call doesn't count" test "$rc" -eq 1
+printf 'on: workflow_call\njobs:\n  h:\n    uses: ./.github/workflows/ci.yml\n' > "$R/.github/workflows/main.yml"
+parity "$R"
+check "a call from a workflow nothing triggers doesn't count" test "$rc" -eq 1
+
 echo ".shift-left.yml itself:"
 scenario no-reason
 printf 'local-only:\n  - id: stamp\n' > "$R/.shift-left.yml"

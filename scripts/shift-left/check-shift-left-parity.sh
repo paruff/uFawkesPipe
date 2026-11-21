@@ -6,7 +6,9 @@
 # --all-files`, per stage), so a new hook needs no workflow edit. What can
 # drift is the set of stages CI runs: a hook whose stages CI never runs, and
 # that isn't in .shift-left.yml, fails here. The stages CI runs are read from
-# the `pre-commit run` lines in .github/workflows/*.yml (--all-files required;
+# the `pre-commit run` lines in the .github/workflows/*.yml that can run: a
+# trigger besides workflow_call, or a `uses: ./.github/workflows/x.yml` call from
+# one that can (--all-files required;
 # commit-msg needs --commit-msg-filename instead). A call to uFawkesPipe's
 # reusable-preflight.yml counts as all three stages: that is what it runs.
 # A line that names a hook (`pre-commit run <id> --all-files`, or on a
@@ -61,7 +63,32 @@ ci_stages = set()
 ci_hooks = set()  # hooks CI runs by id
 ci_refs = []  # (id, workflow, line number) for each such line
 REUSABLE = re.compile(r"uses:\s*paruff/ufawkespipe/\.github/workflows/reusable-preflight\.ya?ml@", re.I)
-for wf in sorted(glob.glob(".github/workflows/*.y*ml")):
+
+def triggers(wf):
+    # a workflow with no readable `on:` is treated as triggerable, never silently dropped
+    try:
+        d = yaml.safe_load(open(wf))
+        on = d.get("on", d.get(True))  # YAML 1.1 parses a bare `on` key as True
+    except (yaml.YAMLError, OSError, AttributeError) as e:
+        print(f"warning: cannot read triggers of {wf} ({e}); counting it as runnable", file=sys.stderr)
+        return None
+    if isinstance(on, dict):
+        return set(on)
+    return set([on] if isinstance(on, str) else on or [])
+
+# A workflow only counts if it can run: a trigger other than workflow_call, or a
+# call (uses: ./.github/workflows/<name>) from a workflow that can run (#145).
+wfs = sorted(glob.glob(".github/workflows/*.y*ml"))
+live = {wf for wf in wfs if triggers(wf) != {"workflow_call"}}
+LOCAL_CALL = re.compile(r"uses:\s*[\"']?\./\.github/workflows/([\w.-]+)")
+while True:
+    called = {f".github/workflows/{m}" for wf in live for line in open(wf) for m in LOCAL_CALL.findall(line.split("#", 1)[0])}
+    if called & set(wfs) <= live:
+        break
+    live |= called & set(wfs)
+for wf in wfs:
+    if wf not in live:
+        continue
     for n, line in enumerate(open(wf), 1):
         line = line.split("#", 1)[0]
         if REUSABLE.search(line):
