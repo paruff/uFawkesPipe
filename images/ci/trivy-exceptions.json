@@ -1,20 +1,50 @@
 [
   {
-    "id": "CVE-2026-78669",
-    "target": "usr/local/lib/docker/cli-plugins/docker-compose",
-    "reason": "docker compose v5.6.0 (latest upstream) is built with Go 1.26.8 and golang.org/x/net 0.58.0; fixes exist (Go 1.26.9, x/net 0.60.0) but upstream has not shipped a rebuild.",
-    "expires": "2026-11-12"
+    "id": "CVE-2026-115563",
+    "target": "Python",
+    "reason": "semgrep 1.179.0 and 1.186.0 (latest) both require mcp==1.29.0; the fix is in mcp 1.30.0. Bump semgrep in requirements.in once it allows mcp>=1.30.",
+    "expires": "2026-12-06"
   },
   {
-    "id": "CVE-2026-78667",
-    "target": "usr/local/lib/docker/cli-plugins/docker-compose",
-    "reason": "Same: compose v5.6.0 is built with Go 1.26.8; fixed in Go 1.26.9. Bump compose in runner.lock when upstream rebuilds.",
-    "expires": "2026-11-12"
+    "id": "CVE-2026-114149",
+    "target": "opt/ufawkes-runner/bin/Runner.Worker.deps.json",
+    "reason": "Microsoft.AspNetCore.WebUtilities 8.0.25 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.34. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
   },
   {
-    "id": "CVE-2026-97031",
+    "id": "CVE-2026-78661",
     "target": "usr/local/lib/docker/cli-plugins/docker-compose",
-    "reason": "Same: compose v5.6.0 is built with Go 1.26.8; fixed in Go 1.26.9. Bump compose in runner.lock when upstream rebuilds.",
-    "expires": "2026-11-12"
+    "reason": "docker compose v5.8.0 (latest) is built with golang.org/x/net 0.60.0; fixed in 0.62.0. Bump compose in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
+  },
+  {
+    "id": "GHSA-p3jp-9v83-76w9",
+    "target": "opt/ufawkes-runner/bin/Runner.Listener.deps.json",
+    "reason": "Microsoft.NETCore.App.Runtime.linux-* 8.0.32 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.33. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
+  },
+  {
+    "id": "GHSA-p3jp-9v83-76w9",
+    "target": "opt/ufawkes-runner/bin/Runner.PluginHost.deps.json",
+    "reason": "Microsoft.NETCore.App.Runtime.linux-* 8.0.32 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.33. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
+  },
+  {
+    "id": "GHSA-p3jp-9v83-76w9",
+    "target": "opt/ufawkes-runner/bin/Runner.Plugins.deps.json",
+    "reason": "Microsoft.NETCore.App.Runtime.linux-* 8.0.32 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.33. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
+  },
+  {
+    "id": "GHSA-p3jp-9v83-76w9",
+    "target": "opt/ufawkes-runner/bin/Runner.Sdk.deps.json",
+    "reason": "Microsoft.NETCore.App.Runtime.linux-* 8.0.32 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.33. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
+  },
+  {
+    "id": "GHSA-p3jp-9v83-76w9",
+    "target": "opt/ufawkes-runner/bin/Runner.Worker.deps.json",
+    "reason": "Microsoft.NETCore.App.Runtime.linux-* 8.0.32 ships inside actions-runner 2.338.2 (latest stable); fixed in 8.0.33. Bump actions-runner in runner.lock when upstream rebuilds.",
+    "expires": "2026-12-06"
   }
 ]
