@@ -20,7 +20,7 @@ jobs:
   # ─── Stage 0: Pre-flight ──────────────────────────────────────────────────
   preflight:
     name: Pre-flight
-    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-preflight.yml@93650e69ae0fa22d9e1aaff0d4b98236ab52ab14 # v1.15.0-beta.1
     with:
       pr-size-limit: 0
       # The hook stages run in the suite's CI image (ci-pipeline spec R4).
