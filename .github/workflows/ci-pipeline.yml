@@ -47,7 +47,7 @@ jobs:
   dependency-review:
     name: Dependency Review
     needs: [lint]
-    uses: paruff/uFawkesPipe/.github/workflows/reusable-dependency-review.yml@41f3e92d6fb63b3779595bed3e44333c67d37028 # v1.15.0-beta.1
+    uses: paruff/uFawkesPipe/.github/workflows/reusable-dependency-review.yml@93650e69ae0fa22d9e1aaff0d4b98236ab52ab14 # v1.15.0-beta.1
     with:
       fail-on-severity: high
 
